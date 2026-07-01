@@ -1,0 +1,105 @@
+package store_test
+
+import (
+	"errors"
+	"os"
+	"path/filepath"
+	"strings"
+	"testing"
+	"time"
+
+	"beaver/internal/issue"
+	"beaver/internal/store"
+)
+
+func TestDiscoverFromSubdirectory(t *testing.T) {
+	root := t.TempDir()
+	if _, _, err := store.Init(root); err != nil {
+		t.Fatalf("Init: %v", err)
+	}
+	sub := filepath.Join(root, "src", "pkg", "deep")
+	if err := os.MkdirAll(sub, 0o755); err != nil {
+		t.Fatal(err)
+	}
+
+	st, err := store.Discover(sub)
+	if err != nil {
+		t.Fatalf("Discover from subdirectory: %v", err)
+	}
+	if want := filepath.Join(root, ".beaver"); st.Root() != want {
+		t.Errorf("root = %q, want %q", st.Root(), want)
+	}
+}
+
+func TestDiscoverNoStore(t *testing.T) {
+	if _, err := store.Discover(t.TempDir()); !errors.Is(err, store.ErrNoStore) {
+		t.Errorf("got %v, want ErrNoStore", err)
+	}
+}
+
+// Resolve must find an issue by its authoritative frontmatter id even when the
+// filename has drifted from it (ADR 0002, ADR 0005).
+func TestResolveFallsBackToFrontmatterID(t *testing.T) {
+	root := newStore(t)
+	writeIssueFile(t, root, "totally-wrong-name.md", issue.Issue{
+		ID: "m3k8", Title: "Drifted", State: issue.StateTodo,
+		Created: fixedTime, Updated: fixedTime,
+	})
+
+	st, _ := store.Discover(root)
+	got, _, err := st.Resolve("m3k8")
+	if err != nil {
+		t.Fatalf("Resolve by frontmatter id: %v", err)
+	}
+	if got.ID != "m3k8" {
+		t.Errorf("resolved id = %q, want m3k8", got.ID)
+	}
+}
+
+func TestResolveNotFound(t *testing.T) {
+	st, _ := store.Discover(newStore(t))
+	if _, _, err := st.Resolve("nope"); !errors.Is(err, store.ErrNotFound) {
+		t.Errorf("got %v, want ErrNotFound", err)
+	}
+}
+
+// A reference that matches a file by name, but whose contents are corrupt, must
+// surface a precise error naming the file — not a misleading "not found".
+func TestResolveReportsCorruptTargetFile(t *testing.T) {
+	root := newStore(t)
+	path := filepath.Join(root, ".beaver", "issues", "m3k8-broken.md")
+	if err := os.WriteFile(path, []byte("this is not an issue file"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	st, _ := store.Discover(root)
+	_, _, err := st.Resolve("m3k8")
+	if err == nil {
+		t.Fatal("expected an error for a corrupt target file")
+	}
+	if !strings.Contains(err.Error(), "m3k8-broken.md") {
+		t.Errorf("error should name the offending file, got: %v", err)
+	}
+}
+
+var fixedTime = time.Date(2026, 6, 27, 18, 30, 0, 0, time.UTC)
+
+func newStore(t *testing.T) string {
+	t.Helper()
+	root := t.TempDir()
+	if _, _, err := store.Init(root); err != nil {
+		t.Fatalf("Init: %v", err)
+	}
+	return root
+}
+
+func writeIssueFile(t *testing.T, root, name string, iss issue.Issue) {
+	t.Helper()
+	data, err := issue.Marshal(iss)
+	if err != nil {
+		t.Fatalf("Marshal: %v", err)
+	}
+	if err := os.WriteFile(filepath.Join(root, ".beaver", "issues", name), data, 0o644); err != nil {
+		t.Fatalf("write %s: %v", name, err)
+	}
+}
