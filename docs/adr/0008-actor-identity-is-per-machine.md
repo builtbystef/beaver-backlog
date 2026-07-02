@@ -2,7 +2,7 @@
 
 `beaver init` initializes a *project*: it creates `.beaver/issues/` and a small,
 committed project config (a format-version marker, with room for project-wide
-settings later). It is run once per repository by whoever adopts Beaver, and it
+settings later). It is run once per repository by whoever adopts Busy Beaver, and it
 is shared through version control like the issues themselves.
 
 **Actor identity is separate and per-machine.** It lives in user-level config
@@ -10,7 +10,7 @@ is shared through version control like the issues themselves.
 committed project config would make every contributor who clones the repo inherit
 the initializer's identity — breaking teams and open-source projects. Decoupling
 the personal thing (identity, per-machine) from the shared thing (the project,
-committed) is what lets Beaver serve solo devs, solo-dev-plus-agents, closed
+committed) is what lets Busy Beaver serve solo devs, solo-dev-plus-agents, closed
 teams, and unbounded open-source contributors with no per-contributor
 registration. Free-form, untyped actors (see CONTEXT.md "Actor") mean an
 unbounded contributor needs no roster entry — their identity seeds itself.

@@ -1,6 +1,6 @@
 # Agents are auto-identified from the environment; human identity is interactive-only
 
-Beaver resolves the current actor differently for humans and agents, so both are
+Busy Beaver resolves the current actor differently for humans and agents, so both are
 attributed correctly with zero configuration in the common case.
 
 Two facts shape this:

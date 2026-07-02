@@ -1,4 +1,4 @@
-// Package beavertest is the in-process test harness for the Beaver CLI. It runs
+// Package beavertest is the in-process test harness for the Busy Beaver CLI. It runs
 // real commands against a temporary store with an injected clock, environment,
 // and TTY signal, then exposes the exit code, captured stdio, and the resulting
 // files for assertions.

@@ -1,13 +1,13 @@
 # Assignment is advisory coordination, not a lock
 
-Beaver's assignment is an advisory coordination signal, not mutual exclusion. A
+Busy Beaver's assignment is an advisory coordination signal, not mutual exclusion. A
 local-first tool with no central authority cannot guarantee a globally atomic
 claim: two actors on two branches (or two clones) can both claim the same issue,
 and nothing short of a server could prevent it — which would forfeit local-first.
 This is the same distributed-uniqueness wall that ruled out sequential IDs
 (ADR 0002).
 
-So `claim` does not lock. Beaver reduces collisions with a **best-effort local
+So `claim` does not lock. Busy Beaver reduces collisions with a **best-effort local
 guard** — `claim` and `start` refuse an issue already assigned to a *different*
 actor (`--force` to steal); re-claiming one's own is a no-op — but that guard is
 only ever as fresh as the working tree. The backstop for genuinely concurrent

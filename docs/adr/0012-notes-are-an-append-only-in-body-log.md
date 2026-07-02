@@ -12,11 +12,11 @@ comment. The cost is that concurrent notes from two actors append to the same fi
 and can merge-conflict; this is accepted and resolved like any other content
 conflict (ADR 0005). The clean-merge benefit of separate files only matters under
 heavy concurrent commenting, which a local-first tracker rarely sees, and it isn't
-worth sacrificing the single-file readability that makes Beaver browsable.
+worth sacrificing the single-file readability that makes Busy Beaver browsable.
 
 The term is **Note**, not **Comment**: the entries are non-threaded standalone
-observations, and "comment" both overpromises a conversation model Beaver doesn't
-have and overloads with the code comments in the codebases Beaver lives in.
+observations, and "comment" both overpromises a conversation model Busy Beaver doesn't
+have and overloads with the code comments in the codebases Busy Beaver lives in.
 
 ## Consequences
 

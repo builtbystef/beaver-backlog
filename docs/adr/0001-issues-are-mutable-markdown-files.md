@@ -3,7 +3,7 @@
 Each issue's Markdown file is treated as the **mutable source of truth** —
 hand-editable by humans and coding agents with any text editor — rather than as
 a projection of an append-only event log (the git-bug model). We chose this
-because Beaver's core promise is human-readable, Git-diffable, directly editable
+because Busy Beaver's core promise is human-readable, Git-diffable, directly editable
 files, and because a local-first CLI does not need event sourcing (operation
 logs, CRDT merges, projection rebuilds) to get useful history: Git already
 provides per-file history and diffs.

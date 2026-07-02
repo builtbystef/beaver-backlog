@@ -1,6 +1,6 @@
 // Package clock provides an injectable source of the current time.
 //
-// Every timestamp Beaver writes (an issue's created/updated fields) comes from a
+// Every timestamp Busy Beaver writes (an issue's created/updated fields) comes from a
 // Clock rather than from time.Now directly, so tests can pin time to a fixed
 // instant and assert on deterministic output.
 package clock

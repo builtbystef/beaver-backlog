@@ -1,13 +1,13 @@
-# Beaver
+# Busy Beaver
 
-**Beaver** is a local-first issue tracker for software projects. It stores issues
+**Busy Beaver** is a local-first issue tracker for software projects. It stores issues
 as Markdown files inside your project, so humans and coding agents can coordinate
 work through the files themselves. No external service, account, or database necessary.
 
-## Why Beaver?
+## Why Busy Beaver?
 
 Most issue trackers live outside the codebase, behind a web app and an API.
-Beaver keeps project work _in_ the repository, as plain files that travel with
+Busy Beaver keeps project work _in_ the repository, as plain files that travel with
 your code:
 
 - **Markdown-first** — every issue is a human-readable `.md` file with a small
@@ -15,9 +15,9 @@ your code:
 - **Local by default** — issues live on your disk, in your project. Nothing to
   sign up for, nothing to sync, works offline.
 - **Version-control-friendly** — the files are plain
-  text that Git (or any version control system) diffs and merges cleanly. But Beaver never _requires_
+  text that Git (or any version control system) diffs and merges cleanly. But Busy Beaver never _requires_
   a VCS: it works correctly with Git, with another VCS, or with none at all.
-- **Optionally drives your VCS** — when you want it to, Beaver can act as one way
+- **Optionally drives your VCS** — when you want it to, Busy Beaver can act as one way
   of recording work: e.g. committing a completed issue as its own atomic commit.
 - **Agent-friendly** — coding agents read, create, and update issues as plain
   files, and coordinate parallel work through the same store you use.
@@ -46,13 +46,13 @@ When a user submits a correct password containing a `!`, the form clears and
 shows "invalid credentials". Expected: the login succeeds.
 ```
 
-The file _is_ the issue — the single source of truth. Beaver's CLI (and the
+The file _is_ the issue — the single source of truth. Busy Beaver's CLI (and the
 future web app) are thin clients over these files; nothing authoritative lives in
 a database.
 
 ## Coordinating work
 
-Beaver is local-first and has no sync layer, so it can't _lock_ an issue. A lock
+Busy Beaver is local-first and has no sync layer, so it can't _lock_ an issue. A lock
 would need a central server, which is the thing local-first leaves out. Instead,
 an actor **claims** an issue by setting its `assignee` field, and that claim
 travels through Git like any other change. It's a signal, not a rule: two
@@ -66,5 +66,5 @@ layer instead of a lock.
 
 ## Status
 
-Beaver is in early design. See [`CONTEXT.md`](./CONTEXT.md) for the project's
+Busy Beaver is in early design. See [`CONTEXT.md`](./CONTEXT.md) for the project's
 language, and [`docs/adr/`](./docs/adr/) for the decisions behind the design.

@@ -12,7 +12,7 @@ updated: 2026-06-27T18:30:00Z
 
 Complete the VCS port (begun for identity) with a commit capability, and implement
 it in the Git reference adapter. Add **opt-in** commit-per-issue: when enabled,
-completing an issue commits the change as its own atomic commit. By default Beaver
+completing an issue commits the change as its own atomic commit. By default Busy Beaver
 commits nothing and never requires a VCS; zero configured adapters means
 VCS-unaware operation. The port is the single seam where Git — or a future
 third-party adapter — plugs in.

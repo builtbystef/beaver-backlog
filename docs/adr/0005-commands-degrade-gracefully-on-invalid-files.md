@@ -1,6 +1,6 @@
 # Commands degrade gracefully when an issue file is invalid
 
-Beaver draws a deliberate line between two kinds of file problem:
+Busy Beaver draws a deliberate line between two kinds of file problem:
 
 - **Validation** — whether a file is a usable issue at all: the YAML frontmatter
   parses, `id` is present and well-formed, `state` is one of the legal values.
@@ -10,11 +10,11 @@ Beaver draws a deliberate line between two kinds of file problem:
   trailing whitespace. Failure is a warning, and is usually auto-fixable.
 
 When a normal command (`list`, `show`, …) encounters a file that fails
-*validation*, Beaver skips it, prints a loud warning naming the file, and keeps
+*validation*, Busy Beaver skips it, prints a loud warning naming the file, and keeps
 operating on the valid issues — rather than failing fast and refusing to run
 until the store is clean.
 
-Beaver is a coordination tool operating on a shared Git repo edited by humans and
+Busy Beaver is a coordination tool operating on a shared Git repo edited by humans and
 agents in parallel and updated by merges that can splice conflict markers into
 files. Broken files are a normal, recurring state. Fail-fast would let one bad
 file — often from someone else's merge — brick every command for the whole team
@@ -27,7 +27,7 @@ halting every command.
 
 - Because `id` is authoritative in the frontmatter (ADR 0002), a filename that
   doesn't match its frontmatter is a *lint* issue, not a validation error —
-  Beaver renames the file to match. Interfaces keep filenames correct
+  Busy Beaver renames the file to match. Interfaces keep filenames correct
   automatically on every write; drift arises only from hand-edits and merges,
   which `beaver doctor --fix` repairs.
 - Every command must be written to tolerate, skip, and report invalid files

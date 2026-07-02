@@ -43,9 +43,9 @@ func cmdInit(env Env, args []string) int {
 		return exitOK
 	}
 	if created {
-		fmt.Fprintf(env.Stdout, "Initialized empty Beaver store in %s\n", root)
+		fmt.Fprintf(env.Stdout, "Initialized empty Busy Beaver store in %s\n", root)
 	} else {
-		fmt.Fprintf(env.Stdout, "Reinitialized existing Beaver store in %s\n", root)
+		fmt.Fprintf(env.Stdout, "Reinitialized existing Busy Beaver store in %s\n", root)
 	}
 	return exitOK
 }
@@ -172,7 +172,7 @@ func mintID(env Env, st *store.Store) (string, error) {
 
 func storeError(env Env, err error) int {
 	if errors.Is(err, store.ErrNoStore) {
-		errf(env, "not a Beaver store; run `beaver init`")
+		errf(env, "not a Busy Beaver store; run `beaver init`")
 		return exitError
 	}
 	errf(env, "%v", err)

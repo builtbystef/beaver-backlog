@@ -1,17 +1,17 @@
 # VCS integration via optional ports and adapters (Git-first)
 
-Beaver integrates with version-control systems through a ports-and-adapters
+Busy Beaver integrates with version-control systems through a ports-and-adapters
 (hexagonal) boundary. The core depends only on a VCS *port* — an interface;
 concrete *adapters* implement that port for specific systems. Git is the
-reference adapter Beaver ships. Third parties can implement adapters for Jujutsu,
+reference adapter Busy Beaver ships. Third parties can implement adapters for Jujutsu,
 Mercurial, or anything else against the same port. Zero configured adapters is a
-fully supported mode: Beaver is then VCS-unaware and operates on files alone
+fully supported mode: Busy Beaver is then VCS-unaware and operates on files alone
 (ADR 0006).
 
-The port exists so Beaver can optionally *drive* a VCS as **one** way — not the
-only way — of recording work. The motivating case: running Beaver alongside
+The port exists so Busy Beaver can optionally *drive* a VCS as **one** way — not the
+only way — of recording work. The motivating case: running Busy Beaver alongside
 coding agents working in parallel, so each completed issue becomes its own atomic
-commit. All such behavior is **opt-in**. By default Beaver writes files and
+commit. All such behavior is **opt-in**. By default Busy Beaver writes files and
 commits nothing; the user or agent commits on their own cadence with their own
 tools.
 

@@ -25,7 +25,7 @@ const FormatVersion = 1
 // Sentinel errors callers branch on.
 var (
 	// ErrNoStore means no .beaver directory was found at or above a working dir.
-	ErrNoStore = errors.New("not a Beaver store; run `beaver init`")
+	ErrNoStore = errors.New("not a Busy Beaver store; run `beaver init`")
 	// ErrNotFound means a reference matched no issue in the store.
 	ErrNotFound = errors.New("issue not found")
 )
@@ -47,7 +47,7 @@ func (s *Store) ConfigPath() string { return filepath.Join(s.root, "config.yml")
 // Init creates (or safely re-creates) a store under workDir: the .beaver/issues
 // directory and a committed project config carrying the format version. It is
 // idempotent — re-running never clobbers an existing config. created reports
-// whether the store directory was newly made. Init never touches a VCS; Beaver
+// whether the store directory was newly made. Init never touches a VCS; Busy Beaver
 // requires none (ADR 0006, ADR 0008).
 func Init(workDir string) (root string, created bool, err error) {
 	root = filepath.Join(workDir, dirName)
@@ -104,7 +104,7 @@ func (s *Store) List() ([]string, error) {
 
 // IDTaken reports whether an issue with the given ID already exists, so create
 // can regenerate on the rare collision. It checks the filename's ID portion,
-// which Beaver always keeps in sync with the frontmatter on write.
+// which Busy Beaver always keeps in sync with the frontmatter on write.
 func (s *Store) IDTaken(id string) (bool, error) {
 	files, err := s.List()
 	if err != nil {
@@ -142,7 +142,7 @@ func (s *Store) Resolve(ref string) (issue.Issue, string, error) {
 		return issue.Issue{}, "", err
 	}
 
-	// Fast path: a file whose name mirrors the ID — the normal case, since Beaver
+	// Fast path: a file whose name mirrors the ID — the normal case, since Busy Beaver
 	// always names files <id>-<slug>.md. A parse failure here is reported with the
 	// file name rather than masked as "not found".
 	for _, f := range files {
@@ -185,7 +185,7 @@ func readIssue(path string) (issue.Issue, error) {
 
 func defaultConfig() []byte {
 	return fmt.Appendf(nil,
-		`# Beaver project configuration.
+		`# Busy Beaver project configuration.
 # Committed and shared through version control, like the issues themselves.
 # Safe to read and edit by hand.
 format_version: %d

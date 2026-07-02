@@ -1,15 +1,15 @@
-# Beaver
+# Busy Beaver
 
-Beaver is a local-first issue tracker for software projects. It stores issues as
+Busy Beaver is a local-first issue tracker for software projects. It stores issues as
 Markdown files inside the project so that humans and coding agents can coordinate
 work through the files themselves — with no external service and no hard
 dependency on any version-control system. Git is the first-class companion, but
-Beaver stays correct with another VCS, or none.
+Busy Beaver stays correct with another VCS, or none.
 
 ## Language
 
 **Issue**:
-The unit of work Beaver tracks — a bug, feature, chore, or any discrete piece of
+The unit of work Busy Beaver tracks — a bug, feature, chore, or any discrete piece of
 work. Each issue is a single Markdown file living in the repository.
 _Avoid_: Task, Ticket
 
@@ -39,8 +39,8 @@ Umbrella query categories, not stored values. *Open* is any non-terminal issue
 `todo`.
 
 **Actor**:
-A participant Beaver can attribute work to — a human or a coding agent, treated
-identically. An actor is just a free-form name (e.g. `stefan`, `claude`); Beaver
+A participant Busy Beaver can attribute work to — a human or a coding agent, treated
+identically. An actor is just a free-form name (e.g. `stefan`, `claude`); Busy Beaver
 does not formally distinguish humans from agents.
 _Avoid_: User, Person, Member, Contributor
 
@@ -52,7 +52,7 @@ _Avoid_: Owner
 
 **Label**:
 A free-form, multi-valued tag on an issue, used for any classification the team
-wants — including its "type" (`bug`, `feature`, `chore`). Beaver has no separate
+wants — including its "type" (`bug`, `feature`, `chore`). Busy Beaver has no separate
 type or category concept; those are simply labels.
 _Avoid_: Tag, Type, Category
 
@@ -64,7 +64,7 @@ _Avoid_: Severity, Importance
 
 **Claim**:
 The act of an actor making themselves an issue's assignee to signal "this is
-mine." Advisory only — a coordination signal, never a lock; Beaver cannot stop
+mine." Advisory only — a coordination signal, never a lock; Busy Beaver cannot stop
 two actors on different branches from claiming the same issue, and the VCS merge
 surfaces the clash. Claiming reserves an issue without changing its state.
 _Avoid_: Lock
@@ -80,13 +80,13 @@ Derived conditions, not stored states. A dependency is satisfied only when its
 target is `done`. An issue is *blocked* when any `depends_on` target is not
 `done`, and *ready* when it is `todo` with every dependency `done`. A dependency
 on a `cancelled` issue is never satisfied, leaving the dependent *stuck* — a
-condition `doctor` flags for a human to resolve, not one Beaver clears
+condition `doctor` flags for a human to resolve, not one Busy Beaver clears
 automatically. Like Open/Closed, these are query views over the data — never
 written to a file.
 
 **Sub-issue**:
 An issue that names another as its `parent`, used to decompose larger work. An
-issue that has sub-issues is informally an "epic," but Beaver has no distinct epic
+issue that has sub-issues is informally an "epic," but Busy Beaver has no distinct epic
 type — it is just an issue with sub-issues.
 _Avoid_: Subtask, Child
 

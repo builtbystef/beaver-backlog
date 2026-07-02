@@ -6,7 +6,7 @@ Each issue is identified by a short, randomly generated, collision-resistant ID
 readability. An issue may be referenced by its full ID, any unambiguous ID
 prefix, or its slug.
 
-Beaver coordinates parallel work across Git branches and multiple actors (humans
+Busy Beaver coordinates parallel work across Git branches and multiple actors (humans
 and agents), so a shared sequential counter would produce frequent, semantically
 nasty merge conflicts — two different issues both claiming `#42`. Content hashes
 were rejected because they presuppose an immutable record to hash, which the

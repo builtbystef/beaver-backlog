@@ -1,4 +1,4 @@
-// Package issue defines Beaver's core domain type — the Issue — together with
+// Package issue defines Busy Beaver's core domain type — the Issue — together with
 // its on-disk Markdown representation (YAML frontmatter + body), its identity
 // (a short random ID), and the slug derived from its title.
 //
@@ -39,7 +39,7 @@ const (
 	PriorityLow    Priority = "low"
 )
 
-// Issue is the unit of work Beaver tracks. The fields mirror the frontmatter
+// Issue is the unit of work Busy Beaver tracks. The fields mirror the frontmatter
 // schema; Body is the Markdown content that follows the frontmatter and holds
 // the description (and, in later slices, the notes log).
 type Issue struct {

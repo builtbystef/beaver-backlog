@@ -10,7 +10,7 @@ A relationship is logically bidirectional, but storing both directions means two
 files must stay in sync — doubling the merge-conflict surface and inviting desync
 (edit one side, the other rots). One-sided storage is a single source of truth
 that cannot desync, the same discipline used for timestamps and the authoritative
-`id`. The cost is a scan to answer inverse queries, trivial at Beaver's scale and
+`id`. The cost is a scan to answer inverse queries, trivial at Busy Beaver's scale and
 accelerable by the disposable index (ADR 0003) if ever needed.
 
 ## Consequences
@@ -27,7 +27,7 @@ accelerable by the disposable index (ADR 0003) if ever needed.
 - A dependency on a `cancelled` issue never clears (only `done` satisfies a
   dependency), so the dependent is *stuck*: not `ready`, and not self-resolving.
   `doctor` flags it for a human to resolve — cancel the dependent, re-scope it, or
-  drop the dependency. Beaver never auto-cancels it, because a pivoted-away
+  drop the dependency. Busy Beaver never auto-cancels it, because a pivoted-away
   dependency is sometimes salvageable by dropping it rather than abandoning the
   dependent.
 - An issue with children is informally an "epic," but there is no separate epic
