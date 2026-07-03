@@ -9,6 +9,7 @@ import (
 	"io"
 	"sort"
 	"strings"
+	"text/tabwriter"
 	"time"
 
 	"beaver/internal/issue"
@@ -57,6 +58,45 @@ func WriteIssue(w io.Writer, iss issue.Issue, f Format) error {
 		return WriteJSON(w, toJSONView(iss))
 	}
 	return writeHuman(w, iss)
+}
+
+// WriteList renders a collection of issues in the given format, preserving the
+// order the caller supplies. JSON is an array of the same per-issue objects
+// WriteIssue emits — every field present, unset ones normalized to null/empty —
+// so an agent listing issues gets complete records. Human output is an aligned
+// ID/STATE/TITLE table.
+func WriteList(w io.Writer, issues []issue.Issue, f Format) error {
+	if f == JSON {
+		views := make([]jsonView, len(issues)) // non-nil, so an empty list is [] not null
+		for i, iss := range issues {
+			views[i] = toJSONView(iss)
+		}
+		return WriteJSON(w, views)
+	}
+	return writeTable(w, issues)
+}
+
+// writeTable renders issues as an aligned, columnar human table. The header and
+// column set are human output, not a contract (ADR 0013); later slices widen them
+// as priority, labels, and assignee become settable (p1k765).
+func writeTable(w io.Writer, issues []issue.Issue) error {
+	if len(issues) == 0 {
+		_, err := io.WriteString(w, "No issues.\n")
+		return err
+	}
+	tw := tabwriter.NewWriter(w, 0, 0, 2, ' ', 0)
+	fmt.Fprintln(tw, "ID\tSTATE\tTITLE")
+	for _, iss := range issues {
+		fmt.Fprintf(tw, "%s\t%s\t%s\n", iss.ID, iss.State, oneLine(iss.Title))
+	}
+	return tw.Flush()
+}
+
+// oneLine flattens a value to a single line for a table cell, so a newline or tab
+// spliced into a title by a hand-edit or merge cannot break the column grid (a tab
+// is what tabwriter uses to delimit columns).
+func oneLine(s string) string {
+	return strings.NewReplacer("\r\n", " ", "\n", " ", "\r", " ", "\t", " ").Replace(s)
 }
 
 // WriteJSON encodes v as indented JSON with a trailing newline, without escaping

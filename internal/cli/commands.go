@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"path/filepath"
+	"sort"
 	"strings"
 	"time"
 
@@ -111,6 +112,86 @@ func cmdCreate(env Env, args []string) int {
 	}
 	fmt.Fprintf(env.Stdout, "Created %s  %s\n  %s\n", iss.ID, iss.Title, relPath(env.WorkDir, path))
 	return exitOK
+}
+
+// cmdList enumerates issues, optionally filtered by state. With no --state it lists
+// all issues; --state narrows to a single concrete state (todo, in-progress, done,
+// cancelled) or the explicit all. Output is a human table or a JSON array,
+// auto-detected.
+func cmdList(env Env, args []string) int {
+	fs, formatFlag := newFlagSet(env, "list")
+	stateFlag := fs.String("state", "", "filter by state: all|todo|in-progress|done|cancelled")
+	pos, ok := parseArgs(fs, args)
+	if !ok {
+		return exitUsage
+	}
+	if len(pos) > 0 {
+		errf(env, "list takes no positional arguments (did you mean --state %s?)", pos[0])
+		return exitUsage
+	}
+	match, err := stateFilter(*stateFlag)
+	if err != nil {
+		errf(env, "%v", err)
+		return exitUsage
+	}
+	format, err := output.Resolve(*formatFlag, env.StdoutIsTTY, env.Getenv)
+	if err != nil {
+		errf(env, "%v", err)
+		return exitUsage
+	}
+
+	st, err := store.Discover(env.WorkDir)
+	if err != nil {
+		return storeError(env, err)
+	}
+
+	all, err := st.ReadAll()
+	if err != nil {
+		errf(env, "%v", err)
+		return exitError
+	}
+	issues := make([]issue.Issue, 0, len(all))
+	for _, iss := range all {
+		if match(iss.State) {
+			issues = append(issues, iss)
+		}
+	}
+	sortIssues(issues)
+
+	if err := output.WriteList(env.Stdout, issues, format); err != nil {
+		errf(env, "%v", err)
+		return exitError
+	}
+	return exitOK
+}
+
+// stateFilter turns a --state value into a predicate over issue state. An omitted
+// value (the default) and the explicit "all" match every state; otherwise the value
+// must be one of the four concrete states. An unrecognized value is a usage error.
+func stateFilter(value string) (func(issue.State) bool, error) {
+	switch value {
+	case "", "all":
+		return func(issue.State) bool { return true }, nil
+	case string(issue.StateTodo), string(issue.StateInProgress), string(issue.StateDone), string(issue.StateCancelled):
+		want := issue.State(value)
+		return func(s issue.State) bool { return s == want }, nil
+	default:
+		return nil, fmt.Errorf("invalid state %q (want one of: all, todo, in-progress, done, cancelled)", value)
+	}
+}
+
+// sortIssues orders issues deterministically for display: oldest first by creation
+// time, with the stable random ID as a total-order tiebreak so issues minted at
+// the same instant (common under a fixed test clock) still sort reproducibly.
+// Priority-aware ordering arrives with p1k765.
+func sortIssues(issues []issue.Issue) {
+	sort.Slice(issues, func(i, j int) bool {
+		a, b := issues[i], issues[j]
+		if !a.Created.Equal(b.Created) {
+			return a.Created.Before(b.Created)
+		}
+		return a.ID < b.ID
+	})
 }
 
 // cmdShow renders one issue resolved from a reference.

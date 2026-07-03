@@ -49,6 +49,8 @@ func Run(env Env) int {
 		return cmdInit(env, args)
 	case "create":
 		return cmdCreate(env, args)
+	case "list":
+		return cmdList(env, args)
 	case "show":
 		return cmdShow(env, args)
 	case "help", "-h", "--help":
@@ -67,10 +69,14 @@ func printUsage(w io.Writer) {
 usage:
   beaver init                 initialize a store in the current project
   beaver create "<title>"     create a new issue
+  beaver list                 list issues (default: all)
   beaver show <ref>           show an issue by its ID
 
 common flags (after the command):
   --format human|json         override output format (default: auto-detect)
+
+list flags:
+  --state <state>             filter: all|todo|in-progress|done|cancelled
 
 exit codes:
   0  success

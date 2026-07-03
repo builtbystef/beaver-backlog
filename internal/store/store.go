@@ -108,6 +108,27 @@ func (s *Store) List() ([]string, error) {
 	return files, nil
 }
 
+// ReadAll reads and parses every issue in the store, returning them in the stable
+// path order List provides. Files that fail to parse are skipped rather than
+// failing the whole read (ADR 0005), mirroring Resolve; surfacing them with a loud
+// warning is doctor's job (b8q3). A missing issues directory yields no issues.
+// Callers that need a specific display order re-sort the result.
+func (s *Store) ReadAll() ([]issue.Issue, error) {
+	files, err := s.List()
+	if err != nil {
+		return nil, err
+	}
+	issues := make([]issue.Issue, 0, len(files))
+	for _, f := range files {
+		iss, err := readIssue(f)
+		if err != nil {
+			continue // skip invalid files; doctor reports them (b8q3)
+		}
+		issues = append(issues, iss)
+	}
+	return issues, nil
+}
+
 // IDTaken reports whether an issue with the given ID already exists, so create
 // can regenerate on the rare collision. It consults the authoritative frontmatter
 // ID — the same identity Resolve uses — so the two can never disagree.
