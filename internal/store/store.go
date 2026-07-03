@@ -103,19 +103,11 @@ func (s *Store) List() ([]string, error) {
 }
 
 // IDTaken reports whether an issue with the given ID already exists, so create
-// can regenerate on the rare collision. It checks the filename's ID portion,
-// which Busy Beaver always keeps in sync with the frontmatter on write.
+// can regenerate on the rare collision. It consults the authoritative frontmatter
+// ID — the same identity Resolve uses — so the two can never disagree.
 func (s *Store) IDTaken(id string) (bool, error) {
-	files, err := s.List()
-	if err != nil {
-		return false, err
-	}
-	for _, f := range files {
-		if issue.IDFromFileName(filepath.Base(f)) == id {
-			return true, nil
-		}
-	}
-	return false, nil
+	_, _, ok, err := s.findByID(id)
+	return ok, err
 }
 
 // Write serializes an issue to its canonical file (<id>-<slug>.md), replacing any
@@ -132,43 +124,43 @@ func (s *Store) Write(iss issue.Issue) (string, error) {
 	return path, nil
 }
 
-// Resolve turns a reference into a single issue. This slice resolves by exact ID
-// (the authoritative identity); the shared resolver gains prefix and slug support
-// in a later slice (r7p2), which every issue-addressing command will route
-// through. Returns ErrNotFound when nothing matches.
+// Resolve turns a reference into a single issue by its authoritative frontmatter
+// ID (ADR 0002, ADR 0005) — never by filename, which is only a human convenience
+// and may have drifted via a hand-edit or merge. This slice resolves by exact ID;
+// the shared resolver gains prefix and slug support in a later slice (r7p2), which
+// every issue-addressing command will route through. Returns ErrNotFound when
+// nothing matches.
 func (s *Store) Resolve(ref string) (issue.Issue, string, error) {
-	files, err := s.List()
+	iss, path, ok, err := s.findByID(ref)
 	if err != nil {
 		return issue.Issue{}, "", err
 	}
-
-	// Fast path: a file whose name mirrors the ID — the normal case, since Busy Beaver
-	// always names files <id>-<slug>.md. A parse failure here is reported with the
-	// file name rather than masked as "not found".
-	for _, f := range files {
-		if issue.IDFromFileName(filepath.Base(f)) == ref {
-			iss, err := readIssue(f)
-			if err != nil {
-				return issue.Issue{}, "", err
-			}
-			return iss, f, nil
-		}
+	if !ok {
+		return issue.Issue{}, "", ErrNotFound
 	}
+	return iss, path, nil
+}
 
-	// Fallback: the authoritative ID in the frontmatter, in case a filename has
-	// drifted from its ID via a hand-edit or merge (ADR 0002, ADR 0005). Files
-	// that fail to parse are skipped here; `doctor` reports them (b8q3).
+// findByID scans the store's issue files and returns the first whose authoritative
+// frontmatter ID equals id, along with its path. Filenames are never consulted:
+// the ID inside the file is the sole identity (ADR 0002, ADR 0005). Files that
+// fail to parse are skipped here; `doctor` reports them (b8q3). ok is false when
+// nothing matches.
+func (s *Store) findByID(id string) (iss issue.Issue, path string, ok bool, err error) {
+	files, err := s.List()
+	if err != nil {
+		return issue.Issue{}, "", false, err
+	}
 	for _, f := range files {
-		iss, err := readIssue(f)
+		i, err := readIssue(f)
 		if err != nil {
 			continue
 		}
-		if iss.ID == ref {
-			return iss, f, nil
+		if i.ID == id {
+			return i, f, true, nil
 		}
 	}
-
-	return issue.Issue{}, "", ErrNotFound
+	return issue.Issue{}, "", false, nil
 }
 
 func readIssue(path string) (issue.Issue, error) {

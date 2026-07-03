@@ -4,7 +4,6 @@ import (
 	"errors"
 	"os"
 	"path/filepath"
-	"strings"
 	"testing"
 	"time"
 
@@ -63,9 +62,11 @@ func TestResolveNotFound(t *testing.T) {
 	}
 }
 
-// A reference that matches a file by name, but whose contents are corrupt, must
-// surface a precise error naming the file — not a misleading "not found".
-func TestResolveReportsCorruptTargetFile(t *testing.T) {
+// A corrupt file has no readable frontmatter ID, so it carries no identity Resolve
+// can match — even when its filename hints at one. Resolve reports ErrNotFound
+// rather than trusting the filename (ADR 0002, ADR 0005); surfacing the corruption
+// itself is doctor's job (b8q3).
+func TestResolveSkipsCorruptFile(t *testing.T) {
 	root := newStore(t)
 	path := filepath.Join(root, ".beaver", "issues", "m3k8-broken.md")
 	if err := os.WriteFile(path, []byte("this is not an issue file"), 0o644); err != nil {
@@ -73,12 +74,8 @@ func TestResolveReportsCorruptTargetFile(t *testing.T) {
 	}
 
 	st, _ := store.Discover(root)
-	_, _, err := st.Resolve("m3k8")
-	if err == nil {
-		t.Fatal("expected an error for a corrupt target file")
-	}
-	if !strings.Contains(err.Error(), "m3k8-broken.md") {
-		t.Errorf("error should name the offending file, got: %v", err)
+	if _, _, err := st.Resolve("m3k8"); !errors.Is(err, store.ErrNotFound) {
+		t.Errorf("got %v, want ErrNotFound", err)
 	}
 }
 
