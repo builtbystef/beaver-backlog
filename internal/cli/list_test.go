@@ -185,8 +185,9 @@ func TestListUsageErrors(t *testing.T) {
 }
 
 // A file that fails validation is skipped so the command keeps working on the
-// valid issues (ADR 0005), rather than crashing or aborting. The loud warning
-// that names such a file is b8q3's slice; here we only assert the graceful skip.
+// valid issues (ADR 0005), rather than crashing or aborting. This asserts the
+// graceful skip; the loud warning that names the file is asserted in
+// TestListWarnsAndSkipsInvalidFiles.
 func TestListSkipsInvalidFiles(t *testing.T) {
 	h := beavertest.New(t).Init()
 	seed(t, h, "aaa111", "valid one", issue.StateTodo, beavertest.DefaultNow)

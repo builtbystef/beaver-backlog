@@ -114,7 +114,7 @@ func cmdCreate(env Env, args []string) int {
 		return exitUsage
 	}
 
-	st, err := store.Discover(env.WorkDir)
+	st, err := discover(env)
 	if err != nil {
 		return storeError(env, err)
 	}
@@ -176,7 +176,7 @@ func cmdList(env Env, args []string) int {
 		return exitUsage
 	}
 
-	st, err := store.Discover(env.WorkDir)
+	st, err := discover(env)
 	if err != nil {
 		return storeError(env, err)
 	}
@@ -248,7 +248,7 @@ func cmdShow(env Env, args []string) int {
 		return exitUsage
 	}
 
-	st, err := store.Discover(env.WorkDir)
+	st, err := discover(env)
 	if err != nil {
 		return storeError(env, err)
 	}
@@ -289,6 +289,38 @@ func storeError(env Env, err error) int {
 	}
 	errf(env, "%v", err)
 	return exitError
+}
+
+// discover finds the store from the working directory and wires it to report the
+// invalid files it skips as loud stderr warnings (ADR 0005), so every command
+// that reads the store degrades gracefully and visibly — it keeps working on the
+// valid issues but never hides a broken file or lets it brick the command. It
+// returns the same (store, error) as store.Discover; callers map the error with
+// storeError.
+func discover(env Env) (*store.Store, error) {
+	st, err := store.Discover(env.WorkDir)
+	if err != nil {
+		return nil, err
+	}
+	st.OnWarn(warnInvalid(env))
+	return st, nil
+}
+
+// warnInvalid builds the store's warning handler for one command run: it prints
+// each skipped file once, loudly, to stderr, naming the file and the specific
+// problem (ADR 0005). It writes to stderr, never stdout, so a warning never
+// corrupts the JSON an agent parses (ADR 0013). Dedup is by path, so a command
+// that scans the store more than once (create's id-collision loop) still warns a
+// given file only once.
+func warnInvalid(env Env) func(store.Warning) {
+	seen := make(map[string]bool)
+	return func(w store.Warning) {
+		if seen[w.Path] {
+			return
+		}
+		seen[w.Path] = true
+		errf(env, "skipping invalid issue %s: %v", relPath(env.WorkDir, w.Path), w.Err)
+	}
 }
 
 // relPath renders path relative to workDir when it sits inside it, for friendlier

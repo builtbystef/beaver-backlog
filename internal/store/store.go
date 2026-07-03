@@ -51,13 +51,41 @@ func (e *SharedSlugError) Error() string {
 
 func (e *SharedSlugError) Unwrap() error { return ErrNotFound }
 
+// Warning reports a file the store skipped during a scan because it is not a
+// valid issue (ADR 0005): Path names the offending file and Err says what is
+// wrong with it (unreadable, malformed frontmatter, or a failed validation).
+// The store never fails a whole read on one bad file — it skips it and reports it
+// here — so a command can surface it loudly while still serving the valid issues.
+// doctor turns the same signal into a full health report (n9b4a7).
+type Warning struct {
+	Path string // path to the skipped file
+	Err  error  // the specific reason it is not a usable issue
+}
+
 // Store is a handle to an initialized .beaver directory.
 type Store struct {
-	root string // absolute path to the .beaver directory
+	root   string        // absolute path to the .beaver directory
+	onWarn func(Warning) // optional sink for files a scan skips (ADR 0005); nil discards
 }
 
 // Root returns the absolute path to the .beaver directory.
 func (s *Store) Root() string { return s.root }
+
+// OnWarn registers fn to receive every file the store skips as invalid during a
+// scan (ADR 0005). It is an optional diagnostic channel: with no handler set (the
+// default) skipped files are dropped silently, as the store's readers always
+// have; the CLI installs a handler that prints each one loudly to stderr, so a
+// broken store is never mistaken for a clean one. fn may be called more than once
+// for the same path when a single command scans the store repeatedly (create's
+// id-collision loop), so a handler that renders warnings dedupes by path.
+func (s *Store) OnWarn(fn func(Warning)) { s.onWarn = fn }
+
+// warn reports a skipped file to the registered handler, if any.
+func (s *Store) warn(w Warning) {
+	if s.onWarn != nil {
+		s.onWarn(w)
+	}
+}
 
 // IssuesDir returns the directory holding issue files.
 func (s *Store) IssuesDir() string { return filepath.Join(s.root, "issues") }
@@ -129,11 +157,11 @@ func (s *Store) List() ([]string, error) {
 	return files, nil
 }
 
-// ReadAll reads and parses every issue in the store, returning them in the stable
-// path order List provides. Files that fail to parse are skipped rather than
-// failing the whole read (ADR 0005), mirroring Resolve; surfacing them with a loud
-// warning is doctor's job (b8q3). A missing issues directory yields no issues.
-// Callers that need a specific display order re-sort the result.
+// ReadAll reads and validates every issue in the store, returning them in the
+// stable path order List provides. Invalid files are skipped rather than failing
+// the whole read (ADR 0005), mirroring Resolve, and reported through the store's
+// warning handler so a caller can surface them loudly. A missing issues directory
+// yields no issues. Callers that need a specific display order re-sort the result.
 func (s *Store) ReadAll() ([]issue.Issue, error) {
 	items, err := s.scan()
 	if err != nil {
@@ -217,8 +245,8 @@ func (s *Store) Update(oldPath string, iss issue.Issue) (string, error) {
 // yields a *SharedSlugError (which Unwraps to ErrNotFound but carries the
 // candidates); an unknown reference yields ErrNotFound. There is no separate
 // "ambiguous" outcome — a shared slug simply does not resolve, and the caller
-// falls back to the ID. Files that fail to parse carry no identity and are skipped
-// (ADR 0005); doctor reports them (b8q3).
+// falls back to the ID. Invalid files carry no identity Resolve can match and are
+// skipped (ADR 0005), each reported through the store's warning handler.
 func (s *Store) Resolve(ref string) (issue.Issue, string, error) {
 	items, err := s.scan()
 	if err != nil {
@@ -253,10 +281,13 @@ type resolvable struct {
 	path string
 }
 
-// scan reads and parses every issue in the store, pairing each with its path and
-// skipping files that fail to parse (ADR 0005) — the same tolerant read ReadAll
-// performs. It backs Resolve, ReadAll, and IDTaken so they share one notion of
-// which issues exist.
+// scan reads and validates every issue in the store, pairing each with its path
+// and skipping any file that is not a usable issue (ADR 0005) — the same tolerant
+// read ReadAll performs. Each skipped file is reported through the store's warning
+// handler, naming it and the specific problem, so a command can surface it loudly
+// while still operating on the valid issues; with no handler the skip is silent.
+// scan backs Resolve, ReadAll, and IDTaken, so they share one notion of which
+// issues exist and one warning for each that does not.
 func (s *Store) scan() ([]resolvable, error) {
 	files, err := s.List()
 	if err != nil {
@@ -266,7 +297,8 @@ func (s *Store) scan() ([]resolvable, error) {
 	for _, f := range files {
 		iss, err := readIssue(f)
 		if err != nil {
-			continue // skip invalid files; doctor reports them (b8q3)
+			s.warn(Warning{Path: f, Err: err}) // skip it loudly (ADR 0005)
+			continue
 		}
 		items = append(items, resolvable{iss: iss, path: f})
 	}
@@ -297,6 +329,13 @@ func sharedSlug(slug string, matches []resolvable) error {
 	return &SharedSlugError{Slug: slug, Matches: issues}
 }
 
+// readIssue reads, parses, and validates one issue file, returning the reason it
+// is not a usable issue — an unreadable file, malformed frontmatter (Unmarshal),
+// or a failed validation (missing/malformed id, illegal state) — with no filename
+// prefix, since the caller pairs the reason with the path. A nil error means a
+// valid issue. It draws the validation line of ADR 0005: only these hard failures
+// make a file unusable; a valid issue's untidiness (filename drift, unknown keys)
+// is lint, left intact for doctor (n9b4a7).
 func readIssue(path string) (issue.Issue, error) {
 	data, err := os.ReadFile(path)
 	if err != nil {
@@ -304,7 +343,10 @@ func readIssue(path string) (issue.Issue, error) {
 	}
 	iss, err := issue.Unmarshal(data)
 	if err != nil {
-		return issue.Issue{}, fmt.Errorf("%s: %w", filepath.Base(path), err)
+		return issue.Issue{}, err
+	}
+	if err := issue.Validate(iss); err != nil {
+		return issue.Issue{}, err
 	}
 	return iss, nil
 }

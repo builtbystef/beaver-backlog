@@ -7,7 +7,6 @@ import (
 
 	"beaver/internal/issue"
 	"beaver/internal/output"
-	"beaver/internal/store"
 )
 
 // A verb is a lifecycle transition: it moves an issue to target from any of a
@@ -106,7 +105,7 @@ func runTransition(env Env, args []string, v verb) int {
 		return exitUsage
 	}
 
-	st, err := store.Discover(env.WorkDir)
+	st, err := discover(env)
 	if err != nil {
 		return storeError(env, err)
 	}

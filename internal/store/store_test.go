@@ -5,6 +5,7 @@ import (
 	"os"
 	"path/filepath"
 	"slices"
+	"strings"
 	"testing"
 	"time"
 
@@ -281,6 +282,76 @@ func TestUpdateRenamesDriftedFile(t *testing.T) {
 	}
 }
 
+// A scan skips every file that is not a usable issue and reports each through the
+// warning handler — naming the file and the specific reason — while still
+// returning the valid issues (ADR 0005). Malformed frontmatter, a missing id, and
+// an illegal state are each hard validation errors; a valid issue whose filename
+// has drifted from its id is lint, not a hard error, so it loads with no warning.
+func TestReadAllSkipsAndReportsInvalidFiles(t *testing.T) {
+	root := newStore(t)
+	writeIssueFile(t, root, "good111-fine.md", mkIssue("good111", "Fine"))
+	// Lint, not a hard error: a drifted filename is doctor's to tidy, never a reason
+	// to skip. It must load, and it must not warn.
+	writeIssueFile(t, root, "drifted-name.md", mkIssue("lint11", "Untidy but valid"))
+
+	const stamps = "created: 2026-06-27T18:30:00Z\nupdated: 2026-06-27T18:30:00Z\n"
+	writeRaw(t, root, "bad-yaml.md", "this is not an issue file\n")
+	writeRaw(t, root, "no-id.md", "---\ntitle: No id\nstate: todo\n"+stamps+"---\n")
+	writeRaw(t, root, "bad-state.md", "---\nid: sta111\ntitle: Bad state\nstate: archived\n"+stamps+"---\n")
+
+	st, _ := store.Discover(root)
+	warned := map[string]error{}
+	st.OnWarn(func(w store.Warning) { warned[filepath.Base(w.Path)] = w.Err })
+
+	got, err := st.ReadAll()
+	if err != nil {
+		t.Fatalf("ReadAll: %v", err)
+	}
+
+	gotIDs := map[string]bool{}
+	for _, iss := range got {
+		gotIDs[iss.ID] = true
+	}
+	if len(got) != 2 || !gotIDs["good111"] || !gotIDs["lint11"] {
+		t.Errorf("ReadAll returned %d issues %v, want just the two valid ones (good111, lint11)", len(got), gotIDs)
+	}
+
+	// One warning per invalid file, each carrying a non-nil reason; no warning for
+	// the valid-but-untidy file.
+	wantReasons := map[string]string{"bad-yaml.md": "frontmatter", "no-id.md": "id", "bad-state.md": "state"}
+	if len(warned) != len(wantReasons) {
+		t.Fatalf("warnings = %v, want exactly one per invalid file %v", warned, wantReasons)
+	}
+	for file, sub := range wantReasons {
+		err, ok := warned[file]
+		if !ok || err == nil {
+			t.Errorf("no warning for %s", file)
+			continue
+		}
+		if !strings.Contains(err.Error(), sub) {
+			t.Errorf("warning for %s = %q, want it to mention %q", file, err, sub)
+		}
+	}
+}
+
+// With no handler set, an invalid file is still skipped silently — the warning
+// channel is purely additive, so the store's readers behave exactly as before for
+// callers that do not opt in.
+func TestScanSkipsSilentlyWithoutHandler(t *testing.T) {
+	root := newStore(t)
+	writeIssueFile(t, root, "good111-fine.md", mkIssue("good111", "Fine"))
+	writeRaw(t, root, "broken.md", "not an issue\n")
+
+	st, _ := store.Discover(root) // no OnWarn
+	got, err := st.ReadAll()
+	if err != nil {
+		t.Fatalf("ReadAll: %v", err)
+	}
+	if len(got) != 1 || got[0].ID != "good111" {
+		t.Errorf("ReadAll = %v, want just good111", got)
+	}
+}
+
 var fixedTime = time.Date(2026, 6, 27, 18, 30, 0, 0, time.UTC)
 
 // mkIssue builds a minimal todo issue at the fixed time — enough for resolution
@@ -304,7 +375,14 @@ func writeIssueFile(t *testing.T, root, name string, iss issue.Issue) {
 	if err != nil {
 		t.Fatalf("Marshal: %v", err)
 	}
-	if err := os.WriteFile(filepath.Join(root, ".beaver", "issues", name), data, 0o644); err != nil {
+	writeRaw(t, root, name, string(data))
+}
+
+// writeRaw writes literal bytes as an issue file, for seeding malformed or
+// otherwise invalid content that Marshal would never produce.
+func writeRaw(t *testing.T, root, name, content string) {
+	t.Helper()
+	if err := os.WriteFile(filepath.Join(root, ".beaver", "issues", name), []byte(content), 0o644); err != nil {
 		t.Fatalf("write %s: %v", name, err)
 	}
 }
