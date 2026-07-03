@@ -86,14 +86,8 @@ func newFlagSet(env Env, name string) (fs *flag.FlagSet, format *string) {
 // parseArgs parses flags that may appear anywhere among the positional
 // arguments, returning the positionals. The standard flag package stops at the
 // first positional, which would reject the natural `beaver show <ref> --format
-// json`; pulling positionals out one at a time and re-parsing the remainder lets
-// flags sit on either side. ok is false when a flag failed to parse (flag has
-// already reported why), and the caller should exit with a usage error.
+// json`;
 func parseArgs(fs *flag.FlagSet, args []string) (positionals []string, ok bool) {
-	// A "--" terminator means "everything after this is a plain positional, not
-	// a flag." Split it off before the loop below: that loop re-parses the
-	// remaining arguments on each pass and would otherwise forget the terminator,
-	// treating a later "--flag" as a real flag again.
 	var literals []string
 	for i, a := range args {
 		if a == "--" {
