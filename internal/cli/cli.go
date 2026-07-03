@@ -90,13 +90,24 @@ func newFlagSet(env Env, name string) (fs *flag.FlagSet, format *string) {
 // flags sit on either side. ok is false when a flag failed to parse (flag has
 // already reported why), and the caller should exit with a usage error.
 func parseArgs(fs *flag.FlagSet, args []string) (positionals []string, ok bool) {
+	// A "--" terminator means "everything after this is a plain positional, not
+	// a flag." Split it off before the loop below: that loop re-parses the
+	// remaining arguments on each pass and would otherwise forget the terminator,
+	// treating a later "--flag" as a real flag again.
+	var literals []string
+	for i, a := range args {
+		if a == "--" {
+			args, literals = args[:i], args[i+1:]
+			break
+		}
+	}
 	for {
 		if err := fs.Parse(args); err != nil {
 			return nil, false
 		}
 		rest := fs.Args()
 		if len(rest) == 0 {
-			return positionals, true
+			return append(positionals, literals...), true
 		}
 		positionals = append(positionals, rest[0])
 		args = rest[1:]
