@@ -79,6 +79,25 @@ func TestResolveSkipsCorruptFile(t *testing.T) {
 	}
 }
 
+// A store whose issues/ directory has been deleted (a half-merged or hand-edited
+// store) is a normal, recoverable state: List reports zero issues rather than
+// leaking a raw OS error (ADR 0005).
+func TestListMissingIssuesDir(t *testing.T) {
+	root := newStore(t)
+	if err := os.RemoveAll(filepath.Join(root, ".beaver", "issues")); err != nil {
+		t.Fatal(err)
+	}
+
+	st, _ := store.Discover(root)
+	files, err := st.List()
+	if err != nil {
+		t.Fatalf("List with missing issues dir: %v", err)
+	}
+	if len(files) != 0 {
+		t.Errorf("got %d files, want 0", len(files))
+	}
+}
+
 var fixedTime = time.Date(2026, 6, 27, 18, 30, 0, 0, time.UTC)
 
 func newStore(t *testing.T) string {

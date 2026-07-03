@@ -86,9 +86,15 @@ func Discover(workDir string) (*Store, error) {
 }
 
 // List returns the paths of all issue files, sorted for deterministic ordering.
+// A missing issues directory is treated as an empty store rather than an error: a
+// half-merged or hand-edited store is a normal, recoverable state (ADR 0005), and
+// `doctor` is what reports and repairs it. Other read errors still surface.
 func (s *Store) List() ([]string, error) {
 	entries, err := os.ReadDir(s.IssuesDir())
 	if err != nil {
+		if errors.Is(err, os.ErrNotExist) {
+			return nil, nil
+		}
 		return nil, err
 	}
 	var files []string
