@@ -3,8 +3,8 @@
 Each issue is identified by a short, randomly generated, collision-resistant ID
 — not a sequential number and not a content hash. The file is named
 `<id>-<slug>.md`, where the slug is derived from the title for human
-readability. An issue may be referenced by its full ID, any unambiguous ID
-prefix, or its slug.
+readability. An issue may be referenced by its full ID, its slug, or the full
+`<id>-<slug>` name; matching is exact, with no prefix or fuzzy resolution.
 
 Busy Beaver coordinates parallel work across Git branches and multiple actors (humans
 and agents), so a shared sequential counter would produce frequent, semantically
@@ -25,3 +25,7 @@ distributed-safe with no counter; the slug preserves human readability.
   it. A filename that drifts from the frontmatter (after a manual rename, or a
   title change that staled the slug) does not affect identity and can be
   regenerated from the frontmatter.
+- References resolve by *exact* match only — a full ID, a slug, or the full
+  `<id>-<slug>` name — never by prefix. The ID and the `<id>-<slug>` name are
+  unique; a slug is derived from the mutable title and may be shared, so a slug
+  that names more than one issue does not resolve, and the caller uses the ID.

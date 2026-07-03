@@ -4,6 +4,7 @@ import (
 	"errors"
 	"os"
 	"path/filepath"
+	"slices"
 	"testing"
 	"time"
 
@@ -76,6 +77,127 @@ func TestResolveSkipsCorruptFile(t *testing.T) {
 	st, _ := store.Discover(root)
 	if _, _, err := st.Resolve("m3k8"); !errors.Is(err, store.ErrNotFound) {
 		t.Errorf("got %v, want ErrNotFound", err)
+	}
+}
+
+// A slug resolves to its issue. The ID is deliberately unrelated to the slug, so a
+// hit proves slug matching and not a coincidental match on the ID.
+func TestResolveBySlug(t *testing.T) {
+	root := newStore(t)
+	writeIssueFile(t, root, "q1w2e3-fix-the-login-bug.md", mkIssue("q1w2e3", "Fix the login bug"))
+	st, _ := store.Discover(root)
+
+	got, _, err := st.Resolve("fix-the-login-bug")
+	if err != nil {
+		t.Fatalf("Resolve slug: %v", err)
+	}
+	if got.ID != "q1w2e3" {
+		t.Errorf("resolved id = %q, want q1w2e3", got.ID)
+	}
+}
+
+// The full "<id>-<slug>" name — the canonical file name a user sees on disk —
+// resolves to its issue, since it carries the unique ID.
+func TestResolveByIDSlugName(t *testing.T) {
+	root := newStore(t)
+	writeIssueFile(t, root, "q1w2e3-fix-the-login-bug.md", mkIssue("q1w2e3", "Fix the login bug"))
+	st, _ := store.Discover(root)
+
+	got, _, err := st.Resolve("q1w2e3-fix-the-login-bug")
+	if err != nil {
+		t.Fatalf("Resolve <id>-<slug>: %v", err)
+	}
+	if got.ID != "q1w2e3" {
+		t.Errorf("resolved id = %q, want q1w2e3", got.ID)
+	}
+}
+
+// A slug is derived from the mutable title and so is not unique. A slug two issues
+// share names no single issue: it does not resolve, counting as a not-found
+// (SharedSlugError Unwraps to ErrNotFound) while also carrying the candidates,
+// sorted by ID, so a caller can list them. Each issue stays reachable by its unique
+// ID and its full "<id>-<slug>" name.
+func TestResolveSharedSlugIsNotFoundWithCandidates(t *testing.T) {
+	root := newStore(t)
+	// Drifted filenames whose path order (zzz, aaa) is the reverse of the ID order
+	// (aaa111, bbb222), so a passing sort assertion proves the ordering is on the
+	// ID and not an artifact of directory iteration.
+	writeIssueFile(t, root, "zzz-fix-bug.md", mkIssue("aaa111", "Fix bug"))
+	writeIssueFile(t, root, "aaa-fix-bug.md", mkIssue("bbb222", "Fix bug"))
+	st, _ := store.Discover(root)
+
+	_, _, err := st.Resolve("fix-bug")
+	if !errors.Is(err, store.ErrNotFound) {
+		t.Errorf("shared slug: got %v, want it to count as ErrNotFound", err)
+	}
+	var shared *store.SharedSlugError
+	if !errors.As(err, &shared) {
+		t.Fatalf("shared slug: got %v, want *SharedSlugError", err)
+	}
+	if shared.Slug != "fix-bug" {
+		t.Errorf("Slug = %q, want fix-bug", shared.Slug)
+	}
+	ids := []string{shared.Matches[0].ID, shared.Matches[1].ID}
+	if !slices.Equal(ids, []string{"aaa111", "bbb222"}) {
+		t.Errorf("candidates = %v, want sorted [aaa111 bbb222]", ids)
+	}
+	// Each remains reachable by its unique ID and its full "<id>-<slug>" name.
+	for _, id := range []string{"aaa111", "bbb222"} {
+		if got, _, err := st.Resolve(id); err != nil || got.ID != id {
+			t.Errorf("Resolve(%q) = %q, %v; want it to resolve", id, got.ID, err)
+		}
+		if got, _, err := st.Resolve(id + "-fix-bug"); err != nil || got.ID != id {
+			t.Errorf("Resolve(%q) = %q, %v; want it to resolve", id+"-fix-bug", got.ID, err)
+		}
+	}
+}
+
+// Precedence: an exact full ID is the authoritative identity and wins over another
+// issue whose title happens to slugify to the same string.
+func TestResolveExactIDBeatsCoincidentSlug(t *testing.T) {
+	root := newStore(t)
+	writeIssueFile(t, root, "abc123-target.md", mkIssue("abc123", "Target"))
+	writeIssueFile(t, root, "zzzzzz-abc123.md", mkIssue("zzzzzz", "abc123")) // slug == "abc123"
+	st, _ := store.Discover(root)
+
+	got, _, err := st.Resolve("abc123")
+	if err != nil {
+		t.Fatalf("Resolve: %v", err)
+	}
+	if got.ID != "abc123" {
+		t.Errorf("resolved id = %q, want abc123 (exact id wins over a coincident slug)", got.ID)
+	}
+}
+
+// The slug is the title's canonical slug, never the filename's — so a drifted
+// filename (ADR 0005) neither creates a phantom match on its stale slug nor hides
+// the issue behind its real one.
+func TestResolveSlugUsesTitleNotFilename(t *testing.T) {
+	root := newStore(t)
+	writeIssueFile(t, root, "abc123-old-name.md", mkIssue("abc123", "New Name"))
+	st, _ := store.Discover(root)
+
+	if got, _, err := st.Resolve("new-name"); err != nil || got.ID != "abc123" {
+		t.Errorf("Resolve(new-name) = %q, %v; want abc123 via the canonical slug", got.ID, err)
+	}
+	if _, _, err := st.Resolve("old-name"); !errors.Is(err, store.ErrNotFound) {
+		t.Errorf("Resolve(old-name) = %v; want ErrNotFound (a stale filename slug is not matched)", err)
+	}
+}
+
+// An empty reference matches nothing — not even an issue whose title has no
+// alphanumerics and so has an empty canonical slug. That issue stays reachable by
+// its ID.
+func TestResolveEmptyRefMatchesNothing(t *testing.T) {
+	root := newStore(t)
+	writeIssueFile(t, root, "aaaaaa.md", mkIssue("aaaaaa", "!!!")) // empty slug
+	st, _ := store.Discover(root)
+
+	if _, _, err := st.Resolve(""); !errors.Is(err, store.ErrNotFound) {
+		t.Errorf("Resolve(empty) = %v, want ErrNotFound", err)
+	}
+	if got, _, err := st.Resolve("aaaaaa"); err != nil || got.ID != "aaaaaa" {
+		t.Errorf("Resolve(id) = %q, %v; want aaaaaa", got.ID, err)
 	}
 }
 
@@ -160,6 +282,12 @@ func TestUpdateRenamesDriftedFile(t *testing.T) {
 }
 
 var fixedTime = time.Date(2026, 6, 27, 18, 30, 0, 0, time.UTC)
+
+// mkIssue builds a minimal todo issue at the fixed time — enough for resolution
+// tests, which care only about id and title.
+func mkIssue(id, title string) issue.Issue {
+	return issue.Issue{ID: id, Title: title, State: issue.StateTodo, Created: fixedTime, Updated: fixedTime}
+}
 
 func newStore(t *testing.T) string {
 	t.Helper()

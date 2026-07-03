@@ -76,7 +76,7 @@ usage:
   beaver init                 initialize a store in the current project
   beaver create "<title>"     create a new issue
   beaver list                 list issues (default: all)
-  beaver show <ref>           show an issue by its ID
+  beaver show <ref>           show an issue by ID or slug
   beaver done <ref>           mark an issue done
   beaver cancel <ref>         cancel an issue (deliberately abandon it)
   beaver reopen <ref>         return a done or cancelled issue to todo
@@ -86,6 +86,8 @@ common flags (after the command):
 
 list flags:
   --state <state>             filter: all|todo|in-progress|done|cancelled
+
+a <ref> is a full issue ID, its slug, or the full <id>-<slug> name.
 
 exit codes:
   0  success

@@ -217,14 +217,9 @@ func cmdShow(env Env, args []string) int {
 		return storeError(env, err)
 	}
 
-	iss, _, err := st.Resolve(ref)
-	if err != nil {
-		if errors.Is(err, store.ErrNotFound) {
-			errf(env, "no issue found matching %q", ref)
-			return exitNotFound
-		}
-		errf(env, "%v", err)
-		return exitError
+	iss, _, code := resolveRef(env, st, ref)
+	if code != exitOK {
+		return code
 	}
 
 	if err := output.WriteIssue(env.Stdout, iss, format); err != nil {

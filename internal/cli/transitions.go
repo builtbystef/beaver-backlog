@@ -1,7 +1,6 @@
 package cli
 
 import (
-	"errors"
 	"fmt"
 	"slices"
 	"time"
@@ -112,14 +111,9 @@ func runTransition(env Env, args []string, v verb) int {
 		return storeError(env, err)
 	}
 
-	iss, path, err := st.Resolve(ref)
-	if err != nil {
-		if errors.Is(err, store.ErrNotFound) {
-			errf(env, "no issue found matching %q", ref)
-			return exitNotFound
-		}
-		errf(env, "%v", err)
-		return exitError
+	iss, path, code := resolveRef(env, st, ref)
+	if code != exitOK {
+		return code
 	}
 
 	switch classify(v, iss.State) {

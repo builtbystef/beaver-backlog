@@ -30,6 +30,27 @@ var (
 	ErrNotFound = errors.New("issue not found")
 )
 
+// SharedSlugError reports that a reference is a slug several issues share, so it
+// names no single issue. It carries the matching issues (sorted by their unique
+// ID) so a caller can list them; the remedy is the full ID. It Unwraps to
+// ErrNotFound — a shared slug resolves to no single issue — so callers that branch
+// on ErrNotFound treat it as a not-found, while one that wants the candidates
+// reaches them with errors.As.
+type SharedSlugError struct {
+	Slug    string
+	Matches []issue.Issue
+}
+
+func (e *SharedSlugError) Error() string {
+	ids := make([]string, len(e.Matches))
+	for i, m := range e.Matches {
+		ids[i] = m.ID
+	}
+	return fmt.Sprintf("slug %q is shared by %d issues (%s)", e.Slug, len(e.Matches), strings.Join(ids, ", "))
+}
+
+func (e *SharedSlugError) Unwrap() error { return ErrNotFound }
+
 // Store is a handle to an initialized .beaver directory.
 type Store struct {
 	root string // absolute path to the .beaver directory
@@ -114,27 +135,31 @@ func (s *Store) List() ([]string, error) {
 // warning is doctor's job (b8q3). A missing issues directory yields no issues.
 // Callers that need a specific display order re-sort the result.
 func (s *Store) ReadAll() ([]issue.Issue, error) {
-	files, err := s.List()
+	items, err := s.scan()
 	if err != nil {
 		return nil, err
 	}
-	issues := make([]issue.Issue, 0, len(files))
-	for _, f := range files {
-		iss, err := readIssue(f)
-		if err != nil {
-			continue // skip invalid files; doctor reports them (b8q3)
-		}
-		issues = append(issues, iss)
+	issues := make([]issue.Issue, len(items))
+	for i, it := range items {
+		issues[i] = it.iss
 	}
 	return issues, nil
 }
 
 // IDTaken reports whether an issue with the given ID already exists, so create
 // can regenerate on the rare collision. It consults the authoritative frontmatter
-// ID — the same identity Resolve uses — so the two can never disagree.
+// ID — the same identity Resolve matches on — so the two can never disagree.
 func (s *Store) IDTaken(id string) (bool, error) {
-	_, _, ok, err := s.findByID(id)
-	return ok, err
+	items, err := s.scan()
+	if err != nil {
+		return false, err
+	}
+	for _, it := range items {
+		if it.iss.ID == id {
+			return true, nil
+		}
+	}
+	return false, nil
 }
 
 // Write serializes an issue to its canonical file (<id>-<slug>.md), replacing any
@@ -173,43 +198,103 @@ func (s *Store) Update(oldPath string, iss issue.Issue) (string, error) {
 	return newPath, nil
 }
 
-// Resolve turns a reference into a single issue by its authoritative frontmatter
-// ID (ADR 0002, ADR 0005) — never by filename, which is only a human convenience
-// and may have drifted via a hand-edit or merge. This slice resolves by exact ID;
-// the shared resolver gains prefix and slug support in a later slice (r7p2), which
-// every issue-addressing command will route through. Returns ErrNotFound when
-// nothing matches.
+// Resolve turns a user-supplied reference into a single issue, matched on the
+// authoritative frontmatter identity (ADR 0002) and never on the filename, which
+// only mirrors it and may have drifted via a hand-edit or merge (ADR 0005). It is
+// the one resolver every issue-addressing command routes through, so they all
+// accept the same references. Matching is exact — there is no prefix or fuzzy
+// matching — and a reference may take any of three forms:
+//
+//  1. a full ID — the authoritative, unique identity;
+//  2. the full "<id>-<slug>" name — the canonical file name (minus .md), also
+//     unique, so a user can paste what they see on disk;
+//  3. a full slug — the title's canonical slug (not the possibly-stale filename
+//     slug), a human-friendly handle.
+//
+// The first two forms carry the unique ID, so they never collide. A slug is
+// derived from the mutable title and so is not unique; only a slug that names a
+// single issue resolves. A slug several issues share names no single issue and
+// yields a *SharedSlugError (which Unwraps to ErrNotFound but carries the
+// candidates); an unknown reference yields ErrNotFound. There is no separate
+// "ambiguous" outcome — a shared slug simply does not resolve, and the caller
+// falls back to the ID. Files that fail to parse carry no identity and are skipped
+// (ADR 0005); doctor reports them (b8q3).
 func (s *Store) Resolve(ref string) (issue.Issue, string, error) {
-	iss, path, ok, err := s.findByID(ref)
+	items, err := s.scan()
 	if err != nil {
 		return issue.Issue{}, "", err
 	}
-	if !ok {
-		return issue.Issue{}, "", ErrNotFound
+
+	// The two unique forms first — the ID itself and the canonical "<id>-<slug>"
+	// name. Both carry the unique ID, so a match is decisive.
+	for _, it := range items {
+		slug := issue.Slug(it.iss.Title)
+		if ref == it.iss.ID || (slug != "" && ref == it.iss.ID+"-"+slug) {
+			return it.iss, it.path, nil
+		}
 	}
-	return iss, path, nil
+	// Then the slug alone. It is not unique: a single match resolves, several are a
+	// SharedSlugError naming the candidates, and none (or an empty ref) is a plain
+	// not-found.
+	switch m := matchSlug(items, ref); len(m) {
+	case 1:
+		return m[0].iss, m[0].path, nil
+	case 0:
+		return issue.Issue{}, "", ErrNotFound
+	default:
+		return issue.Issue{}, "", sharedSlug(ref, m)
+	}
 }
 
-// findByID scans the store's issue files and returns the first whose authoritative
-// frontmatter ID equals id, along with its path. Filenames are never consulted:
-// the ID inside the file is the sole identity (ADR 0002, ADR 0005). Files that
-// fail to parse are skipped here; `doctor` reports them (b8q3). ok is false when
-// nothing matches.
-func (s *Store) findByID(id string) (iss issue.Issue, path string, ok bool, err error) {
+// resolvable pairs a parsed issue with the path it was read from — the two things
+// Resolve returns together.
+type resolvable struct {
+	iss  issue.Issue
+	path string
+}
+
+// scan reads and parses every issue in the store, pairing each with its path and
+// skipping files that fail to parse (ADR 0005) — the same tolerant read ReadAll
+// performs. It backs Resolve, ReadAll, and IDTaken so they share one notion of
+// which issues exist.
+func (s *Store) scan() ([]resolvable, error) {
 	files, err := s.List()
 	if err != nil {
-		return issue.Issue{}, "", false, err
+		return nil, err
 	}
+	items := make([]resolvable, 0, len(files))
 	for _, f := range files {
-		i, err := readIssue(f)
+		iss, err := readIssue(f)
 		if err != nil {
-			continue
+			continue // skip invalid files; doctor reports them (b8q3)
 		}
-		if i.ID == id {
-			return i, f, true, nil
+		items = append(items, resolvable{iss: iss, path: f})
+	}
+	return items, nil
+}
+
+// matchSlug returns the issues whose canonical (title-derived) slug equals ref. An
+// empty slug — a title with no alphanumerics — is not a usable reference and never
+// matches, so an empty ref matches nothing here.
+func matchSlug(items []resolvable, ref string) []resolvable {
+	var out []resolvable
+	for _, it := range items {
+		if slug := issue.Slug(it.iss.Title); slug != "" && slug == ref {
+			out = append(out, it)
 		}
 	}
-	return issue.Issue{}, "", false, nil
+	return out
+}
+
+// sharedSlug builds a *SharedSlugError from the matches, sorted by their unique ID
+// so the candidate listing is deterministic regardless of file iteration order.
+func sharedSlug(slug string, matches []resolvable) error {
+	issues := make([]issue.Issue, len(matches))
+	for i, m := range matches {
+		issues[i] = m.iss
+	}
+	sort.Slice(issues, func(i, j int) bool { return issues[i].ID < issues[j].ID })
+	return &SharedSlugError{Slug: slug, Matches: issues}
 }
 
 func readIssue(path string) (issue.Issue, error) {
