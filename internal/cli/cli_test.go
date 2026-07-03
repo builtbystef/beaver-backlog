@@ -194,12 +194,14 @@ func TestClockIsInjected(t *testing.T) {
 	}
 }
 
+// AC: a missing store exits 3 (not-found), the code the CLI documents for "the
+// store was not found".
 func TestCommandsRequireStore(t *testing.T) {
 	for _, args := range [][]string{{"create", "x"}, {"show", "x"}} {
 		h := beavertest.New(t) // no init
 		r := h.Run(args...)
-		if r.Code == 0 {
-			t.Errorf("%v without a store should fail", args)
+		if r.Code != 3 {
+			t.Errorf("%v without a store exit = %d, want 3 (not-found)", args, r.Code)
 		}
 		if !strings.Contains(r.Stderr, "init") {
 			t.Errorf("%v error should suggest init:\n%s", args, r.Stderr)

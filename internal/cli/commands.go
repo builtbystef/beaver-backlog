@@ -173,7 +173,7 @@ func mintID(env Env, st *store.Store) (string, error) {
 func storeError(env Env, err error) int {
 	if errors.Is(err, store.ErrNoStore) {
 		errf(env, "not a Busy Beaver store; run `beaver init`")
-		return exitError
+		return exitNotFound
 	}
 	errf(env, "%v", err)
 	return exitError
