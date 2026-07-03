@@ -25,31 +25,23 @@ const (
 
 // Resolve picks the output format. An explicit override ("human"/"json") always
 // wins; otherwise output is human for an interactive terminal and JSON for a
-// non-interactive pipe or a detected agent.
-func Resolve(override string, stdoutIsTTY bool, getenv func(string) string) (Format, error) {
+// non-interactive pipe or a detected agent. Whether an agent is present is decided
+// by the caller — via the one agent registry that also drives identity resolution
+// (ADR 0010) — and passed in, rather than sniffed from the environment here.
+func Resolve(override string, stdoutIsTTY bool, agentDetected bool) (Format, error) {
 	switch override {
 	case string(Human):
 		return Human, nil
 	case string(JSON):
 		return JSON, nil
 	case "":
-		if !stdoutIsTTY || agentDetected(getenv) {
+		if !stdoutIsTTY || agentDetected {
 			return JSON, nil
 		}
 		return Human, nil
 	default:
 		return "", fmt.Errorf("invalid format %q (want human or json)", override)
 	}
-}
-
-// agentDetected is a minimal check used only to bias output toward JSON for
-// agents. Full actor/agent resolution (ADR 0010) arrives with the identity slice
-// and will centralize this; output will defer to it then.
-func agentDetected(getenv func(string) string) bool {
-	if getenv == nil {
-		return false
-	}
-	return getenv("AGENT") != "" || getenv("CLAUDECODE") != ""
 }
 
 // WriteIssue renders a single issue in the given format.

@@ -1,11 +1,13 @@
 ---
 id: h5t10u
-title: "Identity resolution"
-state: todo
-labels: [v1]
-depends_on: [m3k8td]
+title: Identity resolution
+state: done
+labels:
+    - v1
+depends_on:
+    - m3k8td
 created: 2026-06-27T18:30:00Z
-updated: 2026-06-27T18:30:00Z
+updated: 2026-07-03T08:56:58Z
 ---
 
 ## What to build
@@ -14,14 +16,14 @@ Resolve the current Actor through the full precedence chain, so both humans and
 agents are attributed correctly with no configuration in the common case:
 
 1. `--as <actor>` flag
-2. `BEAVER_ACTOR` env var
+2. `BUSY_BEAVER_ACTOR` env var
 3. Agent detection (`AGENT`, else markers like `CLAUDECODE` → `claude`)
 4. Interactive human: user-level config identity; if unset, seed from
    `git config user.name` (via the VCS port's identity op) and confirm, or prompt
 5. Non-interactive with none of the above: a loud generic `agent`
 
 The human's identity lives in user-level config (never committed, never in
-`BEAVER_ACTOR`) and is used **only** interactively. `beaver init` proactively seeds
+`BUSY_BEAVER_ACTOR`) and is used **only** interactively. `beaver init` proactively seeds
 it. A `beaver whoami` surface prints the resolved actor, making the chain demoable
 and testable. This slice introduces the VCS port with its identity capability and a
 Git reference adapter (identity op only).

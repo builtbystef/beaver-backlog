@@ -100,7 +100,7 @@ func runTransition(env Env, args []string, v verb) int {
 		return exitUsage
 	}
 	ref := pos[0]
-	format, err := output.Resolve(*formatFlag, env.StdoutIsTTY, env.Getenv)
+	format, err := resolveFormat(env, *formatFlag)
 	if err != nil {
 		errf(env, "%v", err)
 		return exitUsage

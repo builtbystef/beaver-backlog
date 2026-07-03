@@ -11,31 +11,23 @@ import (
 )
 
 func TestResolve(t *testing.T) {
-	none := func(string) string { return "" }
-	agent := func(k string) string {
-		if k == "AGENT" {
-			return "claude"
-		}
-		return ""
-	}
-
 	cases := []struct {
 		name     string
 		override string
 		tty      bool
-		getenv   func(string) string
+		agent    bool
 		want     output.Format
 		wantErr  bool
 	}{
-		{"override human wins over pipe", "human", false, none, output.Human, false},
-		{"override json wins over tty", "json", true, none, output.JSON, false},
-		{"interactive tty -> human", "", true, none, output.Human, false},
-		{"non-interactive pipe -> json", "", false, none, output.JSON, false},
-		{"agent at tty -> json", "", true, agent, output.JSON, false},
-		{"invalid override errors", "xml", true, none, "", true},
+		{"override human wins over pipe", "human", false, false, output.Human, false},
+		{"override json wins over tty", "json", true, false, output.JSON, false},
+		{"interactive tty -> human", "", true, false, output.Human, false},
+		{"non-interactive pipe -> json", "", false, false, output.JSON, false},
+		{"agent at tty -> json", "", true, true, output.JSON, false},
+		{"invalid override errors", "xml", true, false, "", true},
 	}
 	for _, c := range cases {
-		got, err := output.Resolve(c.override, c.tty, c.getenv)
+		got, err := output.Resolve(c.override, c.tty, c.agent)
 		if c.wantErr {
 			if err == nil {
 				t.Errorf("%s: expected error", c.name)

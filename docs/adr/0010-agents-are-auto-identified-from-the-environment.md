@@ -19,20 +19,20 @@ Two facts shape this:
 Resolution chain (this is the authoritative version; it refines ADR 0008):
 
 1. `--as <actor>` — explicit, always wins.
-2. `BEAVER_ACTOR` — explicit override (programmatic / CI; never a human's stored
+2. `BUSY_BEAVER_ACTOR` — explicit override (programmatic / CI; never a human's stored
    identity).
 3. **Agent signal** — `AGENT`, else known markers (`CLAUDECODE` → `claude`, …),
    resolving to the agent's name.
 4. **Interactive human** — user-level config identity; if unset, seed from the VCS
    and confirm, or prompt, then save (ADR 0008).
 5. **Non-interactive with none of the above** — proceed as a loud generic `agent`,
-   noting that `BEAVER_ACTOR` distinguishes multiple agents.
+   noting that `BUSY_BEAVER_ACTOR` distinguishes multiple agents.
 
 Two rules make it footgun-proof:
 
 - The human's stored/VCS identity (step 4) is used **only** in an interactive
   session. A non-interactive run never borrows it.
-- A human's identity is never stored in `BEAVER_ACTOR` — a child agent process would
+- A human's identity is never stored in `BUSY_BEAVER_ACTOR` — a child agent process would
   inherit it and act as the human. Human identity lives in user config.
 
 The known-agent registry (`AGENT` plus a few markers) is small, best-effort, and

@@ -10,6 +10,7 @@ import (
 	"io"
 
 	"beaver/internal/clock"
+	"beaver/internal/vcs"
 )
 
 // Exit codes. 0 is success; the rest are stable so scripts and agents can branch
@@ -25,15 +26,18 @@ const (
 // real process; the test harness wires them to buffers, a temp directory, and a
 // fixed clock.
 type Env struct {
-	Args        []string            // arguments after the program name
-	Stdin       io.Reader           // reserved for interactive commands (later slices)
-	Stdout      io.Writer           // command output
-	Stderr      io.Writer           // diagnostics and errors
-	WorkDir     string              // directory the store is resolved from
-	Getenv      func(string) string // environment lookup
-	Clock       clock.Clock         // source of timestamps
-	NewID       func() string       // issue ID generator (injectable for tests)
-	StdoutIsTTY bool                // whether stdout is an interactive terminal
+	Args          []string            // arguments after the program name
+	Stdin         io.Reader           // interactive input (identity confirmation/prompt)
+	Stdout        io.Writer           // command output
+	Stderr        io.Writer           // diagnostics, errors, and interactive prompts
+	WorkDir       string              // directory the store is resolved from
+	Getenv        func(string) string // environment lookup
+	Clock         clock.Clock         // source of timestamps
+	NewID         func() string       // issue ID generator (injectable for tests)
+	StdoutIsTTY   bool                // whether stdout is an interactive terminal
+	StdinIsTTY    bool                // whether stdin is interactive: the signal that gates human identity setup (ADR 0010)
+	VCS           vcs.Port            // version-control port, for the identity seed; nil means no adapter (ADR 0006/0007)
+	UserConfigDir string              // per-machine user-config dir (identity lives here, never committed; ADR 0008)
 }
 
 // Run dispatches one command and returns its exit code. It never calls os.Exit;
@@ -59,6 +63,8 @@ func Run(env Env) int {
 		return cmdCancel(env, args)
 	case "reopen":
 		return cmdReopen(env, args)
+	case "whoami":
+		return cmdWhoami(env, args)
 	case "help", "-h", "--help":
 		printUsage(env.Stdout)
 		return exitOK
@@ -80,12 +86,16 @@ usage:
   beaver done <ref>           mark an issue done
   beaver cancel <ref>         cancel an issue (deliberately abandon it)
   beaver reopen <ref>         return a done or cancelled issue to todo
+  beaver whoami               print the actor Busy Beaver resolves you as
 
 common flags (after the command):
   --format human|json         override output format (default: auto-detect)
 
 list flags:
   --state <state>             filter: all|todo|in-progress|done|cancelled
+
+whoami flags:
+  --as <actor>                resolve as this actor (overrides all detection)
 
 a <ref> is a full issue ID, its slug, or the full <id>-<slug> name.
 

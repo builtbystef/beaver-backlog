@@ -16,6 +16,7 @@ import (
 
 	"beaver/internal/cli"
 	"beaver/internal/issue"
+	"beaver/internal/vcs"
 )
 
 // DefaultNow is the instant the harness clock starts at, unless a test changes
@@ -44,24 +45,31 @@ type Result struct {
 
 // Harness drives the CLI in-process against a temporary store.
 type Harness struct {
-	t     *testing.T
-	Dir   string            // project directory; the store lives at Dir/.beaver
-	Clock *FakeClock        // controllable time source
-	Env   map[string]string // environment seen by the CLI
-	IsTTY bool              // whether stdout looks interactive (default false → JSON)
-	NewID func() string     // ID generator override; nil uses the real one
+	t             *testing.T
+	Dir           string            // project directory; the store lives at Dir/.beaver
+	UserConfigDir string            // per-machine user-config dir; separate from Dir, never committed (ADR 0008)
+	Clock         *FakeClock        // controllable time source
+	Env           map[string]string // environment seen by the CLI
+	IsTTY         bool              // whether stdout looks interactive (default false → JSON)
+	StdinIsTTY    bool              // the interactivity signal that gates human identity setup (default false)
+	StdinText     string            // interactive input fed to prompts (identity confirmation)
+	VCS           vcs.Port          // VCS port for the identity seed; nil means no adapter
+	NewID         func() string     // ID generator override; nil uses the real one
 }
 
 // New returns a harness backed by a fresh temp directory. The store is not yet
-// initialized — call Init or Run("init").
+// initialized — call Init or Run("init"). The user-config directory is a distinct
+// temp dir, so identity (per-machine, never committed) is always kept apart from
+// the project store.
 func New(t *testing.T) *Harness {
 	t.Helper()
 	return &Harness{
-		t:     t,
-		Dir:   t.TempDir(),
-		Clock: &FakeClock{now: DefaultNow},
-		Env:   map[string]string{},
-		IsTTY: false,
+		t:             t,
+		Dir:           t.TempDir(),
+		UserConfigDir: t.TempDir(),
+		Clock:         &FakeClock{now: DefaultNow},
+		Env:           map[string]string{},
+		IsTTY:         false,
 	}
 }
 
@@ -74,15 +82,18 @@ func (h *Harness) Run(args ...string) Result {
 	}
 	var stdout, stderr bytes.Buffer
 	code := cli.Run(cli.Env{
-		Args:        args,
-		Stdin:       strings.NewReader(""),
-		Stdout:      &stdout,
-		Stderr:      &stderr,
-		WorkDir:     h.Dir,
-		Getenv:      func(k string) string { return h.Env[k] },
-		Clock:       h.Clock,
-		NewID:       newID,
-		StdoutIsTTY: h.IsTTY,
+		Args:          args,
+		Stdin:         strings.NewReader(h.StdinText),
+		Stdout:        &stdout,
+		Stderr:        &stderr,
+		WorkDir:       h.Dir,
+		Getenv:        func(k string) string { return h.Env[k] },
+		Clock:         h.Clock,
+		NewID:         newID,
+		StdoutIsTTY:   h.IsTTY,
+		StdinIsTTY:    h.StdinIsTTY,
+		VCS:           h.VCS,
+		UserConfigDir: h.UserConfigDir,
 	})
 	return Result{Code: code, Stdout: stdout.String(), Stderr: stderr.String()}
 }

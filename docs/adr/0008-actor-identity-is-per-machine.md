@@ -18,12 +18,12 @@ unbounded contributor needs no roster entry — their identity seeds itself.
 Identity is resolved per command, in precedence order:
 
 1. `--as <actor>` flag.
-2. `BEAVER_ACTOR` environment variable (how agents and CI name themselves).
+2. `BUSY_BEAVER_ACTOR` environment variable (how agents and CI name themselves).
 3. User-level config (the saved identity).
 4. Otherwise, *interactively*: detect a VCS and, if present, read its identity
    (e.g. `git config user.name`) and ask the actor to confirm or replace it; with
    no VCS, prompt for a name. The result is saved to user-level config.
-5. Otherwise, *non-interactively*: error, asking for `--as` / `BEAVER_ACTOR`.
+5. Otherwise, *non-interactively*: error, asking for `--as` / `BUSY_BEAVER_ACTOR`.
 
 > **Refined by ADR 0010.** The chain above is superseded in detail by ADR 0010,
 > which inserts environment-based agent detection ahead of the human-identity
@@ -38,7 +38,7 @@ ownership operation.
 A VCS identity is therefore only ever adopted through an **interactive
 confirmation**, never as a silent non-interactive fallback. This is deliberate: in
 a repo whose Git user is the human owner, an agent that runs `claim` without
-setting `BEAVER_ACTOR` must *not* silently claim under the human's Git name — it
+setting `BUSY_BEAVER_ACTOR` must *not* silently claim under the human's Git name — it
 must error instead.
 
 ## Consequences
