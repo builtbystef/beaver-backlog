@@ -54,4 +54,13 @@ type Issue struct {
 	Created   time.Time
 	Updated   time.Time
 	Body      string
+
+	// Custom holds frontmatter keys Busy Beaver does not define — user-added fields
+	// (e.g. sprint:, estimate:) that the schema knows nothing about. They are
+	// carried through a read-modify-write untouched rather than silently
+	// dropped, so a hand-added field survives commands like done or claim
+	// (ADR 0014). Values are whatever YAML the user wrote (scalars, sequences,
+	// maps); Busy Beaver preserves them but never interprets them. Nil when the file
+	// has no custom keys.
+	Custom map[string]any
 }

@@ -146,6 +146,76 @@ func TestMarshalOmitsUnsetOptionals(t *testing.T) {
 	}
 }
 
+// TestCustomFieldsSurviveRoundTrip is the core guarantee of ADR 0014: a
+// hand-added frontmatter key Busy Beaver knows nothing about is preserved through a
+// read-modify-write, not silently dropped. It lands in Custom on read, a command
+// mutates a known field, and the custom key is still there on write.
+func TestCustomFieldsSurviveRoundTrip(t *testing.T) {
+	now := time.Date(2026, 6, 27, 18, 30, 0, 0, time.UTC)
+	src := "---\n" +
+		"id: m3k8\n" +
+		"title: Title\n" +
+		"state: todo\n" +
+		"sprint: 7\n" +
+		"estimate: 3d\n" +
+		"reviewers:\n" +
+		"    - stefan\n" +
+		"    - claude\n" +
+		"created: " + now.Format(time.RFC3339) + "\n" +
+		"updated: " + now.Format(time.RFC3339) + "\n" +
+		"---\n\nBody.\n"
+
+	iss, err := issue.Unmarshal([]byte(src))
+	if err != nil {
+		t.Fatalf("Unmarshal: %v", err)
+	}
+	if got := iss.Custom["sprint"]; got != 7 {
+		t.Errorf("Custom[sprint] = %v (%T), want 7", got, got)
+	}
+	if _, ok := iss.Custom["estimate"]; !ok {
+		t.Errorf("Custom missing estimate: %v", iss.Custom)
+	}
+	if _, ok := iss.Custom["reviewers"]; !ok {
+		t.Errorf("Custom missing reviewers: %v", iss.Custom)
+	}
+
+	// A command mutates a known field; the custom keys must ride along.
+	iss.State = issue.StateDone
+	out, err := issue.Marshal(iss)
+	if err != nil {
+		t.Fatalf("Marshal: %v", err)
+	}
+	s := string(out)
+	for _, want := range []string{"sprint: 7", "estimate: 3d", "reviewers:", "- stefan", "- claude"} {
+		if !strings.Contains(s, want) {
+			t.Errorf("custom field %q dropped on save, file:\n%s", want, s)
+		}
+	}
+	// Custom keys follow the machine-owned fields, never before them.
+	if !canonicalOrder(s, "id:", "title:", "state:", "created:", "updated:", "sprint:") {
+		t.Errorf("custom keys not placed after machine-owned fields, file:\n%s", s)
+	}
+}
+
+// TestNoCustomFieldsLeavesCustomNil guards the DeepEqual round-trip contract: an
+// issue with no user keys unmarshals to a nil Custom map, not an empty one.
+func TestNoCustomFieldsLeavesCustomNil(t *testing.T) {
+	now := time.Date(2026, 6, 27, 18, 30, 0, 0, time.UTC)
+	data, err := issue.Marshal(issue.Issue{
+		ID: "m3k8", Title: "Title", State: issue.StateTodo, Created: now, Updated: now,
+	})
+	if err != nil {
+		t.Fatalf("Marshal: %v", err)
+	}
+	iss, err := issue.Unmarshal(data)
+	if err != nil {
+		t.Fatalf("Unmarshal: %v", err)
+	}
+	if iss.Custom != nil {
+		t.Errorf("Custom = %v, want nil for a file with no custom keys", iss.Custom)
+	}
+}
+
 func TestUnmarshalReportsMalformed(t *testing.T) {
 	if _, err := issue.Unmarshal([]byte("no frontmatter at all")); !errors.Is(err, issue.ErrMissingFrontmatter) {
 		t.Errorf("missing frontmatter: got %v, want ErrMissingFrontmatter", err)

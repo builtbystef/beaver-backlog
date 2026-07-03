@@ -20,17 +20,23 @@ var (
 // frontmatter is the YAML projection of an Issue. Field order here is the
 // canonical on-disk order; optional fields carry omitempty so an unset field is
 // absent from the file entirely (it reappears as null/empty only in JSON output).
+//
+// Custom is an inline catch-all: any frontmatter key with no matching field
+// above lands here on read and is written back on save, so user-added fields
+// survive a round-trip instead of being silently dropped (ADR 0014). The known
+// fields keep their canonical order; custom keys follow, sorted by the encoder.
 type frontmatter struct {
-	ID        string   `yaml:"id"`
-	Title     string   `yaml:"title"`
-	State     string   `yaml:"state"`
-	Assignee  string   `yaml:"assignee,omitempty"`
-	Priority  string   `yaml:"priority,omitempty"`
-	Labels    []string `yaml:"labels,omitempty"`
-	DependsOn []string `yaml:"depends_on,omitempty"`
-	Parent    string   `yaml:"parent,omitempty"`
-	Created   yamlTime `yaml:"created"`
-	Updated   yamlTime `yaml:"updated"`
+	ID        string         `yaml:"id"`
+	Title     string         `yaml:"title"`
+	State     string         `yaml:"state"`
+	Assignee  string         `yaml:"assignee,omitempty"`
+	Priority  string         `yaml:"priority,omitempty"`
+	Labels    []string       `yaml:"labels,omitempty"`
+	DependsOn []string       `yaml:"depends_on,omitempty"`
+	Parent    string         `yaml:"parent,omitempty"`
+	Created   yamlTime       `yaml:"created"`
+	Updated   yamlTime       `yaml:"updated"`
+	Custom    map[string]any `yaml:",inline"`
 }
 
 // Marshal renders an Issue as its on-disk Markdown file: a YAML frontmatter
@@ -47,6 +53,7 @@ func Marshal(iss Issue) ([]byte, error) {
 		Parent:    iss.Parent,
 		Created:   yamlTime{iss.Created},
 		Updated:   yamlTime{iss.Updated},
+		Custom:    iss.Custom,
 	}
 	y, err := yaml.Marshal(fm)
 	if err != nil {
@@ -90,6 +97,7 @@ func Unmarshal(data []byte) (Issue, error) {
 		Created:   fm.Created.Time,
 		Updated:   fm.Updated.Time,
 		Body:      string(body),
+		Custom:    fm.Custom,
 	}, nil
 }
 

@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"sort"
 	"strings"
 	"time"
 
@@ -82,6 +83,10 @@ type jsonView struct {
 	Created   string   `json:"created"`
 	Updated   string   `json:"updated"`
 	Body      string   `json:"body"`
+	// Custom carries user-defined frontmatter keys Busy Beaver preserves but does not
+	// interpret (ADR 0014). Always present as an object, empty when the issue has
+	// none, so consumers never special-case a missing key.
+	Custom map[string]any `json:"custom"`
 }
 
 func toJSONView(iss issue.Issue) jsonView {
@@ -97,6 +102,7 @@ func toJSONView(iss issue.Issue) jsonView {
 		Created:   formatTime(iss.Created),
 		Updated:   formatTime(iss.Updated),
 		Body:      iss.Body,
+		Custom:    orEmptyMap(iss.Custom),
 	}
 }
 
@@ -122,6 +128,9 @@ func writeHuman(w io.Writer, iss issue.Issue) error {
 	}
 	field(&b, "created", formatTime(iss.Created))
 	field(&b, "updated", formatTime(iss.Updated))
+	for _, key := range sortedKeys(iss.Custom) {
+		field(&b, key, formatCustomValue(iss.Custom[key]))
+	}
 
 	if body := strings.TrimRight(iss.Body, "\n"); body != "" {
 		fmt.Fprintf(&b, "\n%s\n", body)
@@ -148,6 +157,41 @@ func orEmpty(xs []string) []string {
 		return []string{}
 	}
 	return xs
+}
+
+func orEmptyMap(m map[string]any) map[string]any {
+	if m == nil {
+		return map[string]any{}
+	}
+	return m
+}
+
+// sortedKeys returns m's keys in a stable order so the human rendering of custom
+// fields is deterministic, matching the sorted order the YAML encoder writes.
+func sortedKeys(m map[string]any) []string {
+	keys := make([]string, 0, len(m))
+	for k := range m {
+		keys = append(keys, k)
+	}
+	sort.Strings(keys)
+	return keys
+}
+
+// formatCustomValue renders a preserved custom value for the human view: scalars
+// print plainly; sequences and maps, which have no single-line "key  value" form,
+// print as compact JSON so the glance stays one line per field.
+func formatCustomValue(v any) string {
+	switch v.(type) {
+	case nil:
+		return ""
+	case []any, map[string]any:
+		if b, err := json.Marshal(v); err == nil {
+			return string(b)
+		}
+		return fmt.Sprintf("%v", v)
+	default:
+		return fmt.Sprintf("%v", v)
+	}
 }
 
 func formatTime(t time.Time) string {

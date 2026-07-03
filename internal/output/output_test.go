@@ -67,6 +67,7 @@ func TestWriteIssueJSONNormalizesUnset(t *testing.T) {
 	for _, want := range []string{
 		`"assignee": null`, `"priority": null`, `"parent": null`,
 		`"labels": []`, `"depends_on": []`, `"body": ""`,
+		`"custom": {}`,
 		`"created": "2026-06-27T18:30:00Z"`,
 	} {
 		if !strings.Contains(s, want) {
@@ -92,5 +93,35 @@ func TestWriteIssueHuman(t *testing.T) {
 	}
 	if strings.HasPrefix(strings.TrimSpace(s), "{") {
 		t.Errorf("human output should not be JSON:\n%s", s)
+	}
+}
+
+// TestWriteIssueRendersCustomFields checks that preserved user-defined fields
+// (ADR 0014) are visible in both renderings, not just carried silently on disk:
+// scalars print plainly and sequences print as compact JSON in the human view,
+// and the JSON view exposes them verbatim under "custom".
+func TestWriteIssueRendersCustomFields(t *testing.T) {
+	now := time.Date(2026, 6, 27, 18, 30, 0, 0, time.UTC)
+	iss := issue.Issue{
+		ID: "m3k8", Title: "Title", State: issue.StateTodo, Created: now, Updated: now,
+		Custom: map[string]any{"sprint": 7, "reviewers": []any{"stefan", "claude"}},
+	}
+
+	var human bytes.Buffer
+	if err := output.WriteIssue(&human, iss, output.Human); err != nil {
+		t.Fatalf("WriteIssue human: %v", err)
+	}
+	for _, want := range []string{"sprint", "7", "reviewers", `["stefan","claude"]`} {
+		if !strings.Contains(human.String(), want) {
+			t.Errorf("human output missing custom %q in:\n%s", want, human.String())
+		}
+	}
+
+	var jsn bytes.Buffer
+	if err := output.WriteIssue(&jsn, iss, output.JSON); err != nil {
+		t.Fatalf("WriteIssue json: %v", err)
+	}
+	if !strings.Contains(jsn.String(), `"sprint": 7`) {
+		t.Errorf("JSON output missing custom sprint in:\n%s", jsn.String())
 	}
 }
