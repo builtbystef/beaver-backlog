@@ -98,7 +98,7 @@ func TestCreateIDsAreShortRandomDistinct(t *testing.T) {
 		t.Errorf("expected distinct ids, both were %q", a)
 	}
 	for _, id := range []string{a, b} {
-		if len(id) != 4 {
+		if len(id) != 6 {
 			t.Errorf("id %q is not short (len %d)", id, len(id))
 		}
 	}

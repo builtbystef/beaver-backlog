@@ -1,9 +1,9 @@
 ---
-id: b8q3
+id: b8q3c8
 title: "Validation and graceful degradation"
 state: todo
 labels: [v1]
-depends_on: [m3k8]
+depends_on: [m3k8td]
 created: 2026-06-27T18:30:00Z
 updated: 2026-07-03T02:19:21Z
 ---

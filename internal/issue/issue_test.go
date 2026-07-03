@@ -69,8 +69,8 @@ func TestNewIDFormat(t *testing.T) {
 	seen := make(map[string]bool)
 	for range 1000 {
 		id := issue.NewID()
-		if len(id) != 4 {
-			t.Fatalf("id %q has length %d, want 4", id, len(id))
+		if len(id) != 6 {
+			t.Fatalf("id %q has length %d, want 6", id, len(id))
 		}
 		for _, r := range id {
 			if !strings.ContainsRune(alphabet, r) {

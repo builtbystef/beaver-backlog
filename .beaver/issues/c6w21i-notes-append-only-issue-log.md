@@ -1,9 +1,9 @@
 ---
-id: c6w2
+id: c6w21i
 title: "Notes: append-only issue log"
 state: todo
 labels: [v1]
-depends_on: [h5t1]
+depends_on: [h5t10u]
 created: 2026-06-27T18:30:00Z
 updated: 2026-06-27T18:30:00Z
 ---

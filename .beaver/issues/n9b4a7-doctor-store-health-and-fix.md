@@ -1,9 +1,9 @@
 ---
-id: n9b4
+id: n9b4a7
 title: "doctor: store health and --fix"
 state: todo
 labels: [v1]
-depends_on: [b8q3, d3r8]
+depends_on: [b8q3c8, d3r89r]
 created: 2026-06-27T18:30:00Z
 updated: 2026-07-03T02:19:21Z
 ---

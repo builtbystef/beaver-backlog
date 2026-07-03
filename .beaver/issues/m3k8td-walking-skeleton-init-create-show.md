@@ -1,5 +1,5 @@
 ---
-id: m3k8
+id: m3k8td
 title: "Walking skeleton: init, create, show"
 state: todo
 labels: [v1]

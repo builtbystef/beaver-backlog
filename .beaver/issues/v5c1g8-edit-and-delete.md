@@ -1,9 +1,9 @@
 ---
-id: v5c1
+id: v5c1g8
 title: "edit and delete (and $EDITOR on create)"
 state: todo
 labels: [v1]
-depends_on: [m3k8, r7p2]
+depends_on: [m3k8td, r7p2iv]
 created: 2026-06-27T18:30:00Z
 updated: 2026-06-27T18:30:00Z
 ---

@@ -4,12 +4,12 @@ import "crypto/rand"
 
 // IDs are short, random, and collision-resistant — deliberately not sequential
 // (ADR 0002). The exact alphabet and length are implementation details, left
-// tunable until 1.0; today an ID is four random lowercase-alphanumeric
-// characters (e.g. "a1b2"). Lowercase keeps an ID safe to embed in a filename on
-// case-insensitive filesystems.
+// tunable until 1.0; today an ID is six random lowercase-alphanumeric
+// characters (e.g. "a1b2c3"). Lowercase keeps an ID safe to embed in a filename
+// on case-insensitive filesystems.
 const (
 	idAlphabet = "abcdefghijklmnopqrstuvwxyz0123456789"
-	idLength   = 4
+	idLength   = 6
 )
 
 // NewID returns a fresh random ID. Collision-resistance at the store level is
