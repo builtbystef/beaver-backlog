@@ -64,6 +64,12 @@ assign or split issues by area, and integrate often. The one case to watch is
 many parallel agents pulling from the same queue; there, add a small dispatch
 layer instead of a lock.
 
+Give each concurrent agent its **own working tree** — a separate `git worktree`
+or clone. The working tree is the unit of concurrency: with one tree per agent,
+every concurrent edit lands on a different copy of the file and Git reconciles it
+at merge. Two agents sharing a single checkout can silently overwrite each other's
+edits — that configuration is unsupported.
+
 ## Status
 
 Busy Beaver is in early design. See [`CONTEXT.md`](./CONTEXT.md) for the project's
