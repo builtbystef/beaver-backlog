@@ -30,12 +30,12 @@ Each issue is a single Markdown file in `.beaver/issues/`, identified by a short
 stable ID and named for human readability:
 
 ```
-.beaver/issues/k3n9-login-form-rejects-valid-passwords.md
+.beaver/issues/k3n9x7-login-form-rejects-valid-passwords.md
 ```
 
 ```markdown
 ---
-id: k3n9
+id: k3n9x7
 title: Login form rejects valid passwords
 state: todo
 created: 2026-06-27T14:30:00Z

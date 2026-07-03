@@ -69,8 +69,14 @@ usage:
   beaver create "<title>"     create a new issue
   beaver show <ref>           show an issue by its ID
 
-global flags:
+common flags (after the command):
   --format human|json         override output format (default: auto-detect)
+
+exit codes:
+  0  success
+  1  an unexpected or runtime failure
+  2  the command was invoked incorrectly
+  3  a referenced issue (or the store) was not found
 `)
 }
 
