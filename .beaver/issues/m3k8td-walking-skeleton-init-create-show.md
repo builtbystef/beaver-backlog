@@ -1,10 +1,10 @@
 ---
 id: m3k8td
 title: "Walking skeleton: init, create, show"
-state: todo
+state: done
 labels: [v1]
 created: 2026-06-27T18:30:00Z
-updated: 2026-06-27T18:30:00Z
+updated: 2026-07-03T06:09:34Z
 ---
 
 ## What to build
@@ -40,9 +40,9 @@ updated: <RFC3339>
 
 ## Acceptance criteria
 
-- [ ] `beaver init` creates `.beaver/issues/` and a committed project config with a format-version marker; re-running is safe.
-- [ ] `beaver create "<title>"` writes `<id>-<slug>.md` with `id`, `title`, `state: todo`, `created`, `updated`, and the body.
-- [ ] IDs are short and random (not sequential); the filename mirrors `id` + slug; `id` in the frontmatter is authoritative.
-- [ ] `beaver show <ref>` renders the issue; output is human at a TTY, JSON when piped; `--format` overrides; exit codes distinguish success from not-found.
-- [ ] Timestamps come from an injectable clock, so tests are deterministic.
-- [ ] A test harness drives the CLI in-process against a temporary `.beaver/`, asserting on files, JSON output, and exit codes.
+- [x] `beaver init` creates `.beaver/issues/` and a committed project config with a format-version marker; re-running is safe.
+- [x] `beaver create "<title>"` writes `<id>-<slug>.md` with `id`, `title`, `state: todo`, `created`, `updated`, and the body.
+- [x] IDs are short and random (not sequential); the filename mirrors `id` + slug; `id` in the frontmatter is authoritative.
+- [x] `beaver show <ref>` renders the issue; output is human at a TTY, JSON when piped; `--format` overrides; exit codes distinguish success from not-found.
+- [x] Timestamps come from an injectable clock, so tests are deterministic.
+- [x] A test harness drives the CLI in-process against a temporary `.beaver/`, asserting on files, JSON output, and exit codes.
