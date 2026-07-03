@@ -1,6 +1,6 @@
 // Package output renders issues for two audiences: a human reading a terminal,
 // and a machine (or agent) consuming JSON. The format is auto-detected and
-// overridable (ADR 0013)..
+// overridable (ADR 0013).
 package output
 
 import (

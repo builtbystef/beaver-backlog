@@ -2,7 +2,6 @@
 // store and rendered output. Everything it depends on (arguments, stdio, the
 // working directory, the environment, the clock, and the ID generator) arrives
 // through an Env struct.
-
 package cli
 
 import (
