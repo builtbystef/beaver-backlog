@@ -98,6 +98,67 @@ func TestListMissingIssuesDir(t *testing.T) {
 	}
 }
 
+// Update overwrites an already-canonical file in place, returning the same path
+// and leaving exactly one file for the id.
+func TestUpdateOverwritesCanonicalInPlace(t *testing.T) {
+	root := newStore(t)
+	canonical := issue.FileName("abc123", issue.Slug("Fix the bug"))
+	writeIssueFile(t, root, canonical, issue.Issue{
+		ID: "abc123", Title: "Fix the bug", State: issue.StateTodo,
+		Created: fixedTime, Updated: fixedTime,
+	})
+	st, _ := store.Discover(root)
+	iss, path, err := st.Resolve("abc123")
+	if err != nil {
+		t.Fatalf("Resolve: %v", err)
+	}
+
+	iss.State = issue.StateDone
+	newPath, err := st.Update(path, iss)
+	if err != nil {
+		t.Fatalf("Update: %v", err)
+	}
+	if filepath.Base(newPath) != canonical {
+		t.Errorf("newPath = %s, want canonical %s", filepath.Base(newPath), canonical)
+	}
+	if files, _ := st.List(); len(files) != 1 {
+		t.Fatalf("want exactly one file, got %v", files)
+	}
+	if got, _, _ := st.Resolve("abc123"); got.State != issue.StateDone {
+		t.Errorf("state = %q, want done", got.State)
+	}
+}
+
+// Update renames a drifted file to its canonical name — writing the canonical file
+// and removing the stale one — so a read-modify-write never leaves two files with
+// the same id (ADR 0005).
+func TestUpdateRenamesDriftedFile(t *testing.T) {
+	root := newStore(t)
+	writeIssueFile(t, root, "totally-wrong-name.md", issue.Issue{
+		ID: "abc123", Title: "Fix the bug", State: issue.StateTodo,
+		Created: fixedTime, Updated: fixedTime,
+	})
+	st, _ := store.Discover(root)
+	iss, path, err := st.Resolve("abc123")
+	if err != nil {
+		t.Fatalf("Resolve: %v", err)
+	}
+
+	iss.State = issue.StateDone
+	if _, err := st.Update(path, iss); err != nil {
+		t.Fatalf("Update: %v", err)
+	}
+
+	want := issue.FileName("abc123", issue.Slug("Fix the bug"))
+	files, _ := st.List()
+	if len(files) != 1 || filepath.Base(files[0]) != want {
+		t.Fatalf("files = %v, want exactly [%s] (drifted name removed)", files, want)
+	}
+	if got, _, _ := st.Resolve("abc123"); got.State != issue.StateDone {
+		t.Errorf("state = %q, want done", got.State)
+	}
+}
+
 var fixedTime = time.Date(2026, 6, 27, 18, 30, 0, 0, time.UTC)
 
 func newStore(t *testing.T) string {

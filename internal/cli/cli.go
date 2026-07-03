@@ -53,6 +53,12 @@ func Run(env Env) int {
 		return cmdList(env, args)
 	case "show":
 		return cmdShow(env, args)
+	case "done":
+		return cmdDone(env, args)
+	case "cancel":
+		return cmdCancel(env, args)
+	case "reopen":
+		return cmdReopen(env, args)
 	case "help", "-h", "--help":
 		printUsage(env.Stdout)
 		return exitOK
@@ -71,6 +77,9 @@ usage:
   beaver create "<title>"     create a new issue
   beaver list                 list issues (default: all)
   beaver show <ref>           show an issue by its ID
+  beaver done <ref>           mark an issue done
+  beaver cancel <ref>         cancel an issue (deliberately abandon it)
+  beaver reopen <ref>         return a done or cancelled issue to todo
 
 common flags (after the command):
   --format human|json         override output format (default: auto-detect)

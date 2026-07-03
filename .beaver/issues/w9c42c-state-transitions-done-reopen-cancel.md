@@ -1,11 +1,11 @@
 ---
 id: w9c42c
 title: "State transitions: done, reopen, cancel"
-state: todo
+state: done
 labels: [v1]
 depends_on: [m3k8td]
 created: 2026-06-27T18:30:00Z
-updated: 2026-06-27T18:30:00Z
+updated: 2026-07-03T07:13:01Z
 ---
 
 ## What to build
@@ -20,7 +20,7 @@ Ownership slice.)
 
 ## Acceptance criteria
 
-- [ ] `done`, `cancel`, and `reopen` set the expected `state` and bump `updated`.
-- [ ] `cancel` is distinct from `done`, and the cancelled issue remains readable.
-- [ ] Nonsensical transitions are handled gracefully (clear message, no corruption).
-- [ ] Tests assert resulting `state` and `updated` through the harness.
+- [x] `done`, `cancel`, and `reopen` set the expected `state` and bump `updated`.
+- [x] `cancel` is distinct from `done`, and the cancelled issue remains readable.
+- [x] Nonsensical transitions are handled gracefully (clear message, no corruption).
+- [x] Tests assert resulting `state` and `updated` through the harness.
