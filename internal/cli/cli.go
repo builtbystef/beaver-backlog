@@ -76,6 +76,8 @@ func Run(env Env) int {
 		return cmdEdit(env, args)
 	case "delete":
 		return cmdDelete(env, args)
+	case "note":
+		return cmdNote(env, args)
 	case "whoami":
 		return cmdWhoami(env, args)
 	case "help", "-h", "--help":
@@ -105,6 +107,7 @@ usage:
   beaver start <ref>          start an issue (in-progress; auto-claims if unowned)
   beaver edit <ref>           open an issue in $EDITOR for freeform hand-editing
   beaver delete <ref>         delete an issue's file (for junk; the VCS keeps history)
+  beaver note <ref> "<text>"  append a note to an issue's coordination log
   beaver whoami               print the actor Busy Beaver resolves you as
 
 common flags (after the command):
@@ -125,6 +128,9 @@ claim / start flags:
 
 whoami flags:
   --as <actor>                resolve as this actor (overrides all detection)
+
+note flags:
+  --as <actor>                attribute the note to this actor (overrides detection)
 
 a <ref> is a full issue ID, its slug, or the full <id>-<slug> name.
 show reports what an issue is waiting on and whether it is ready or blocked.

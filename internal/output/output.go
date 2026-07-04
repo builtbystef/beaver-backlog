@@ -137,10 +137,24 @@ type jsonView struct {
 	Created   string   `json:"created"`
 	Updated   string   `json:"updated"`
 	Body      string   `json:"body"`
+	// Notes is the append-only log parsed out of the body's Notes section (ADR 0012)
+	// into structured entries, so an agent reads attributed, timestamped handoffs
+	// without re-parsing the Markdown. The raw entries also remain in Body verbatim.
+	// Always present as an array, empty when the issue has no notes, per the
+	// no-missing-keys contract (ADR 0013).
+	Notes []noteView `json:"notes"`
 	// Custom carries user-defined frontmatter keys Busy Beaver preserves but does not
 	// interpret (ADR 0014). Always present as an object, empty when the issue has
 	// none, so consumers never special-case a missing key.
 	Custom map[string]any `json:"custom"`
+}
+
+// noteView is one note in JSON: who wrote it, when (RFC3339 UTC, like the issue's own
+// timestamps), and its text.
+type noteView struct {
+	Author string `json:"author"`
+	Time   string `json:"time"`
+	Text   string `json:"text"`
 }
 
 func toJSONView(iss issue.Issue) jsonView {
@@ -156,8 +170,20 @@ func toJSONView(iss issue.Issue) jsonView {
 		Created:   formatTime(iss.Created),
 		Updated:   formatTime(iss.Updated),
 		Body:      iss.Body,
+		Notes:     toNoteViews(issue.ParseNotes(iss.Body)),
 		Custom:    orEmptyMap(iss.Custom),
 	}
+}
+
+// toNoteViews projects parsed notes into their JSON shape. The result is always
+// non-nil (an empty [] rather than null) so an issue with no notes still carries the
+// key, matching the no-missing-keys contract (ADR 0013).
+func toNoteViews(notes []issue.Note) []noteView {
+	views := make([]noteView, len(notes))
+	for i, n := range notes {
+		views[i] = noteView{Author: n.Author, Time: formatTime(n.Time), Text: n.Text}
+	}
+	return views
 }
 
 // issueWithRel is show's JSON shape: every field of the base jsonView, plus an
