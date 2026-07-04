@@ -150,8 +150,8 @@ func promptForIdentity(env Env) (string, error) {
 	return readReply(r)
 }
 
-// vcsIdentity reads the VCS's configured identity through the port, to seed the
-// interactive confirmation. A nil port (no adapter), a not-found result, or any
+// vcsIdentity reads the configured VCS identity through the System, to seed the
+// interactive confirmation. A nil System (no adapter), a not-found result, or any
 // error all mean "no seed" — resolution then prompts for a name instead. Reading
 // the VCS identity is only ever a seed for confirmation, never an agent identity
 // (ADR 0010).

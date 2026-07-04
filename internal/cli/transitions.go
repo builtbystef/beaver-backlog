@@ -23,16 +23,23 @@ type verb struct {
 	did     string // human confirmation on a real transition; one %s (id)
 	already string // human line when already at target; one %s (id)
 	reject  string // stderr guidance when the current state forbids it; two %s (id, current state)
+
+	// completes marks the verb that finishes an issue (done), so a successful
+	// transition may record the opt-in commit-per-issue (ADR 0007). cancel and
+	// reopen leave it false: abandoning or restoring is not a completion, and only a
+	// completion commits.
+	completes bool
 }
 
 var (
 	verbDone = verb{
-		name:    "done",
-		target:  issue.StateDone,
-		sources: []issue.State{issue.StateTodo, issue.StateInProgress},
-		did:     "Marked %s done",
-		already: "%s is already done",
-		reject:  "%s is %s; reopen it first to mark it done",
+		name:      "done",
+		target:    issue.StateDone,
+		sources:   []issue.State{issue.StateTodo, issue.StateInProgress},
+		did:       "Marked %s done",
+		already:   "%s is already done",
+		reject:    "%s is %s; reopen it first to mark it done",
+		completes: true,
 	}
 	verbCancel = verb{
 		name:    "cancel",
@@ -134,11 +141,24 @@ func runTransition(env Env, args []string, v verb) int {
 	// and any custom frontmatter keys through untouched (ADR 0014).
 	iss.State = v.target
 	iss.Updated = env.Clock.Now().UTC().Truncate(time.Second)
-	if _, err := st.Update(path, iss); err != nil {
+	newPath, err := st.Update(path, iss)
+	if err != nil {
 		errf(env, "%v", err)
 		return exitError
 	}
-	return reportIssue(env, format, iss, fmt.Sprintf(v.did, iss.ID))
+
+	line := fmt.Sprintf(v.did, iss.ID)
+	// A completed issue may become its own atomic commit, when the project has opted
+	// in (ADR 0007). This runs only for done, only after the file is safely written,
+	// and never fails the command — the issue is done regardless of whether the
+	// convenience commit could be made. The confirmation line notes the revision when
+	// one was recorded; a disabled setting or a degraded VCS is silent or a warning.
+	if v.completes {
+		if rev := commitCompletion(env, st, iss, commitPaths(newPath, path)); rev != "" {
+			line += fmt.Sprintf(" (committed %s)", rev)
+		}
+	}
+	return reportIssue(env, format, iss, line)
 }
 
 // reportIssue renders a completed command's result: a concise confirmation line

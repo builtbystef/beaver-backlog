@@ -93,7 +93,7 @@ func TestWhoamiPrecedence(t *testing.T) {
 func TestWhoamiInteractiveSeedsFromVCSWithConfirmation(t *testing.T) {
 	h := beavertest.New(t).Init()
 	h.StdinIsTTY = true
-	h.VCS = vcs.Fake{Name: "Ada Lovelace", Found: true}
+	h.VCS = &vcs.Fake{Name: "Ada Lovelace", Found: true}
 	h.StdinText = "\n" // Enter accepts the [Y/n] default
 
 	r := h.MustRun("whoami", "--format", "json")
@@ -122,7 +122,7 @@ func TestWhoamiInteractiveSeedsFromVCSWithConfirmation(t *testing.T) {
 func TestWhoamiInteractiveDeclineVCSThenType(t *testing.T) {
 	h := beavertest.New(t).Init()
 	h.StdinIsTTY = true
-	h.VCS = vcs.Fake{Name: "Git Name", Found: true}
+	h.VCS = &vcs.Fake{Name: "Git Name", Found: true}
 	h.StdinText = "n\nStefan\n" // decline the seed, then type a name
 
 	out := h.DecodeJSON(h.MustRun("whoami", "--format", "json").Stdout)
@@ -157,7 +157,7 @@ func TestWhoamiInteractiveNoVCSPromptsForName(t *testing.T) {
 func TestVCSNameNeverUsedNonInteractively(t *testing.T) {
 	h := beavertest.New(t).Init()
 	h.StdinIsTTY = false // the key: not an interactive session
-	h.VCS = vcs.Fake{Name: "Human Git Name", Found: true}
+	h.VCS = &vcs.Fake{Name: "Human Git Name", Found: true}
 
 	out := h.DecodeJSON(h.MustRun("whoami", "--format", "json").Stdout)
 	if out["actor"] == "Human Git Name" {
@@ -237,7 +237,7 @@ func TestWhoamiInteractiveNoInputErrors(t *testing.T) {
 func TestInitSeedsIdentityInteractively(t *testing.T) {
 	h := beavertest.New(t) // not yet initialized
 	h.StdinIsTTY = true
-	h.VCS = vcs.Fake{Name: "Ada Lovelace", Found: true}
+	h.VCS = &vcs.Fake{Name: "Ada Lovelace", Found: true}
 	h.StdinText = "\n" // accept the VCS seed
 
 	out := h.DecodeJSON(h.MustRun("init").Stdout)
@@ -264,7 +264,7 @@ func TestInitSeedsIdentityInteractively(t *testing.T) {
 func TestInitDoesNotSeedNonInteractively(t *testing.T) {
 	h := beavertest.New(t)
 	h.StdinIsTTY = false
-	h.VCS = vcs.Fake{Name: "Ada Lovelace", Found: true}
+	h.VCS = &vcs.Fake{Name: "Ada Lovelace", Found: true}
 
 	out := h.DecodeJSON(h.MustRun("init").Stdout)
 	if _, ok := out["actor"]; ok {
@@ -281,7 +281,7 @@ func TestInitIdentitySeedingIsIdempotent(t *testing.T) {
 	h := beavertest.New(t)
 	saveActor(t, h, "existing")
 	h.StdinIsTTY = true
-	h.VCS = vcs.Fake{Name: "Different Name", Found: true}
+	h.VCS = &vcs.Fake{Name: "Different Name", Found: true}
 	h.StdinText = "" // if init prompted, an empty read would error; it must not prompt
 
 	out := h.DecodeJSON(h.MustRun("init").Stdout)

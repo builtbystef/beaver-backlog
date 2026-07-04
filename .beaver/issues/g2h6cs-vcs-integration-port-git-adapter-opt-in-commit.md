@@ -1,14 +1,14 @@
 ---
 id: g2h6cs
 title: 'VCS integration: port, Git adapter, opt-in commit'
-state: todo
+state: done
 labels:
     - v1
 depends_on:
     - w9c42c
     - h5t10u
 created: 2026-06-27T18:30:00Z
-updated: 2026-06-27T18:30:00Z
+updated: 2026-07-04T04:33:11Z
 ---
 
 ## What to build
@@ -22,7 +22,7 @@ third-party adapter — plugs in.
 
 ## Acceptance criteria
 
-- [ ] With commit-on-done enabled, finishing an issue produces one atomic commit via the Git adapter.
-- [ ] Default behavior commits nothing; all core commands work with no VCS present.
-- [ ] All VCS access goes through the port; a fake adapter drives tests with no real repository.
-- [ ] Tests assert commit behavior (via the fake adapter) and the VCS-unaware default.
+- [x] With commit-on-done enabled, finishing an issue produces one atomic commit via the Git adapter.
+- [x] Default behavior commits nothing; all core commands work with no VCS present.
+- [x] All VCS access goes through the port; a fake adapter drives tests with no real repository.
+- [x] Tests assert commit behavior (via the fake adapter) and the VCS-unaware default.

@@ -37,7 +37,7 @@ type Env struct {
 	Edit          func(string) error  // open a file in the user's editor, blocking until it exits; nil (or a non-interactive session) means no editor, so edit and interactive create refuse rather than hang
 	StdoutIsTTY   bool                // whether stdout is an interactive terminal
 	StdinIsTTY    bool                // whether stdin is interactive: the signal that gates human identity setup (ADR 0010)
-	VCS           vcs.Port            // version-control port, for the identity seed; nil means no adapter (ADR 0006/0007)
+	VCS           vcs.System          // version-control integration (identity seed + commit); nil means no adapter (ADR 0006/0007)
 	UserConfigDir string              // per-machine user-config dir (identity lives here, never committed; ADR 0008)
 }
 

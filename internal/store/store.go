@@ -371,15 +371,6 @@ func readIssue(path string) (issue.Issue, error) {
 	return iss, nil
 }
 
-func defaultConfig() []byte {
-	return fmt.Appendf(nil,
-		`# Busy Beaver project configuration.
-# Committed and shared through version control, like the issues themselves.
-# Safe to read and edit by hand.
-format_version: %d
-`, FormatVersion)
-}
-
 // atomicWrite writes data to path via a temp file and rename, so a reader never
 // observes a half-written issue.
 func atomicWrite(path string, data []byte, perm os.FileMode) error {
