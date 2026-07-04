@@ -146,6 +146,28 @@ func TestMarshalOmitsUnsetOptionals(t *testing.T) {
 	}
 }
 
+// TestPriorityRank pins the ordering contract sorting relies on: the four levels
+// rank most-urgent-first and strictly increasing, and both the unprioritized empty
+// value and any unknown (hand-edited) value rank last, tied below every real level
+// so they sort to the bottom rather than the top.
+func TestPriorityRank(t *testing.T) {
+	ordered := []issue.Priority{issue.PriorityUrgent, issue.PriorityHigh, issue.PriorityMedium, issue.PriorityLow}
+	for i := 1; i < len(ordered); i++ {
+		if ordered[i-1].Rank() >= ordered[i].Rank() {
+			t.Errorf("Rank(%s)=%d not strictly below Rank(%s)=%d", ordered[i-1], ordered[i-1].Rank(), ordered[i], ordered[i].Rank())
+		}
+	}
+	lowest := issue.PriorityLow.Rank()
+	for _, p := range []issue.Priority{"", "bogus"} {
+		if p.Rank() <= lowest {
+			t.Errorf("Rank(%q)=%d, want greater than low's %d (sorts last)", p, p.Rank(), lowest)
+		}
+	}
+	if issue.Priority("").Rank() != issue.Priority("bogus").Rank() {
+		t.Error("unprioritized and unknown should share the lowest rank")
+	}
+}
+
 // TestCustomFieldsSurviveRoundTrip is the core guarantee of ADR 0014: a
 // hand-added frontmatter key Busy Beaver knows nothing about is preserved through a
 // read-modify-write, not silently dropped. It lands in Custom on read, a command

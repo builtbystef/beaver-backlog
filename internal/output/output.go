@@ -91,19 +91,36 @@ func WriteList(w io.Writer, issues []issue.Issue, f Format) error {
 }
 
 // writeTable renders issues as an aligned, columnar human table. The header and
-// column set are human output, not a contract (ADR 0013); later slices widen them
-// as priority, labels, and assignee become settable (p1k765).
+// column set are human output, not a contract (ADR 0013): the machine shape lives
+// in JSON. It carries the triage fields — priority and assignee and labels — beside
+// the state, with an absent optional shown as "-" so every column stays legible,
+// and the free-form title last where its variable width cannot misalign the rest.
 func writeTable(w io.Writer, issues []issue.Issue) error {
 	if len(issues) == 0 {
 		_, err := io.WriteString(w, "No issues.\n")
 		return err
 	}
 	tw := tabwriter.NewWriter(w, 0, 0, 2, ' ', 0)
-	fmt.Fprintln(tw, "ID\tSTATE\tTITLE")
+	fmt.Fprintln(tw, "ID\tPRIORITY\tSTATE\tASSIGNEE\tLABELS\tTITLE")
 	for _, iss := range issues {
-		fmt.Fprintf(tw, "%s\t%s\t%s\n", iss.ID, iss.State, oneLine(iss.Title))
+		fmt.Fprintf(tw, "%s\t%s\t%s\t%s\t%s\t%s\n",
+			iss.ID,
+			orDash(string(iss.Priority)),
+			iss.State,
+			orDash(iss.Assignee),
+			orDash(oneLine(strings.Join(iss.Labels, ", "))),
+			oneLine(iss.Title))
 	}
 	return tw.Flush()
+}
+
+// orDash renders an absent optional cell as "-", so a table column stays visible
+// (and its header stays meaningful) when the value is unset.
+func orDash(s string) string {
+	if s == "" {
+		return "-"
+	}
+	return s
 }
 
 // oneLine flattens a value to a single line for a table cell, so a newline or tab

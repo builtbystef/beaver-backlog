@@ -87,21 +87,48 @@ func seedIdentity(env Env) string {
 	return name
 }
 
-// refList collects a repeatable, comma-separated flag of issue references, e.g.
-// `--depends-on a,b --depends-on c`. Each Set splits on commas and appends the
-// trimmed, non-empty references in order; resolving them to canonical ids and
-// deduping happens later, once the store is open.
-type refList struct{ refs []string }
+// csvList collects a repeatable, comma-separated string flag into an ordered
+// slice, e.g. `--label a,b --label c` yields [a, b, c]. Each Set splits on commas
+// and appends the trimmed, non-empty values in order; any later normalization
+// (resolving references to canonical ids, deduping) happens once the values are
+// known to be needed. It backs both --depends-on (issue references) and --label
+// (free-form tags), which share this exact repeatable/comma-separated shape.
+type csvList struct{ values []string }
 
-func (r *refList) String() string { return strings.Join(r.refs, ",") }
+func (l *csvList) String() string { return strings.Join(l.values, ",") }
 
-func (r *refList) Set(v string) error {
+func (l *csvList) Set(v string) error {
+	l.values = append(l.values, splitCSV(v)...)
+	return nil
+}
+
+// splitCSV splits one flag value on commas into its trimmed, non-empty parts. It
+// is the shared normalizer behind csvList and the positional label arguments the
+// label command takes, so `a, b` becomes [a, b] wherever a list of values is
+// accepted.
+func splitCSV(v string) []string {
+	var out []string
 	for part := range strings.SplitSeq(v, ",") {
-		if ref := strings.TrimSpace(part); ref != "" {
-			r.refs = append(r.refs, ref)
+		if s := strings.TrimSpace(part); s != "" {
+			out = append(out, s)
 		}
 	}
-	return nil
+	return out
+}
+
+// dedupe returns in with later duplicates dropped, preserving first-seen order —
+// the canonical form for the multi-valued flags (labels, edges) where a repeat is
+// redundant, not meaningful.
+func dedupe(in []string) []string {
+	seen := make(map[string]bool, len(in))
+	var out []string
+	for _, s := range in {
+		if !seen[s] {
+			seen[s] = true
+			out = append(out, s)
+		}
+	}
+	return out
 }
 
 // cmdCreate mints a new issue from a title, optionally wiring its one-sided
@@ -110,11 +137,22 @@ func (r *refList) Set(v string) error {
 // derived, never written (ADR 0011).
 func cmdCreate(env Env, args []string) int {
 	fs, formatFlag := newFlagSet(env, "create")
-	var dependsOn refList
+	var dependsOn csvList
 	fs.Var(&dependsOn, "depends-on", "issue this depends on (a ref; repeatable, comma-separated)")
 	parentFlag := fs.String("parent", "", "parent issue this is a sub-issue of (a ref)")
+	var labels csvList
+	fs.Var(&labels, "label", "label to tag this issue with (free-form; repeatable, comma-separated)")
+	priorityFlag := fs.String("priority", "", "priority: urgent|high|medium|low")
 	pos, ok := parseArgs(fs, args)
 	if !ok {
+		return exitUsage
+	}
+	// Validate the priority up front, before any store work, so a bad value fails
+	// fast as a usage error. An omitted flag ("") maps to the unprioritized empty
+	// value, so create defaults to no priority.
+	priority, err := parsePriority(*priorityFlag)
+	if err != nil {
+		errf(env, "%v", err)
 		return exitUsage
 	}
 	// A title comes from the command line or, in an interactive session, from the
@@ -155,7 +193,7 @@ func cmdCreate(env Env, args []string) int {
 	// ids (depends_on and parent store ids, never slugs). Every issue-addressing
 	// input routes through the shared resolver, so an edge accepts the same
 	// references show and done do.
-	deps, code := resolveEdges(env, st, dependsOn.refs)
+	deps, code := resolveEdges(env, st, dependsOn.values)
 	if code != exitOK {
 		return code
 	}
@@ -179,6 +217,8 @@ func cmdCreate(env Env, args []string) int {
 		ID:        id,
 		Title:     title, // empty in the interactive editor path; the human supplies it
 		State:     issue.StateTodo,
+		Priority:  priority,
+		Labels:    dedupe(labels.values), // nil when none, so the field marshals away
 		DependsOn: deps,
 		Parent:    parent,
 		Created:   now,
@@ -223,6 +263,10 @@ func cmdList(env Env, args []string) int {
 	stateFlag := fs.String("state", "", "filter by state: all|todo|in-progress|done|cancelled")
 	readyFlag := fs.Bool("ready", false, "only ready issues: todo with every dependency done")
 	blockedFlag := fs.Bool("blocked", false, "only blocked issues: todo with an unmet dependency")
+	var labelFilter csvList
+	fs.Var(&labelFilter, "label", "only issues carrying every named label (repeatable, comma-separated)")
+	priorityFilter := fs.String("priority", "", "only issues at this priority: urgent|high|medium|low|none")
+	assigneeFilter := fs.String("assignee", "", "only issues assigned to this actor")
 	pos, ok := parseArgs(fs, args)
 	if !ok {
 		return exitUsage
@@ -233,7 +277,9 @@ func cmdList(env Env, args []string) int {
 	}
 	// The ready and blocked queues each define their own selection over the
 	// dependency graph, so they are mutually exclusive and do not stack with the
-	// state filter — --ready already implies todo.
+	// state filter — --ready already implies todo. The attribute filters below
+	// (label, priority, assignee) are refinements, so they do stack with any base
+	// selector.
 	if *readyFlag && *blockedFlag {
 		errf(env, "--ready and --blocked are mutually exclusive")
 		return exitUsage
@@ -243,6 +289,11 @@ func cmdList(env Env, args []string) int {
 		return exitUsage
 	}
 	match, err := stateFilter(*stateFlag)
+	if err != nil {
+		errf(env, "%v", err)
+		return exitUsage
+	}
+	attr, err := attrFilter(labelFilter.values, *priorityFilter, *assigneeFilter)
 	if err != nil {
 		errf(env, "%v", err)
 		return exitUsage
@@ -263,7 +314,7 @@ func cmdList(env Env, args []string) int {
 		errf(env, "%v", err)
 		return exitError
 	}
-	issues := selectIssues(all, *readyFlag, *blockedFlag, match)
+	issues := attr(selectIssues(all, *readyFlag, *blockedFlag, match))
 	sortIssues(issues)
 
 	if err := output.WriteList(env.Stdout, issues, format); err != nil {
@@ -324,13 +375,80 @@ func stateFilter(value string) (func(issue.State) bool, error) {
 	}
 }
 
-// sortIssues orders issues deterministically for display: oldest first by creation
-// time, with the stable random ID as a total-order tiebreak so issues minted at
-// the same instant (common under a fixed test clock) still sort reproducibly.
-// Priority-aware ordering arrives with p1k765.
+// attrFilter builds the attribute refinement that list applies after its base
+// selector: keep only issues carrying every label in wantLabels, at the wanted
+// priority, and assigned to wantAssignee. Each dimension is independent and any may
+// be inactive — no labels, an empty priority string, an empty assignee — and
+// constrains nothing when so, leaving the default list unfiltered. The priority is
+// validated here (the four levels, plus "none" to select the unprioritized), the
+// one place list rejects a bad filter flag. The returned function preserves order
+// and always returns a non-nil slice, so an empty match still renders as [] /
+// "No issues.".
+func attrFilter(wantLabels []string, priorityValue, wantAssignee string) (func([]issue.Issue) []issue.Issue, error) {
+	// An explicit --priority is validated and, uniquely, distinguishes "none" (match
+	// the unprioritized) from an omitted flag (match any priority): parsePriority
+	// folds both "" and "none" to the empty Priority, so activeness is tracked apart
+	// from the value it resolves to.
+	priorityActive := priorityValue != ""
+	var wantPriority issue.Priority
+	if priorityActive {
+		p, err := parsePriority(priorityValue)
+		if err != nil {
+			return nil, err
+		}
+		wantPriority = p
+	}
+	labels := dedupe(wantLabels)
+	return func(in []issue.Issue) []issue.Issue {
+		out := make([]issue.Issue, 0, len(in))
+		for _, iss := range in {
+			if priorityActive && iss.Priority != wantPriority {
+				continue
+			}
+			if wantAssignee != "" && iss.Assignee != wantAssignee {
+				continue
+			}
+			if !hasAllLabels(iss.Labels, labels) {
+				continue
+			}
+			out = append(out, iss)
+		}
+		return out
+	}, nil
+}
+
+// hasAllLabels reports whether have carries every label in want (AND semantics), so
+// `--label a --label b` narrows to issues tagged both. An empty want matches every
+// issue, so an inactive label filter keeps all.
+func hasAllLabels(have, want []string) bool {
+	if len(want) == 0 {
+		return true
+	}
+	set := make(map[string]bool, len(have))
+	for _, l := range have {
+		set[l] = true
+	}
+	for _, w := range want {
+		if !set[w] {
+			return false
+		}
+	}
+	return true
+}
+
+// sortIssues orders issues deterministically for display: highest priority first
+// (urgent > high > medium > low, then the unprioritized), and within one priority
+// the stable creation order — oldest first, with the random ID as a total-order
+// tiebreak so issues minted at the same instant (common under a fixed test clock)
+// still sort reproducibly. Priority leads because list is a triage view: what to
+// pick up next sorts to the top. Issues with no priority set all share the lowest
+// rank, so a store that sets none keeps the pure creation order it had before.
 func sortIssues(issues []issue.Issue) {
 	sort.Slice(issues, func(i, j int) bool {
 		a, b := issues[i], issues[j]
+		if ra, rb := a.Priority.Rank(), b.Priority.Rank(); ra != rb {
+			return ra < rb
+		}
 		if !a.Created.Equal(b.Created) {
 			return a.Created.Before(b.Created)
 		}

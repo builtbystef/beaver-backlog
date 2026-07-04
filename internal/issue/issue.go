@@ -39,6 +39,27 @@ const (
 	PriorityLow    Priority = "low"
 )
 
+// Rank maps a priority to its sort order, most urgent first (urgent=0 … low=3).
+// The unprioritized empty value — and any value not one of the four levels, which
+// a hand-edit might leave in a file — rank last, after every explicit level, so
+// they sort to the bottom of a priority-ordered list rather than jumping to the
+// top. Validation stays narrow (ADR 0005): an unknown priority is not a load
+// failure, so ordering degrades gracefully instead of rejecting the file.
+func (p Priority) Rank() int {
+	switch p {
+	case PriorityUrgent:
+		return 0
+	case PriorityHigh:
+		return 1
+	case PriorityMedium:
+		return 2
+	case PriorityLow:
+		return 3
+	default:
+		return 4
+	}
+}
+
 // Issue is the unit of work Busy Beaver tracks. The fields mirror the frontmatter
 // schema; Body is the Markdown content that follows the frontmatter and holds
 // the description (and, in later slices, the notes log).

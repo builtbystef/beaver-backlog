@@ -72,6 +72,10 @@ func Run(env Env) int {
 		return cmdRelease(env, args)
 	case "start":
 		return cmdStart(env, args)
+	case "priority":
+		return cmdPriority(env, args)
+	case "label":
+		return cmdLabel(env, args)
 	case "edit":
 		return cmdEdit(env, args)
 	case "delete":
@@ -105,6 +109,8 @@ usage:
   beaver assign <ref> <actor> assign an issue to a named actor
   beaver release <ref>        clear an issue's assignee
   beaver start <ref>          start an issue (in-progress; auto-claims if unowned)
+  beaver priority <ref> <lvl> set or clear priority (urgent|high|medium|low|none)
+  beaver label <ref> <label>  add labels (or remove them with --remove)
   beaver edit <ref>           open an issue in $EDITOR for freeform hand-editing
   beaver delete <ref>         delete an issue's file (for junk; the VCS keeps history)
   beaver note <ref> "<text>"  append a note to an issue's coordination log
@@ -114,6 +120,8 @@ common flags (after the command):
   --format human|json         override output format (default: auto-detect)
 
 create flags:
+  --label <label>             tag with a label (free-form; repeatable, comma-separated)
+  --priority <level>          set priority: urgent|high|medium|low
   --depends-on <ref>          depend on an issue (repeatable, comma-separated)
   --parent <ref>              set the parent issue (makes this a sub-issue)
 
@@ -121,6 +129,13 @@ list flags:
   --state <state>             filter: all|todo|in-progress|done|cancelled
   --ready                     only ready issues (todo, every dependency done)
   --blocked                   only blocked issues (todo, an unmet dependency)
+  --label <label>             only issues carrying every named label (repeatable)
+  --priority <level>          only issues at this priority (none = unprioritized)
+  --assignee <actor>          only issues assigned to this actor
+  issues are ordered by priority (urgent first), then oldest first
+
+label flags:
+  --remove <label>            remove a label instead of adding (repeatable, comma-separated)
 
 claim / start flags:
   --as <actor>                act as this actor (overrides identity detection)
