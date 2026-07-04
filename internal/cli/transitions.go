@@ -126,7 +126,7 @@ func runTransition(env Env, args []string, v verb) int {
 	case transRedundant:
 		// Already in the target state. Idempotent success: report the issue but do
 		// not rewrite it, so `updated` and the file bytes stay untouched.
-		return reportTransition(env, format, iss, fmt.Sprintf(v.already, iss.ID))
+		return reportIssue(env, format, iss, fmt.Sprintf(v.already, iss.ID))
 	}
 
 	// transApply: set the new state and bump `updated` from the injected clock,
@@ -138,13 +138,14 @@ func runTransition(env Env, args []string, v verb) int {
 		errf(env, "%v", err)
 		return exitError
 	}
-	return reportTransition(env, format, iss, fmt.Sprintf(v.did, iss.ID))
+	return reportIssue(env, format, iss, fmt.Sprintf(v.did, iss.ID))
 }
 
-// reportTransition renders a completed transition: a concise confirmation line
+// reportIssue renders a completed command's result: a concise confirmation line
 // for a human, or the full resulting issue as JSON for a machine — the same
-// per-issue shape create and show emit, so an agent sees the new state directly.
-func reportTransition(env Env, format output.Format, iss issue.Issue, humanLine string) int {
+// per-issue shape create and show emit, so an agent sees the new state and
+// assignee directly. The transition verbs and the ownership verbs all end here.
+func reportIssue(env Env, format output.Format, iss issue.Issue, humanLine string) int {
 	if format == output.Human {
 		fmt.Fprintln(env.Stdout, humanLine)
 		return exitOK

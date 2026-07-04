@@ -1,11 +1,11 @@
 ---
 id: z4m900
 title: "Ownership: claim, assign, release, start"
-state: todo
+state: done
 labels: [v1]
 depends_on: [r7p2iv, h5t10u]
 created: 2026-06-27T18:30:00Z
-updated: 2026-07-04T01:59:10Z
+updated: 2026-07-04T02:30:00Z
 ---
 
 ## What to build
@@ -34,9 +34,9 @@ derivation added in d3r89r, surfacing it at the moment work begins.
 
 ## Acceptance criteria
 
-- [ ] `claim` sets `assignee` to the current actor without changing `state`; refuses another's issue unless `--force`; re-claiming own is a no-op.
-- [ ] `assign` sets a named assignee; `release` clears it.
-- [ ] `start` moves to `in-progress` and auto-claims an unowned issue; the assignee survives `done`.
-- [ ] `start` warns (non-fatally) when the issue is not ready — a `depends_on` target is not yet `done` — naming the incomplete dependencies, but still starts it; it never refuses on that basis (advisory, per ADR 0011).
-- [ ] No locking is attempted; the guard is best-effort against the local working tree.
-- [ ] Tests cover the guard, auto-claim, delegation, and retention through the harness.
+- [x] `claim` sets `assignee` to the current actor without changing `state`; refuses another's issue unless `--force`; re-claiming own is a no-op.
+- [x] `assign` sets a named assignee; `release` clears it.
+- [x] `start` moves to `in-progress` and auto-claims an unowned issue; the assignee survives `done`.
+- [x] `start` warns (non-fatally) when the issue is not ready — a `depends_on` target is not yet `done` — naming the incomplete dependencies, but still starts it; it never refuses on that basis (advisory, per ADR 0011).
+- [x] No locking is attempted; the guard is best-effort against the local working tree.
+- [x] Tests cover the guard, auto-claim, delegation, and retention through the harness.

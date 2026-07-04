@@ -63,6 +63,14 @@ func Run(env Env) int {
 		return cmdCancel(env, args)
 	case "reopen":
 		return cmdReopen(env, args)
+	case "claim":
+		return cmdClaim(env, args)
+	case "assign":
+		return cmdAssign(env, args)
+	case "release":
+		return cmdRelease(env, args)
+	case "start":
+		return cmdStart(env, args)
 	case "whoami":
 		return cmdWhoami(env, args)
 	case "help", "-h", "--help":
@@ -86,6 +94,10 @@ usage:
   beaver done <ref>           mark an issue done
   beaver cancel <ref>         cancel an issue (deliberately abandon it)
   beaver reopen <ref>         return a done or cancelled issue to todo
+  beaver claim <ref>          claim an issue (make yourself its assignee)
+  beaver assign <ref> <actor> assign an issue to a named actor
+  beaver release <ref>        clear an issue's assignee
+  beaver start <ref>          start an issue (in-progress; auto-claims if unowned)
   beaver whoami               print the actor Busy Beaver resolves you as
 
 common flags (after the command):
@@ -99,6 +111,10 @@ list flags:
   --state <state>             filter: all|todo|in-progress|done|cancelled
   --ready                     only ready issues (todo, every dependency done)
   --blocked                   only blocked issues (todo, an unmet dependency)
+
+claim / start flags:
+  --as <actor>                act as this actor (overrides identity detection)
+  --force                     steal an issue already claimed by another actor
 
 whoami flags:
   --as <actor>                resolve as this actor (overrides all detection)

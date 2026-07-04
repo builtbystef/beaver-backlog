@@ -55,11 +55,13 @@ func WriteIssue(w io.Writer, iss issue.Issue, f Format) error {
 // WriteIssueWithRelationship renders one issue together with its derived
 // relationship view — what it is waiting on, whether it is ready/blocked/stuck,
 // and the inverse edges Busy Beaver never stores (what it blocks, its children).
-// show uses it to answer "can I start this, and if not, why". The plain WriteIssue
-// that create and the transitions emit stays a pure projection of the stored
-// fields; only show carries the derived section, and in JSON it is an additive
-// "relationships" object beside the same issue fields, so a consumer reading the
-// base fields sees an unchanged shape.
+// show uses it to answer "can I start this, and if not, why", and start emits it
+// (JSON only) so an agent sees whether the work it just began was blocked and on
+// what. The plain WriteIssue that create, the transitions, and the reserving
+// ownership verbs emit stays a pure projection of the stored fields; only the two
+// dependency-aware commands carry the derived section, and in JSON it is an
+// additive "relationships" object beside the same issue fields, so a consumer
+// reading the base fields sees an unchanged shape.
 func WriteIssueWithRelationship(w io.Writer, iss issue.Issue, rel issue.Relationship, f Format) error {
 	if f == JSON {
 		return WriteJSON(w, issueWithRel{jsonView: toJSONView(iss), Relationships: toRelView(rel)})
