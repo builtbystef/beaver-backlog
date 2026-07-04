@@ -34,6 +34,7 @@ type Env struct {
 	Getenv        func(string) string // environment lookup
 	Clock         clock.Clock         // source of timestamps
 	NewID         func() string       // issue ID generator (injectable for tests)
+	Edit          func(string) error  // open a file in the user's editor, blocking until it exits; nil (or a non-interactive session) means no editor, so edit and interactive create refuse rather than hang
 	StdoutIsTTY   bool                // whether stdout is an interactive terminal
 	StdinIsTTY    bool                // whether stdin is interactive: the signal that gates human identity setup (ADR 0010)
 	VCS           vcs.Port            // version-control port, for the identity seed; nil means no adapter (ADR 0006/0007)
@@ -71,6 +72,10 @@ func Run(env Env) int {
 		return cmdRelease(env, args)
 	case "start":
 		return cmdStart(env, args)
+	case "edit":
+		return cmdEdit(env, args)
+	case "delete":
+		return cmdDelete(env, args)
 	case "whoami":
 		return cmdWhoami(env, args)
 	case "help", "-h", "--help":
@@ -98,6 +103,8 @@ usage:
   beaver assign <ref> <actor> assign an issue to a named actor
   beaver release <ref>        clear an issue's assignee
   beaver start <ref>          start an issue (in-progress; auto-claims if unowned)
+  beaver edit <ref>           open an issue in $EDITOR for freeform hand-editing
+  beaver delete <ref>         delete an issue's file (for junk; the VCS keeps history)
   beaver whoami               print the actor Busy Beaver resolves you as
 
 common flags (after the command):
@@ -121,6 +128,8 @@ whoami flags:
 
 a <ref> is a full issue ID, its slug, or the full <id>-<slug> name.
 show reports what an issue is waiting on and whether it is ready or blocked.
+run "beaver create" with no title in a terminal to author the issue in $EDITOR;
+a non-interactive create still requires a title argument.
 
 exit codes:
   0  success

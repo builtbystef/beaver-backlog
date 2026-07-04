@@ -117,20 +117,28 @@ func cmdCreate(env Env, args []string) int {
 	if !ok {
 		return exitUsage
 	}
+	// A title comes from the command line or, in an interactive session, from the
+	// editor create opens on the new file. Exactly one positional is the title; none
+	// is allowed only when an editor can supply it — otherwise create still requires a
+	// title, and says so before any store work (a non-interactive create, ADR 0010).
+	var title string
 	switch len(pos) {
-	case 1: // exactly one title argument
+	case 1:
+		title = strings.TrimSpace(pos[0])
+		if title == "" {
+			errf(env, "title must not be empty")
+			return exitUsage
+		}
 	case 0:
-		errf(env, "create requires a title: beaver create \"<title>\"")
-		return exitUsage
+		if editorGate(env) != nil {
+			errf(env, "create requires a title: beaver create \"<title>\"")
+			return exitUsage
+		}
 	default:
 		errf(env, "create takes a single title argument (quote it): beaver create \"<title>\"")
 		return exitUsage
 	}
-	title := strings.TrimSpace(pos[0])
-	if title == "" {
-		errf(env, "title must not be empty")
-		return exitUsage
-	}
+
 	format, err := resolveFormat(env, *formatFlag)
 	if err != nil {
 		errf(env, "%v", err)
@@ -169,17 +177,28 @@ func cmdCreate(env Env, args []string) int {
 	now := env.Clock.Now().UTC().Truncate(time.Second)
 	iss := issue.Issue{
 		ID:        id,
-		Title:     title,
+		Title:     title, // empty in the interactive editor path; the human supplies it
 		State:     issue.StateTodo,
 		DependsOn: deps,
 		Parent:    parent,
 		Created:   now,
 		Updated:   now,
 	}
-	path, err := st.Write(iss)
-	if err != nil {
-		errf(env, "%v", err)
-		return exitError
+
+	// With a title in hand, write the issue directly. With none, the gate above has
+	// already guaranteed an interactive session with an editor: seed the file, hand it
+	// to $EDITOR, and take the title and body the human writes back (authorInEditor).
+	var path string
+	if title != "" {
+		if path, err = st.Write(iss); err != nil {
+			errf(env, "%v", err)
+			return exitError
+		}
+	} else {
+		var code int
+		if iss, path, code = authorInEditor(env, st, iss); code != exitOK {
+			return code
+		}
 	}
 
 	if format == output.JSON {

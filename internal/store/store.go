@@ -226,6 +226,26 @@ func (s *Store) Update(oldPath string, iss issue.Issue) (string, error) {
 	return newPath, nil
 }
 
+// Read parses and validates the single issue file at path, returning the same
+// unusable-file error the store applies everywhere (readIssue): an unreadable
+// file, malformed frontmatter, or a failed validation (ADR 0005). It applies to
+// one named file the exact "is this a usable issue" contract scan applies across
+// the whole store, so a command that just handed a file to an external editor —
+// edit, and interactive create on the file it seeded — can confirm the result the
+// human saved is still a usable issue.
+func (s *Store) Read(path string) (issue.Issue, error) {
+	return readIssue(path)
+}
+
+// Delete removes the issue file at path — the hard removal of a junk issue a typo
+// or an accidental duplicate created, distinct from cancel, which keeps the file as
+// a deliberately-abandoned record (ADR 0004). Busy Beaver keeps no other copy of
+// the issue; a VCS, when present, retains the history. A missing file surfaces as
+// the underlying os error for the caller to map.
+func (s *Store) Delete(path string) error {
+	return os.Remove(path)
+}
+
 // Resolve turns a user-supplied reference into a single issue, matched on the
 // authoritative frontmatter identity (ADR 0002) and never on the filename, which
 // only mirrors it and may have drifted via a hand-edit or merge (ADR 0005). It is

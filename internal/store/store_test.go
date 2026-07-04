@@ -352,6 +352,57 @@ func TestScanSkipsSilentlyWithoutHandler(t *testing.T) {
 	}
 }
 
+// Read applies to one named file the same usable-issue contract scan applies
+// store-wide: a good file returns its issue, and a file that fails validation
+// returns the reason (ADR 0005) — the check edit and interactive create run on
+// what a human just saved in $EDITOR.
+func TestReadValidatesSingleFile(t *testing.T) {
+	root := newStore(t)
+	writeIssueFile(t, root, "abc123-fine.md", mkIssue("abc123", "Fine"))
+	writeRaw(t, root, "broken.md", "---\nid: bad999\ntitle: Bad\nstate: archived\ncreated: 2026-06-27T18:30:00Z\nupdated: 2026-06-27T18:30:00Z\n---\n")
+	st, _ := store.Discover(root)
+	issuesDir := filepath.Join(root, ".beaver", "issues")
+
+	got, err := st.Read(filepath.Join(issuesDir, "abc123-fine.md"))
+	if err != nil {
+		t.Fatalf("Read of a valid file: %v", err)
+	}
+	if got.ID != "abc123" || got.Title != "Fine" {
+		t.Errorf("read issue = %+v, want abc123/Fine", got)
+	}
+
+	if _, err := st.Read(filepath.Join(issuesDir, "broken.md")); err == nil {
+		t.Error("Read of a file with an illegal state returned no error")
+	} else if !strings.Contains(err.Error(), "state") {
+		t.Errorf("Read error = %q, want it to name the invalid state", err)
+	}
+}
+
+// Delete removes an issue's file, so it vanishes from every read path; deleting a
+// path that is no longer there is an error the caller can surface.
+func TestDeleteRemovesFile(t *testing.T) {
+	root := newStore(t)
+	writeIssueFile(t, root, "abc123-junk.md", mkIssue("abc123", "Junk"))
+	st, _ := store.Discover(root)
+	_, path, err := st.Resolve("abc123")
+	if err != nil {
+		t.Fatalf("Resolve: %v", err)
+	}
+
+	if err := st.Delete(path); err != nil {
+		t.Fatalf("Delete: %v", err)
+	}
+	if files, _ := st.List(); len(files) != 0 {
+		t.Errorf("after Delete, List = %v, want empty", files)
+	}
+	if _, _, err := st.Resolve("abc123"); !errors.Is(err, store.ErrNotFound) {
+		t.Errorf("after Delete, Resolve = %v, want ErrNotFound", err)
+	}
+	if err := st.Delete(path); err == nil {
+		t.Error("Delete of an already-removed file returned no error")
+	}
+}
+
 var fixedTime = time.Date(2026, 6, 27, 18, 30, 0, 0, time.UTC)
 
 // mkIssue builds a minimal todo issue at the fixed time — enough for resolution

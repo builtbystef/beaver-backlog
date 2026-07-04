@@ -46,15 +46,16 @@ type Result struct {
 // Harness drives the CLI in-process against a temporary store.
 type Harness struct {
 	t             *testing.T
-	Dir           string            // project directory; the store lives at Dir/.beaver
-	UserConfigDir string            // per-machine user-config dir; separate from Dir, never committed (ADR 0008)
-	Clock         *FakeClock        // controllable time source
-	Env           map[string]string // environment seen by the CLI
-	IsTTY         bool              // whether stdout looks interactive (default false → JSON)
-	StdinIsTTY    bool              // the interactivity signal that gates human identity setup (default false)
-	StdinText     string            // interactive input fed to prompts (identity confirmation)
-	VCS           vcs.Port          // VCS port for the identity seed; nil means no adapter
-	NewID         func() string     // ID generator override; nil uses the real one
+	Dir           string             // project directory; the store lives at Dir/.beaver
+	UserConfigDir string             // per-machine user-config dir; separate from Dir, never committed (ADR 0008)
+	Clock         *FakeClock         // controllable time source
+	Env           map[string]string  // environment seen by the CLI
+	IsTTY         bool               // whether stdout looks interactive (default false → JSON)
+	StdinIsTTY    bool               // the interactivity signal that gates human identity setup (default false)
+	StdinText     string             // interactive input fed to prompts (identity confirmation)
+	VCS           vcs.Port           // VCS port for the identity seed; nil means no adapter
+	NewID         func() string      // ID generator override; nil uses the real one
+	Editor        func(string) error // fake editor: given a file path, it may rewrite the file to simulate a human editing in $EDITOR; nil means no editor is available
 }
 
 // New returns a harness backed by a fresh temp directory. The store is not yet
@@ -90,6 +91,7 @@ func (h *Harness) Run(args ...string) Result {
 		Getenv:        func(k string) string { return h.Env[k] },
 		Clock:         h.Clock,
 		NewID:         newID,
+		Edit:          h.Editor,
 		StdoutIsTTY:   h.IsTTY,
 		StdinIsTTY:    h.StdinIsTTY,
 		VCS:           h.VCS,
