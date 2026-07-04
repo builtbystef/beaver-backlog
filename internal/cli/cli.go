@@ -91,13 +91,20 @@ usage:
 common flags (after the command):
   --format human|json         override output format (default: auto-detect)
 
+create flags:
+  --depends-on <ref>          depend on an issue (repeatable, comma-separated)
+  --parent <ref>              set the parent issue (makes this a sub-issue)
+
 list flags:
   --state <state>             filter: all|todo|in-progress|done|cancelled
+  --ready                     only ready issues (todo, every dependency done)
+  --blocked                   only blocked issues (todo, an unmet dependency)
 
 whoami flags:
   --as <actor>                resolve as this actor (overrides all detection)
 
 a <ref> is a full issue ID, its slug, or the full <id>-<slug> name.
+show reports what an issue is waiting on and whether it is ready or blocked.
 
 exit codes:
   0  success

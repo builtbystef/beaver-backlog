@@ -41,6 +41,29 @@ func resolveRef(env Env, st *store.Store, ref string) (iss issue.Issue, path str
 	}
 }
 
+// resolveEdges turns the raw references from a relationship flag (--depends-on)
+// into canonical issue ids, routing each through resolveRef so an edge accepts an
+// id, a slug, or an <id>-<slug> name — the same references every other command
+// takes. It dedupes by resolved id while preserving first-seen order, so repeats
+// and two references to one issue collapse to a single stored edge. On the first
+// reference that does not resolve it reports the failure (via resolveRef) and
+// returns that non-OK code, so create refuses to store an edge to an issue that is
+// not there: a typo fails fast instead of persisting as a dangling reference.
+func resolveEdges(env Env, st *store.Store, refs []string) (ids []string, code int) {
+	seen := make(map[string]bool)
+	for _, ref := range refs {
+		iss, _, code := resolveRef(env, st, ref)
+		if code != exitOK {
+			return nil, code
+		}
+		if !seen[iss.ID] {
+			seen[iss.ID] = true
+			ids = append(ids, iss.ID)
+		}
+	}
+	return ids, exitOK
+}
+
 // reportSharedSlug explains that a slug names several issues and lists them, each
 // as "id  title", so the user can pick one by its unique ID. store.Resolve already
 // sorted the matches by ID, so the listing is deterministic. It counts as a

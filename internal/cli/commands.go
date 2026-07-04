@@ -87,9 +87,32 @@ func seedIdentity(env Env) string {
 	return name
 }
 
-// cmdCreate mints a new issue from a title.
+// refList collects a repeatable, comma-separated flag of issue references, e.g.
+// `--depends-on a,b --depends-on c`. Each Set splits on commas and appends the
+// trimmed, non-empty references in order; resolving them to canonical ids and
+// deduping happens later, once the store is open.
+type refList struct{ refs []string }
+
+func (r *refList) String() string { return strings.Join(r.refs, ",") }
+
+func (r *refList) Set(v string) error {
+	for part := range strings.SplitSeq(v, ",") {
+		if ref := strings.TrimSpace(part); ref != "" {
+			r.refs = append(r.refs, ref)
+		}
+	}
+	return nil
+}
+
+// cmdCreate mints a new issue from a title, optionally wiring its one-sided
+// relationship edges: --depends-on names issues this one waits on, --parent the
+// issue it is a sub-issue of. Both are stored on this issue alone; the inverse is
+// derived, never written (ADR 0011).
 func cmdCreate(env Env, args []string) int {
 	fs, formatFlag := newFlagSet(env, "create")
+	var dependsOn refList
+	fs.Var(&dependsOn, "depends-on", "issue this depends on (a ref; repeatable, comma-separated)")
+	parentFlag := fs.String("parent", "", "parent issue this is a sub-issue of (a ref)")
 	pos, ok := parseArgs(fs, args)
 	if !ok {
 		return exitUsage
@@ -119,6 +142,24 @@ func cmdCreate(env Env, args []string) int {
 		return storeError(env, err)
 	}
 
+	// Resolve the relationship references to canonical ids before minting anything,
+	// so a typo'd --depends-on/--parent fails fast and the stored edges hold real
+	// ids (depends_on and parent store ids, never slugs). Every issue-addressing
+	// input routes through the shared resolver, so an edge accepts the same
+	// references show and done do.
+	deps, code := resolveEdges(env, st, dependsOn.refs)
+	if code != exitOK {
+		return code
+	}
+	var parent string
+	if ref := strings.TrimSpace(*parentFlag); ref != "" {
+		p, _, c := resolveRef(env, st, ref)
+		if c != exitOK {
+			return c
+		}
+		parent = p.ID
+	}
+
 	id, err := mintID(env, st)
 	if err != nil {
 		errf(env, "%v", err)
@@ -127,11 +168,13 @@ func cmdCreate(env Env, args []string) int {
 
 	now := env.Clock.Now().UTC().Truncate(time.Second)
 	iss := issue.Issue{
-		ID:      id,
-		Title:   title,
-		State:   issue.StateTodo,
-		Created: now,
-		Updated: now,
+		ID:        id,
+		Title:     title,
+		State:     issue.StateTodo,
+		DependsOn: deps,
+		Parent:    parent,
+		Created:   now,
+		Updated:   now,
 	}
 	path, err := st.Write(iss)
 	if err != nil {
@@ -150,19 +193,34 @@ func cmdCreate(env Env, args []string) int {
 	return exitOK
 }
 
-// cmdList enumerates issues, optionally filtered by state. With no --state it lists
-// all issues; --state narrows to a single concrete state (todo, in-progress, done,
-// cancelled) or the explicit all. Output is a human table or a JSON array,
-// auto-detected.
+// cmdList enumerates issues under one of three selectors. By default (or with
+// --state) it filters by state: no flag and the explicit "all" list every issue,
+// a concrete state narrows to it. --ready and --blocked instead select over the
+// dependency graph — the two halves of the unstarted (todo) work: the ready queue
+// (every dependency done) and the blocked queue (some dependency not done). Output
+// is a human table or a JSON array, auto-detected.
 func cmdList(env Env, args []string) int {
 	fs, formatFlag := newFlagSet(env, "list")
 	stateFlag := fs.String("state", "", "filter by state: all|todo|in-progress|done|cancelled")
+	readyFlag := fs.Bool("ready", false, "only ready issues: todo with every dependency done")
+	blockedFlag := fs.Bool("blocked", false, "only blocked issues: todo with an unmet dependency")
 	pos, ok := parseArgs(fs, args)
 	if !ok {
 		return exitUsage
 	}
 	if len(pos) > 0 {
 		errf(env, "list takes no positional arguments (did you mean --state %s?)", pos[0])
+		return exitUsage
+	}
+	// The ready and blocked queues each define their own selection over the
+	// dependency graph, so they are mutually exclusive and do not stack with the
+	// state filter — --ready already implies todo.
+	if *readyFlag && *blockedFlag {
+		errf(env, "--ready and --blocked are mutually exclusive")
+		return exitUsage
+	}
+	if (*readyFlag || *blockedFlag) && *stateFlag != "" {
+		errf(env, "--state does not combine with --ready or --blocked")
 		return exitUsage
 	}
 	match, err := stateFilter(*stateFlag)
@@ -186,12 +244,7 @@ func cmdList(env Env, args []string) int {
 		errf(env, "%v", err)
 		return exitError
 	}
-	issues := make([]issue.Issue, 0, len(all))
-	for _, iss := range all {
-		if match(iss.State) {
-			issues = append(issues, iss)
-		}
-	}
+	issues := selectIssues(all, *readyFlag, *blockedFlag, match)
 	sortIssues(issues)
 
 	if err := output.WriteList(env.Stdout, issues, format); err != nil {
@@ -199,6 +252,42 @@ func cmdList(env Env, args []string) int {
 		return exitError
 	}
 	return exitOK
+}
+
+// selectIssues applies the active list selector to all issues: the ready queue
+// (todo with every dependency done), the blocked queue (todo with an unmet
+// dependency), or, by default, the state predicate. The two queues partition the
+// todo set — every todo issue is ready or blocked, never both — deriving readiness
+// from the dependency graph over the whole set (issue.Relations). Both are scoped
+// to todo because they answer "what unstarted work can I pick up"; an in-progress
+// issue is already being worked, and a closed one is done, so neither queues them
+// even when an edge is unmet (show and doctor still surface a blocked in-progress
+// issue as the anomaly it is).
+func selectIssues(all []issue.Issue, ready, blocked bool, match func(issue.State) bool) []issue.Issue {
+	out := make([]issue.Issue, 0, len(all))
+	switch {
+	case ready:
+		rel := issue.NewRelations(all)
+		for _, iss := range all {
+			if rel.Ready(iss) {
+				out = append(out, iss)
+			}
+		}
+	case blocked:
+		rel := issue.NewRelations(all)
+		for _, iss := range all {
+			if iss.State == issue.StateTodo && rel.Blocked(iss) {
+				out = append(out, iss)
+			}
+		}
+	default:
+		for _, iss := range all {
+			if match(iss.State) {
+				out = append(out, iss)
+			}
+		}
+	}
+	return out
 }
 
 // stateFilter turns a --state value into a predicate over issue state. An omitted
@@ -258,7 +347,19 @@ func cmdShow(env Env, args []string) int {
 		return code
 	}
 
-	if err := output.WriteIssue(env.Stdout, iss, format); err != nil {
+	// Enrich the view with the derived relationship facts show is the natural home
+	// for: what this issue is waiting on, whether it is ready/blocked/stuck, and the
+	// inverse edges (what it blocks, its children) that are never stored (ADR 0011).
+	// Deriving them needs the whole store, so read it and index it; the resolved
+	// issue is among them.
+	all, err := st.ReadAll()
+	if err != nil {
+		errf(env, "%v", err)
+		return exitError
+	}
+	rel := issue.NewRelations(all).For(iss)
+
+	if err := output.WriteIssueWithRelationship(env.Stdout, iss, rel, format); err != nil {
 		errf(env, "%v", err)
 		return exitError
 	}
