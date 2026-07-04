@@ -282,6 +282,85 @@ func TestUpdateRenamesDriftedFile(t *testing.T) {
 	}
 }
 
+// Rename moves a drifted file to its canonical name and nothing more — the surgical
+// repair doctor --fix applies for filename drift (n9b4a7). The old name is gone, the
+// canonical one holds the same issue, and the bytes are the file's own, unrewritten.
+func TestRenameMovesDriftedFileWithoutRewriting(t *testing.T) {
+	root := newStore(t)
+	writeIssueFile(t, root, "drifted-name.md", issue.Issue{
+		ID: "abc123", Title: "Real Title", State: issue.StateTodo,
+		Created: fixedTime, Updated: fixedTime,
+	})
+	st, _ := store.Discover(root)
+	iss, path, err := st.Resolve("abc123")
+	if err != nil {
+		t.Fatalf("Resolve: %v", err)
+	}
+	before, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	newPath, err := st.Rename(path, iss)
+	if err != nil {
+		t.Fatalf("Rename: %v", err)
+	}
+
+	want := issue.FileName("abc123", issue.Slug("Real Title"))
+	if filepath.Base(newPath) != want {
+		t.Errorf("renamed to %q, want %q", filepath.Base(newPath), want)
+	}
+	files, _ := st.List()
+	if len(files) != 1 || filepath.Base(files[0]) != want {
+		t.Fatalf("files = %v, want exactly [%s]", files, want)
+	}
+	if after, _ := os.ReadFile(newPath); string(after) != string(before) {
+		t.Errorf("Rename rewrote the file:\nbefore:\n%s\nafter:\n%s", before, after)
+	}
+}
+
+// Rename refuses to overwrite a different file that already holds the canonical name,
+// returning ErrNameCollision rather than clobbering it — the safety net that keeps
+// doctor --fix from destroying an issue when two files disagree about an id.
+func TestRenameRefusesToClobber(t *testing.T) {
+	root := newStore(t)
+	// A file whose canonical name is "abc123-real-title.md" but sits under a drifted
+	// name, and a *different* issue already occupying that canonical name.
+	writeIssueFile(t, root, "drifted-name.md", issue.Issue{
+		ID: "abc123", Title: "Real Title", State: issue.StateTodo,
+		Created: fixedTime, Updated: fixedTime,
+	})
+	writeIssueFile(t, root, issue.FileName("abc123", issue.Slug("Real Title")), mkIssue("zzz999", "Squatter"))
+
+	st, _ := store.Discover(root)
+	drifted := filepath.Join(root, ".beaver", "issues", "drifted-name.md")
+	if _, err := st.Rename(drifted, mkIssue("abc123", "Real Title")); !errors.Is(err, store.ErrNameCollision) {
+		t.Fatalf("Rename over an occupied name = %v, want ErrNameCollision", err)
+	}
+	// Both files survive untouched: nothing was clobbered.
+	if files, _ := st.List(); len(files) != 2 {
+		t.Errorf("files = %v, want both still present", files)
+	}
+}
+
+// Renaming a file that is already at its canonical name is a no-op success — doctor
+// only calls Rename for a drifted file, but the primitive stays safe if it doesn't.
+func TestRenameCanonicalIsNoOp(t *testing.T) {
+	root := newStore(t)
+	name := issue.FileName("abc123", issue.Slug("Already Canonical"))
+	writeIssueFile(t, root, name, mkIssue("abc123", "Already Canonical"))
+	st, _ := store.Discover(root)
+	iss, path, _ := st.Resolve("abc123")
+
+	newPath, err := st.Rename(path, iss)
+	if err != nil {
+		t.Fatalf("Rename: %v", err)
+	}
+	if filepath.Base(newPath) != name {
+		t.Errorf("newPath = %q, want unchanged %q", filepath.Base(newPath), name)
+	}
+}
+
 // A scan skips every file that is not a usable issue and reports each through the
 // warning handler — naming the file and the specific reason — while still
 // returning the valid issues (ADR 0005). Malformed frontmatter, a missing id, and

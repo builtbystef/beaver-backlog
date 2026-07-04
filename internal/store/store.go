@@ -28,6 +28,9 @@ var (
 	ErrNoStore = errors.New("not a Busy Beaver store; run `beaver init`")
 	// ErrNotFound means a reference matched no issue in the store.
 	ErrNotFound = errors.New("issue not found")
+	// ErrNameCollision means a rename would land on a name another file already
+	// holds, so Rename refuses it rather than overwrite that file (n9b4a7).
+	ErrNameCollision = errors.New("the canonical name is already held by another file")
 )
 
 // SharedSlugError reports that a reference is a slug several issues share, so it
@@ -235,6 +238,27 @@ func (s *Store) Update(oldPath string, iss issue.Issue) (string, error) {
 // human saved is still a usable issue.
 func (s *Store) Read(path string) (issue.Issue, error) {
 	return readIssue(path)
+}
+
+// Rename moves the issue file at oldPath to its canonical <id>-<slug> name without
+// rewriting the file's contents — the minimal, surgical repair doctor --fix applies
+// for filename drift (n9b4a7, ADR 0005). Unlike Update it does not re-serialize the
+// frontmatter, so a fix touches only the name. It refuses rather than overwrite when
+// the canonical name is already held by a different file, returning ErrNameCollision
+// (the sign of a duplicate id, which doctor reports separately) so a fix can never
+// clobber another issue. A file already at its canonical name is a no-op.
+func (s *Store) Rename(oldPath string, iss issue.Issue) (string, error) {
+	newPath := filepath.Join(s.IssuesDir(), issue.FileName(iss.ID, issue.Slug(iss.Title)))
+	if newPath == oldPath {
+		return newPath, nil
+	}
+	if fileExists(newPath) {
+		return "", ErrNameCollision
+	}
+	if err := os.Rename(oldPath, newPath); err != nil {
+		return "", err
+	}
+	return newPath, nil
 }
 
 // Delete removes the issue file at path — the hard removal of a junk issue a typo

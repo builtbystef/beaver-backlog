@@ -1,14 +1,14 @@
 ---
 id: n9b4a7
 title: 'doctor: store health and --fix'
-state: todo
+state: done
 labels:
     - v1
 depends_on:
     - b8q3c8
     - d3r89r
 created: 2026-06-27T18:30:00Z
-updated: 2026-07-03T02:19:21Z
+updated: 2026-07-04T05:25:33Z
 ---
 
 ## What to build
@@ -25,7 +25,7 @@ auto-detection.
 
 ## Acceptance criteria
 
-- [ ] `doctor` detects and reports invalid files, filename drift, unknown frontmatter keys, dangling references, cycles, and stuck-on-cancelled dependents; non-zero exit when any exist.
-- [ ] `doctor --fix` repairs filename drift and other lint-class problems; validation errors are reported, not auto-fixed; unknown keys are reported, never removed.
-- [ ] Output is human or JSON per the standard auto-detection.
-- [ ] Tests seed each problem class and assert detection and fixes through the harness.
+- [x] `doctor` detects and reports invalid files, filename drift, unknown frontmatter keys, dangling references, cycles, and stuck-on-cancelled dependents; non-zero exit when any exist.
+- [x] `doctor --fix` repairs filename drift and other lint-class problems; validation errors are reported, not auto-fixed; unknown keys are reported, never removed.
+- [x] Output is human or JSON per the standard auto-detection.
+- [x] Tests seed each problem class and assert detection and fixes through the harness.
