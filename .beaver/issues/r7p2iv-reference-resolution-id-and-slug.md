@@ -1,9 +1,11 @@
 ---
 id: r7p2iv
-title: "Reference resolution: ID and slug"
+title: 'Reference resolution: ID and slug'
 state: done
-labels: [v1]
-depends_on: [m3k8td]
+labels:
+    - v1
+depends_on:
+    - m3k8td
 created: 2026-06-27T18:30:00Z
 updated: 2026-07-03T08:00:17Z
 ---

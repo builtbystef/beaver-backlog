@@ -1,9 +1,11 @@
 ---
 id: d3r89r
-title: "Relationships and the ready queue"
+title: Relationships and the ready queue
 state: todo
-labels: [v1]
-depends_on: [k2n6gj]
+labels:
+    - v1
+depends_on:
+    - k2n6gj
 created: 2026-06-27T18:30:00Z
 updated: 2026-06-27T18:30:00Z
 ---

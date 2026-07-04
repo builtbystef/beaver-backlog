@@ -1,9 +1,12 @@
 ---
 id: z4m900
-title: "Ownership: claim, assign, release, start"
+title: 'Ownership: claim, assign, release, start'
 state: done
-labels: [v1]
-depends_on: [r7p2iv, h5t10u]
+labels:
+    - v1
+depends_on:
+    - r7p2iv
+    - h5t10u
 created: 2026-06-27T18:30:00Z
 updated: 2026-07-04T02:30:00Z
 ---

@@ -2,8 +2,11 @@
 id: v5c1g8
 title: edit and delete (and $EDITOR on create)
 state: done
-labels: [v1]
-depends_on: [m3k8td, r7p2iv]
+labels:
+    - v1
+depends_on:
+    - m3k8td
+    - r7p2iv
 created: 2026-06-27T18:30:00Z
 updated: 2026-07-04T03:05:24Z
 ---

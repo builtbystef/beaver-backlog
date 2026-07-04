@@ -1,9 +1,12 @@
 ---
 id: g2h6cs
-title: "VCS integration: port, Git adapter, opt-in commit"
+title: 'VCS integration: port, Git adapter, opt-in commit'
 state: todo
-labels: [v1]
-depends_on: [w9c42c, h5t10u]
+labels:
+    - v1
+depends_on:
+    - w9c42c
+    - h5t10u
 created: 2026-06-27T18:30:00Z
 updated: 2026-06-27T18:30:00Z
 ---

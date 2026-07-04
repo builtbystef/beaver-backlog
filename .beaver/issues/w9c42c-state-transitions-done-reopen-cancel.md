@@ -1,9 +1,11 @@
 ---
 id: w9c42c
-title: "State transitions: done, reopen, cancel"
+title: 'State transitions: done, reopen, cancel'
 state: done
-labels: [v1]
-depends_on: [m3k8td]
+labels:
+    - v1
+depends_on:
+    - m3k8td
 created: 2026-06-27T18:30:00Z
 updated: 2026-07-03T07:13:01Z
 ---

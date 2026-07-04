@@ -1,9 +1,11 @@
 ---
 id: k2n6gj
-title: "list with state filtering"
+title: list with state filtering
 state: done
-labels: [v1]
-depends_on: [m3k8td]
+labels:
+    - v1
+depends_on:
+    - m3k8td
 created: 2026-06-27T18:30:00Z
 updated: 2026-07-03T06:47:23Z
 ---

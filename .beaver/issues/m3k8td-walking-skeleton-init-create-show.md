@@ -1,8 +1,9 @@
 ---
 id: m3k8td
-title: "Walking skeleton: init, create, show"
+title: 'Walking skeleton: init, create, show'
 state: done
-labels: [v1]
+labels:
+    - v1
 created: 2026-06-27T18:30:00Z
 updated: 2026-07-03T06:09:34Z
 ---
