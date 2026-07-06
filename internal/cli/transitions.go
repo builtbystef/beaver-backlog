@@ -132,8 +132,15 @@ func runTransition(env Env, args []string, v verb) int {
 
 	case transRedundant:
 		// Already in the target state. Idempotent success: report the issue but do
-		// not rewrite it, so `updated` and the file bytes stay untouched.
-		return reportIssue(env, format, iss, fmt.Sprintf(v.already, iss.ID))
+		// not rewrite it, so `updated` and the file bytes stay untouched. The
+		// completing verb still reports through the commit-carrying shape (with no
+		// commit — nothing was written, so nothing was committed), keeping done's
+		// JSON constant across the no-op and the real transition.
+		line := fmt.Sprintf(v.already, iss.ID)
+		if v.completes {
+			return reportCompletion(env, format, iss, "", line)
+		}
+		return reportIssue(env, format, iss, line)
 	}
 
 	// transApply: set the new state and bump `updated` from the injected clock,
@@ -153,12 +160,33 @@ func runTransition(env Env, args []string, v verb) int {
 	// and never fails the command — the issue is done regardless of whether the
 	// convenience commit could be made. The confirmation line notes the revision when
 	// one was recorded; a disabled setting or a degraded VCS is silent or a warning.
+	// The revision also rides along in done's JSON (reportCompletion), so an agent
+	// sees the commit its command produced without shelling out to the VCS.
 	if v.completes {
-		if rev := commitCompletion(env, st, iss, commitPaths(newPath, path)); rev != "" {
+		rev := commitCompletion(env, st, iss, commitPaths(newPath, path))
+		if rev != "" {
 			line += fmt.Sprintf(" (committed %s)", rev)
 		}
+		return reportCompletion(env, format, iss, rev, line)
 	}
 	return reportIssue(env, format, iss, line)
+}
+
+// reportCompletion is reportIssue for the completing verb: the human line is
+// unchanged, but the JSON result is the commit-carrying shape — the same issue
+// fields plus an always-present "commit" key, null when no commit was made — so
+// done's JSON is one constant shape and the revision of an opt-in commit reaches
+// the machine consumer, not just the human confirmation line.
+func reportCompletion(env Env, format output.Format, iss issue.Issue, revision, humanLine string) int {
+	if format == output.Human {
+		fmt.Fprintln(env.Stdout, humanLine)
+		return exitOK
+	}
+	if err := output.WriteIssueWithCommit(env.Stdout, iss, revision, output.JSON); err != nil {
+		errf(env, "%v", err)
+		return exitError
+	}
+	return exitOK
 }
 
 // reportIssue renders a completed command's result: a concise confirmation line

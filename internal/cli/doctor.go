@@ -26,11 +26,13 @@ import (
 // auto-"fixed": there is nothing safe to guess. The lint classes — a filename that
 // has drifted from its authoritative frontmatter, a frontmatter key that looks like
 // a typo of a known field (ADR 0014), a dangling depends_on/parent reference, a
-// dependency cycle, an issue stuck on a cancelled one, two files claiming one id —
-// are reported, and the one that is mechanically safe to repair (filename drift) is
-// what --fix repairs. --fix never removes an unknown key: removal is data loss, not
-// tidying, and stays a human decision (ADR 0014). Output auto-detects human vs JSON
-// like every other command (ADR 0013).
+// dependency or parent cycle, an issue stuck on a cancelled one, two files claiming
+// one id — are reported, and the one that is mechanically safe to repair (filename
+// drift) is what --fix repairs. --fix never removes an unknown key: removal is data
+// loss, not tidying, and stays a human decision (ADR 0014). The unknown-key class
+// is advisory besides: a resembling key is only *likely* a typo, so it is reported
+// for a human's eye but never fails doctor — see category.advisory. Output
+// auto-detects human vs JSON like every other command (ADR 0013).
 func cmdDoctor(env Env, args []string) int {
 	fs, formatFlag := newFlagSet(env, "doctor")
 	fixFlag := fs.Bool("fix", false, "repair lint-class problems (filename drift); never removes data")
@@ -178,7 +180,7 @@ func lintFindings(env Env, valid []located) []finding {
 				fixIss:  lc.iss,
 			})
 		}
-		for _, key := range sortedCustomKeys(lc.iss.Custom) {
+		for _, key := range issue.CustomKeys(lc.iss.Custom) {
 			if near, ok := nearestField(key); ok {
 				out = append(out, finding{
 					cat:    catUnknownKey,
@@ -226,10 +228,12 @@ func missingTimestamps(iss issue.Issue) string {
 
 // graphFindings reports the relationship problems that only show up across the whole
 // valid set: a depends_on/parent edge to an id no issue holds (a dangling
-// reference), a dependency cycle, and an open issue stuck on a cancelled one. None is
-// auto-fixed — each is a human's call to re-scope, drop an edge, or create the
-// missing issue. Stuck and cycle reuse the derived relationship engine (issue) so
-// doctor and the rest of Busy Beaver share one definition of each condition.
+// reference), a dependency cycle, a parent cycle (a hierarchy loop no tree could
+// render, including an issue that is its own parent), and an open issue stuck on a
+// cancelled one. None is auto-fixed — each is a human's call to re-scope, drop an
+// edge, or create the missing issue. Stuck and the cycles reuse the derived
+// relationship engine (issue) so doctor and the rest of Busy Beaver share one
+// definition of each condition.
 func graphFindings(env Env, valid []located) []finding {
 	idset := make(map[string]bool, len(valid))
 	issues := make([]issue.Issue, len(valid))
@@ -269,6 +273,17 @@ func graphFindings(env Env, valid []located) []finding {
 			cat:    catCycle,
 			ids:    cycle,
 			detail: "dependency cycle: " + strings.Join(cycle, ", "),
+		})
+	}
+	for _, cycle := range rel.ParentCycles() {
+		detail := "parent cycle: " + strings.Join(cycle, ", ")
+		if len(cycle) == 1 {
+			detail = fmt.Sprintf("%s: is its own parent", cycle[0])
+		}
+		out = append(out, finding{
+			cat:    catParentCycle,
+			ids:    cycle,
+			detail: detail,
 		})
 	}
 	return out
@@ -337,6 +352,7 @@ const (
 	catInvalid category = iota
 	catDuplicateID
 	catCycle
+	catParentCycle
 	catDangling
 	catStuck
 	catUnknownKey
@@ -344,6 +360,15 @@ const (
 	catNoTimestamp
 	catDrift
 )
+
+// advisory reports whether findings of this class are informational rather than
+// problems: still reported — a key resembling a known field is worth a look — but
+// never counted toward the exit code or the ok flag. Unknown-key is advisory
+// because resemblance is only ever a guess: a deliberate custom field like
+// `status` sits within typo distance of `state`, and a first-class supported
+// feature (ADR 0014) must not keep an otherwise healthy store permanently failing
+// doctor. Every other class states a fact, not a guess, and stays a problem.
+func (c category) advisory() bool { return c == catUnknownKey }
 
 // slug is the stable machine name of a category, used in JSON so a consumer can
 // branch on the problem class (ADR 0013).
@@ -355,6 +380,8 @@ func (c category) slug() string {
 		return "duplicate_id"
 	case catCycle:
 		return "dependency_cycle"
+	case catParentCycle:
+		return "parent_cycle"
 	case catDangling:
 		return "dangling_reference"
 	case catStuck:
@@ -380,6 +407,8 @@ func (c category) label() string {
 		return "duplicate id"
 	case catCycle:
 		return "cycle"
+	case catParentCycle:
+		return "parent cycle"
 	case catDangling:
 		return "dangling ref"
 	case catStuck:
@@ -422,9 +451,31 @@ type report struct {
 	findings []finding
 }
 
-// remaining counts the problems still standing — every finding not repaired this
-// run — which is what the exit code and the "ok" flag turn on.
-func (r *report) remaining() int { return len(r.findings) - r.fixedCount() }
+// remaining counts the problems still standing — every non-advisory finding not
+// repaired this run — which is what the exit code and the "ok" flag turn on.
+// Advisory findings are excluded by definition: they are reported, never held
+// against the store's health.
+func (r *report) remaining() int {
+	n := 0
+	for _, f := range r.findings {
+		if !f.fixed && !f.cat.advisory() {
+			n++
+		}
+	}
+	return n
+}
+
+// advisoryCount counts the informational findings, reported apart from the
+// problems in every summary.
+func (r *report) advisoryCount() int {
+	n := 0
+	for _, f := range r.findings {
+		if f.cat.advisory() {
+			n++
+		}
+	}
+	return n
+}
 
 func (r *report) fixedCount() int {
 	n := 0
@@ -494,7 +545,7 @@ func (r *report) renderHuman(w io.Writer, fix bool) error {
 		return err
 	}
 	var b strings.Builder
-	fmt.Fprintf(&b, "Found %d problem%s (checked %d issue%s):\n\n", len(r.findings), plural(len(r.findings)), r.checked, plural(r.checked))
+	fmt.Fprintf(&b, "Found %s (checked %d issue%s):\n\n", foundClause(len(r.findings)-r.advisoryCount(), r.advisoryCount()), r.checked, plural(r.checked))
 	tw := tabwriter.NewWriter(&b, 0, 0, 2, ' ', 0)
 	for _, f := range r.findings {
 		label, detail := f.cat.label(), f.detail
@@ -511,13 +562,35 @@ func (r *report) renderHuman(w io.Writer, fix bool) error {
 	return err
 }
 
+// foundClause words the headline's count: problems, advisory notes, or both. The
+// two are kept apart so an advisory-only report does not read as an unhealthy
+// store.
+func foundClause(problems, advisories int) string {
+	switch {
+	case advisories == 0:
+		return fmt.Sprintf("%d problem%s", problems, plural(problems))
+	case problems == 0:
+		return fmt.Sprintf("%d advisory note%s", advisories, plural(advisories))
+	default:
+		return fmt.Sprintf("%d problem%s and %d advisory note%s", problems, plural(problems), advisories, plural(advisories))
+	}
+}
+
+// advisoryOnlyLine closes a report whose only findings are advisory: nothing is
+// wrong, doctor just has something worth a look.
+const advisoryOnlyLine = "Advisory notes are informational and do not fail doctor; the store is otherwise healthy."
+
 // writeSummary writes the closing line: before --fix, an offer to repair the fixable
 // findings; after --fix, an accounting of what was repaired and what still needs a
-// human.
+// human. A report of only advisory notes closes by saying so, in both modes, rather
+// than talking about problems that are not there.
 func writeSummary(b *strings.Builder, r *report, fix bool) {
+	remaining := r.remaining()
 	if fix {
-		fixed, remaining := r.fixedCount(), r.remaining()
+		fixed := r.fixedCount()
 		switch {
+		case fixed == 0 && remaining == 0:
+			fmt.Fprintln(b, advisoryOnlyLine)
 		case fixed == 0:
 			fmt.Fprintf(b, "Nothing here could be fixed automatically; %d problem%s need%s a human.\n", remaining, plural(remaining), verbS(remaining))
 		case remaining == 0:
@@ -529,6 +602,10 @@ func writeSummary(b *strings.Builder, r *report, fix bool) {
 	}
 	if n := r.fixableCount(); n > 0 {
 		fmt.Fprintf(b, "%d of these can be fixed automatically — run `beaver doctor --fix`.\n", n)
+		return
+	}
+	if remaining == 0 {
+		fmt.Fprintln(b, advisoryOnlyLine)
 		return
 	}
 	fmt.Fprintln(b, "None of these can be fixed automatically; each needs a human.")
@@ -547,7 +624,8 @@ type reportView struct {
 
 // findingView is one finding in JSON. Every key is always present (file is null when
 // the finding spans files; ids is [] never null), so a consumer never special-cases
-// a missing key (ADR 0013).
+// a missing key (ADR 0013). advisory marks the informational classes a consumer may
+// filter out: an advisory finding never counts toward problems or flips ok.
 type findingView struct {
 	Category string   `json:"category"`
 	File     *string  `json:"file"`
@@ -555,6 +633,7 @@ type findingView struct {
 	Message  string   `json:"message"`
 	Fixable  bool     `json:"fixable"`
 	Fixed    bool     `json:"fixed"`
+	Advisory bool     `json:"advisory"`
 }
 
 func (r *report) renderJSON(w io.Writer) error {
@@ -567,6 +646,7 @@ func (r *report) renderJSON(w io.Writer) error {
 			Message:  f.detail,
 			Fixable:  f.fixable,
 			Fixed:    f.fixed,
+			Advisory: f.cat.advisory(),
 		}
 	}
 	return output.WriteJSON(w, reportView{
@@ -610,9 +690,10 @@ var knownFields = []string{"id", "title", "state", "assignee", "priority", "labe
 // is never data loss to keep it), but it silently did nothing, so doctor flags it as
 // a likely typo of `assignee` for a human to correct. It is deliberately narrow — a
 // distance of one or two, and only for keys long enough that the match is meaningful
-// — so a deliberate custom field like `sprint` or `estimate`, which is a first-class
-// supported feature and near no known field, is not flagged and never keeps a store
-// with custom fields perpetually unhealthy.
+// — so a deliberate custom field like `sprint` or `estimate`, near no known field,
+// is not flagged at all. Narrowness alone cannot clear every legitimate key, though
+// (`status` sits two edits from `state`), which is why the whole class is advisory
+// (category.advisory): flagged for a look, never a failed bill of health.
 func nearestField(key string) (string, bool) {
 	if len(key) < 3 {
 		return "", false
@@ -665,17 +746,6 @@ func levenshtein(a, b string) int {
 }
 
 // --- small helpers ---
-
-// sortedCustomKeys returns an issue's custom (unknown) frontmatter keys in sorted
-// order, so doctor examines and reports them deterministically.
-func sortedCustomKeys(m map[string]any) []string {
-	keys := make([]string, 0, len(m))
-	for k := range m {
-		keys = append(keys, k)
-	}
-	sort.Strings(keys)
-	return keys
-}
 
 func firstID(ids []string) string {
 	if len(ids) == 0 {

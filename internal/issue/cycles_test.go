@@ -108,3 +108,84 @@ func TestCyclesTailOffCycleNotIncluded(t *testing.T) {
 		t.Errorf("got %v, want %v", got, want)
 	}
 }
+
+// --- parent cycles ---
+
+// child builds an issue with a parent edge — enough to shape a hierarchy for the
+// parent-cycle tests.
+func child(id, parent string) Issue {
+	return Issue{ID: id, Title: id, State: StateTodo, Parent: parent}
+}
+
+func parentCyclesOf(issues ...Issue) [][]string {
+	return NewRelations(issues).ParentCycles()
+}
+
+func TestParentCyclesNoneInProperTrees(t *testing.T) {
+	// A rooted chain, a branching tree, a dangling parent (doctor's separate
+	// dangling-reference concern), and no parents at all: none loops.
+	cases := map[string][]Issue{
+		"empty":    nil,
+		"rootless": {child("aaaaaa", "")},
+		"chain":    {child("aaaaaa", "bbbbbb"), child("bbbbbb", "cccccc"), child("cccccc", "")},
+		"tree":     {child("aaaaaa", "cccccc"), child("bbbbbb", "cccccc"), child("cccccc", "")},
+		"dangling": {child("aaaaaa", "ghost0")},
+	}
+	for name, issues := range cases {
+		if got := parentCyclesOf(issues...); len(got) != 0 {
+			t.Errorf("%s: got parent cycles %v, want none", name, got)
+		}
+	}
+}
+
+func TestParentCyclesSelfParent(t *testing.T) {
+	// An issue naming itself as its own parent is a cycle of one — the degenerate
+	// hierarchy show would otherwise render as an issue among its own children.
+	got := parentCyclesOf(child("aaaaaa", "aaaaaa"))
+	want := [][]string{{"aaaaaa"}}
+	if !reflect.DeepEqual(got, want) {
+		t.Errorf("got %v, want %v", got, want)
+	}
+}
+
+func TestParentCyclesMutualPair(t *testing.T) {
+	got := parentCyclesOf(child("aaaaaa", "bbbbbb"), child("bbbbbb", "aaaaaa"))
+	want := [][]string{{"aaaaaa", "bbbbbb"}}
+	if !reflect.DeepEqual(got, want) {
+		t.Errorf("got %v, want %v", got, want)
+	}
+}
+
+func TestParentCyclesTailIntoLoopNotIncluded(t *testing.T) {
+	// c hangs off the a<->b loop: its chain drains into the cycle, but c itself is
+	// not part of it, and the cycle is reported exactly once however many chains
+	// lead in.
+	got := parentCyclesOf(
+		child("aaaaaa", "bbbbbb"),
+		child("bbbbbb", "aaaaaa"),
+		child("cccccc", "aaaaaa"),
+		child("dddddd", "cccccc"),
+	)
+	want := [][]string{{"aaaaaa", "bbbbbb"}}
+	if !reflect.DeepEqual(got, want) {
+		t.Errorf("got %v, want %v", got, want)
+	}
+}
+
+func TestParentCyclesMultipleDisjointDeterministic(t *testing.T) {
+	// Two independent loops are each reported, ordered by their smallest id, and the
+	// result is identical however the issues were indexed — the property doctor
+	// relies on for byte-stable output.
+	a := parentCyclesOf(
+		child("xxxxxx", "yyyyyy"), child("yyyyyy", "xxxxxx"),
+		child("aaaaaa", "bbbbbb"), child("bbbbbb", "aaaaaa"),
+	)
+	b := parentCyclesOf(
+		child("bbbbbb", "aaaaaa"), child("aaaaaa", "bbbbbb"),
+		child("yyyyyy", "xxxxxx"), child("xxxxxx", "yyyyyy"),
+	)
+	want := [][]string{{"aaaaaa", "bbbbbb"}, {"xxxxxx", "yyyyyy"}}
+	if !reflect.DeepEqual(a, want) || !reflect.DeepEqual(b, want) {
+		t.Errorf("got %v and %v, want both %v", a, b, want)
+	}
+}

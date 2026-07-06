@@ -50,6 +50,38 @@ func TestListWarnsAndSkipsInvalidFiles(t *testing.T) {
 	}
 }
 
+// A custom frontmatter value YAML admits but JSON refuses — the non-finite floats
+// .nan and ±.inf — must not break the JSON paths: the issue is valid (ADR 0014
+// preserves custom values, ADR 0005 keeps validation narrow), so `list` still
+// serves the whole store and a mutating verb still reports the success it had.
+// Before sanitization, one such value failed every JSON write: list died for the
+// entire store, and `done` applied its transition and then exited 1.
+func TestNonFiniteCustomValueDoesNotBreakJSON(t *testing.T) {
+	h := beavertest.New(t).Init()
+	seed(t, h, "good11", "Innocent bystander", issue.StateTodo, beavertest.DefaultNow)
+	h.WriteFile("issues/nan001-odd-weight.md",
+		"---\nid: nan001\ntitle: Odd Weight\nstate: todo\nweight: .nan\n"+stamps+"---\n")
+
+	r := h.Run("list", "--state", "all")
+	if r.Code != 0 {
+		t.Fatalf("list exit = %d, want 0 despite a NaN custom value\nstderr: %s", r.Code, r.Stderr)
+	}
+	if got := ids(decodeArray(t, r.Stdout)); !slices.Equal(got, []string{"good11", "nan001"}) {
+		t.Errorf("listed %v, want both issues", got)
+	}
+	if !strings.Contains(r.Stdout, `"weight": "NaN"`) {
+		t.Errorf("the non-finite value should render as its name:\n%s", r.Stdout)
+	}
+
+	done := h.Run("done", "nan001")
+	if done.Code != 0 {
+		t.Fatalf("done exit = %d, want 0: the write succeeded and the report must too\nstderr: %s", done.Code, done.Stderr)
+	}
+	if out := h.DecodeJSON(done.Stdout); out["state"] != "done" {
+		t.Errorf("done result state = %v, want done", out["state"])
+	}
+}
+
 // The warning lands on stderr, never stdout, so it cannot corrupt the JSON an
 // agent parses (ADR 0013): stdout is still a clean, parseable array.
 func TestInvalidFileWarningStaysOffStdout(t *testing.T) {

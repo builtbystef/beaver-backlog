@@ -134,7 +134,7 @@ func cmdDelete(env Env, args []string) int {
 		}
 		return exitOK
 	}
-	fmt.Fprintf(env.Stdout, "Deleted %s  %s\n  removed %s\n", iss.ID, flattenLine(iss.Title), relPath(env.WorkDir, path))
+	fmt.Fprintf(env.Stdout, "Deleted %s  %s\n  removed %s\n", iss.ID, output.OneLine(iss.Title), relPath(env.WorkDir, path))
 	return exitOK
 }
 
@@ -180,6 +180,16 @@ func authorInEditor(env Env, st *store.Store, seed issue.Issue) (issue.Issue, st
 	edited, err := st.Read(skeleton)
 	if err != nil {
 		errf(env, "issue is not valid after editing: %v", err)
+		return issue.Issue{}, "", exitError
+	}
+	// The id is machine-owned frontmatter (ADR 0014): create minted it, and the
+	// canonicalizing write below trusts it to name the file. An id rewritten in the
+	// editor is refused — were it another issue's id, the write would land on that
+	// issue's canonical name and silently replace it, the one data loss no Busy
+	// Beaver write is ever allowed to commit. The authoring is stashed as a draft
+	// like any other failed result.
+	if edited.ID != seed.ID {
+		errf(env, "create minted the id %s; it cannot be changed in the editor (the file now says %s)", seed.ID, edited.ID)
 		return issue.Issue{}, "", exitError
 	}
 	if strings.TrimSpace(edited.Title) == "" {

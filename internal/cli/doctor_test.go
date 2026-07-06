@@ -52,6 +52,9 @@ func TestDoctorDetectsEachProblemClass(t *testing.T) {
 	// A dependency cycle: two issues each waiting on the other.
 	seedDep(t, h, "cyc0aa", "Cycle A", issue.StateTodo, []string{"cyc0bb"}, "")
 	seedDep(t, h, "cyc0bb", "Cycle B", issue.StateTodo, []string{"cyc0aa"}, "")
+	// A parent cycle: two issues each claiming the other as parent.
+	seedDep(t, h, "pcy0aa", "Parent Cycle A", issue.StateTodo, nil, "pcy0bb")
+	seedDep(t, h, "pcy0bb", "Parent Cycle B", issue.StateTodo, nil, "pcy0aa")
 	// Stuck on a cancelled dependency: an open issue whose dependency can never be met.
 	seedDep(t, h, "cnl001", "Cancelled Dep", issue.StateCancelled, nil, "")
 	seedDep(t, h, "stk001", "Stuck Issue", issue.StateTodo, []string{"cnl001"}, "")
@@ -73,6 +76,7 @@ func TestDoctorDetectsEachProblemClass(t *testing.T) {
 		"unknown_key",
 		"dangling_reference",
 		"dependency_cycle",
+		"parent_cycle",
 		"stuck",
 		"duplicate_id",
 	} {
@@ -138,14 +142,15 @@ func TestDoctorFixLeavesValidationErrors(t *testing.T) {
 
 // AC / ADR 0014: --fix never removes an unknown frontmatter key — removal is data
 // loss, not tidying. The typo'd key is reported (never fixed) and remains in the file
-// after --fix, and the run exits non-zero because the problem still stands.
+// after --fix. The finding is advisory: resemblance to a known field is only ever a
+// guess, so it does not fail the run.
 func TestDoctorFixNeverRemovesUnknownKey(t *testing.T) {
 	h := beavertest.New(t).Init()
 	seedCustom(t, h, "unkey1", "Typo Key", map[string]any{"assigne": "bob"})
 
 	rep, r := doctorJSON(t, h, "--fix")
-	if r.Code == 0 {
-		t.Fatalf("doctor --fix exit = 0, want non-zero: an unknown key is not auto-fixable")
+	if r.Code != 0 {
+		t.Fatalf("doctor --fix exit = %d, want 0: an unknown key is advisory, not a problem\nstdout: %s", r.Code, r.Stdout)
 	}
 	key := findingWhere(t, rep, "unknown_key")
 	if key["fixable"] != false || key["fixed"] != false {
@@ -153,6 +158,57 @@ func TestDoctorFixNeverRemovesUnknownKey(t *testing.T) {
 	}
 	if body := h.ReadFile("issues/" + issue.FileName("unkey1", issue.Slug("Typo Key"))); !strings.Contains(body, "assigne") {
 		t.Errorf("--fix removed the unknown key; file:\n%s", body)
+	}
+}
+
+// A likely-typo'd key is worth a human's eye but is only ever a guess — a deliberate
+// custom key like `status` sits within typo distance of `state` — so the unknown-key
+// class is advisory: reported (with the advisory flag in JSON, and worded as a note
+// in the human report) while the store still counts as healthy (ok, exit 0, zero
+// problems). A first-class custom field must never fail doctor forever (ADR 0014).
+func TestDoctorUnknownKeyIsAdvisory(t *testing.T) {
+	h := beavertest.New(t).Init()
+	seedCustom(t, h, "note01", "Deliberate Custom Key", map[string]any{"status": "shipping"})
+
+	rep, r := doctorJSON(t, h)
+	if r.Code != 0 {
+		t.Fatalf("doctor exit = %d, want 0: an advisory note is not a problem\nstdout: %s", r.Code, r.Stdout)
+	}
+	if rep["ok"] != true || rep["problems"] != float64(0) {
+		t.Errorf("ok=%v problems=%v, want true and 0", rep["ok"], rep["problems"])
+	}
+	key := findingWhere(t, rep, "unknown_key")
+	if key["advisory"] != true {
+		t.Errorf("unknown key advisory = %v, want true", key["advisory"])
+	}
+	if msg, _ := key["message"].(string); !strings.Contains(msg, "status") {
+		t.Errorf("message should name the suspect key: %q", msg)
+	}
+
+	human := h.MustRun("doctor", "--format", "human")
+	if !strings.Contains(human.Stdout, "1 advisory note") || strings.Contains(human.Stdout, "problem") {
+		t.Errorf("human output should headline an advisory note and no problems:\n%s", human.Stdout)
+	}
+}
+
+// A genuine problem and an advisory note coexist without muddying each other: the
+// problem alone drives the exit code and counts, while the note stays visible in the
+// findings and the headline names both.
+func TestDoctorAdvisoryDoesNotMaskProblems(t *testing.T) {
+	h := beavertest.New(t).Init()
+	h.WriteFile("issues/bad-state.md", "---\nid: bad222\ntitle: Bad\nstate: archived\n"+stamps+"---\n")
+	seedCustom(t, h, "note01", "Custom Key", map[string]any{"status": "shipping"})
+
+	rep, r := doctorJSON(t, h)
+	if r.Code == 0 {
+		t.Fatalf("doctor exit = 0, want non-zero: a real problem remains")
+	}
+	if rep["ok"] != false || rep["problems"] != float64(1) {
+		t.Errorf("ok=%v problems=%v, want false and 1 (the advisory note not counted)", rep["ok"], rep["problems"])
+	}
+	human := h.Run("doctor", "--format", "human")
+	if !strings.Contains(human.Stdout, "1 problem and 1 advisory note") {
+		t.Errorf("human headline should count them apart:\n%s", human.Stdout)
 	}
 }
 
@@ -240,6 +296,27 @@ func TestDoctorAllowsDeliberateCustomFields(t *testing.T) {
 	}
 	if got := findingCategories(t, rep); len(got) != 0 {
 		t.Errorf("deliberate custom fields were flagged: %v", got)
+	}
+}
+
+// A parent chain that loops back on itself has no root, so no hierarchy could ever
+// render it — the degenerate case being an issue that names itself as its own
+// parent, which show would list among its own children. Doctor reports it (never
+// fixes it: which edge to drop is a human's call), like a dependency cycle.
+func TestDoctorFlagsParentCycles(t *testing.T) {
+	h := beavertest.New(t).Init()
+	seedDep(t, h, "self01", "Own Parent", issue.StateTodo, nil, "self01")
+
+	rep, r := doctorJSON(t, h)
+	if r.Code == 0 {
+		t.Fatalf("doctor exit = 0, want non-zero for a parent cycle")
+	}
+	f := findingWhere(t, rep, "parent_cycle")
+	if f["fixable"] != false {
+		t.Errorf("parent cycle fixable = %v, want false", f["fixable"])
+	}
+	if msg, _ := f["message"].(string); !strings.Contains(msg, "self01") || !strings.Contains(msg, "own parent") {
+		t.Errorf("message should call out the self-parent: %q", msg)
 	}
 }
 

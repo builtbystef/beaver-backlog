@@ -217,7 +217,19 @@ func cmdStart(env Env, args []string) int {
 	if err != nil {
 		return storeError(env, err)
 	}
-	iss, path, code := resolveRef(env, st, pos[0])
+
+	// One snapshot answers everything start asks of the store: the reference, the
+	// advisory not-ready warning, and the JSON readiness view — one scan, not one
+	// per question (the same pattern show and create use). Starting an issue changes
+	// only its own state, never any dependency's, so the pre-write snapshot also
+	// serves the post-start view: For is handed the updated issue, so its readiness
+	// flags reflect the new state.
+	snap, err := st.Snapshot()
+	if err != nil {
+		errf(env, "%v", err)
+		return exitError
+	}
+	iss, path, code := resolveRef(env, snap, pos[0])
 	if code != exitOK {
 		return code
 	}
@@ -244,27 +256,13 @@ func cmdStart(env Env, args []string) int {
 		return exitUsage
 	}
 
-	// Snapshot the dependency graph once, if this run needs it: for the advisory
-	// warning below (a todo with edges to check) or for the JSON readiness signal
-	// (every JSON start carries it). Starting an issue changes only its own state,
-	// never any dependency's, so this single snapshot serves both the pre-start
-	// warning and the post-start view — For is handed the updated issue, so its
-	// readiness flags reflect the new state.
-	var rel *issue.Relations
-	if format == output.JSON || (iss.State == issue.StateTodo && len(iss.DependsOn) > 0) {
-		all, err := st.ReadAll()
-		if err != nil {
-			errf(env, "%v", err)
-			return exitError
-		}
-		rel = issue.NewRelations(all)
-	}
+	rel := issue.NewRelations(snap.Issues())
 
 	// Advisory dependency warning: only when actually moving a todo to in-progress
 	// (the moment work begins). It names the unmet dependencies and is non-fatal —
 	// start never refuses on this basis (ADR 0011). This is the human-facing half of
 	// the signal; the same facts reach an agent through the JSON relationships below.
-	if iss.State == issue.StateTodo && len(iss.DependsOn) > 0 {
+	if iss.State == issue.StateTodo {
 		if blockers := rel.BlockedOn(iss); len(blockers) > 0 {
 			errf(env, "warning: %s is not ready: waiting on %s. Starting anyway.", iss.ID, formatBlockers(blockers))
 		}
@@ -294,8 +292,7 @@ func cmdStart(env Env, args []string) int {
 	// Human output is the concise confirmation line (the warning already spoke).
 	// JSON additionally carries the derived readiness view — the same issue+
 	// relationships shape show emits — so an agent sees, in the start result itself,
-	// whether the work it just began was blocked and on exactly what. rel is non-nil
-	// here because a JSON format always took the snapshot above.
+	// whether the work it just began was blocked and on exactly what.
 	if format == output.Human {
 		fmt.Fprintln(env.Stdout, humanLine)
 		return exitOK

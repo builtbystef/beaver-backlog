@@ -98,3 +98,68 @@ func (r *Relations) Cycles() [][]string {
 	sort.Slice(cycles, func(i, j int) bool { return cycles[i][0] < cycles[j][0] })
 	return cycles
 }
+
+// ParentCycles returns the parent-edge cycles in the indexed set: each is the
+// sorted ids of a group of issues whose parent chain loops back on itself — a
+// hierarchy that has no root, so no tree view could ever render it — including the
+// degenerate issue that names itself as its own parent (a cycle of one, which
+// show would otherwise happily list among its own children). Like Cycles, only
+// edges to issues in the set count — a parent naming an absent id is a dangling
+// reference, doctor's separate concern — and the result is deterministic: members
+// sorted within each cycle, cycles ordered by their smallest id.
+//
+// parent is a single edge per issue, so the parent graph is a functional graph:
+// every walk up a parent chain either dead-ends or closes exactly one loop, which
+// keeps detection a plain chain-walk rather than a full SCC pass.
+func (r *Relations) ParentCycles() [][]string {
+	ids := make([]string, 0, len(r.byID))
+	for id := range r.byID {
+		ids = append(ids, id)
+	}
+	sort.Strings(ids)
+
+	const (
+		unvisited = iota
+		walking   // on the chain currently being followed
+		settled   // fully processed: cycle-free, or its cycle already recorded
+	)
+	state := make(map[string]int, len(ids))
+	var cycles [][]string
+	for _, start := range ids {
+		if state[start] != unvisited {
+			continue
+		}
+		// Follow the parent chain from start. Meeting the current chain again closes
+		// a new cycle (the part of the path from that point on); meeting settled
+		// ground means the chain drains into territory already accounted for.
+		var path []string
+		for cur := start; ; {
+			if state[cur] == walking {
+				for i, p := range path {
+					if p == cur {
+						cycle := append([]string(nil), path[i:]...)
+						sort.Strings(cycle)
+						cycles = append(cycles, cycle)
+						break
+					}
+				}
+				break
+			}
+			if state[cur] == settled {
+				break
+			}
+			state[cur] = walking
+			path = append(path, cur)
+			parent := r.byID[cur].Parent
+			if _, present := r.byID[parent]; !present {
+				break
+			}
+			cur = parent
+		}
+		for _, p := range path {
+			state[p] = settled
+		}
+	}
+	sort.Slice(cycles, func(i, j int) bool { return cycles[i][0] < cycles[j][0] })
+	return cycles
+}

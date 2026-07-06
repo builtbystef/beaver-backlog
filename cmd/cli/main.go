@@ -1,7 +1,6 @@
 package main
 
 import (
-	"errors"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -35,22 +34,23 @@ func main() {
 }
 
 // editor returns the function the CLI uses to open a file in the user's editor for
-// edit and interactive create. It resolves $VISUAL then $EDITOR at call time and
-// splits the value into a command and arguments, so a multi-word setting like
-// "code --wait" works, then runs it with the file appended and its standard
-// streams wired to the real terminal, blocking until the editor exits. With
-// neither variable set it returns a clear error rather than guessing an editor, so
-// the caller can tell the user how to configure one.
+// edit and interactive create, or nil when neither $VISUAL nor $EDITOR names one —
+// the "no editor" state the CLI's editorGate refuses cleanly, up front, before any
+// file is written (rather than an "editor failed" error after the fact). The
+// setting is resolved once at startup and split into a command and arguments, so a
+// multi-word value like "code --wait" works; the command runs with the file
+// appended and its standard streams wired to the real terminal, blocking until the
+// editor exits.
 func editor(getenv func(string) string) func(string) error {
+	spec := strings.TrimSpace(getenv("VISUAL"))
+	if spec == "" {
+		spec = strings.TrimSpace(getenv("EDITOR"))
+	}
+	fields := strings.Fields(spec)
+	if len(fields) == 0 {
+		return nil
+	}
 	return func(path string) error {
-		spec := strings.TrimSpace(getenv("VISUAL"))
-		if spec == "" {
-			spec = strings.TrimSpace(getenv("EDITOR"))
-		}
-		fields := strings.Fields(spec)
-		if len(fields) == 0 {
-			return errors.New("no editor configured; set $EDITOR or $VISUAL")
-		}
 		cmd := exec.Command(fields[0], append(fields[1:], path)...)
 		cmd.Stdin, cmd.Stdout, cmd.Stderr = os.Stdin, os.Stdout, os.Stderr
 		return cmd.Run()

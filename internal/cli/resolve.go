@@ -3,9 +3,9 @@ package cli
 import (
 	"errors"
 	"fmt"
-	"strings"
 
 	"beaver/internal/issue"
+	"beaver/internal/output"
 	"beaver/internal/store"
 )
 
@@ -79,12 +79,8 @@ func resolveEdges(env Env, st resolver, refs []string) (ids []string, code int) 
 func reportSharedSlug(env Env, e *store.SharedSlugError) {
 	errf(env, "%q is the slug of %d issues; use a full ID:", e.Slug, len(e.Matches))
 	for _, iss := range e.Matches {
-		fmt.Fprintf(env.Stderr, "  %s  %s\n", iss.ID, flattenLine(iss.Title))
+		// OneLine keeps a hand-edited multi-line title from breaking the
+		// one-line-per-candidate listing.
+		fmt.Fprintf(env.Stderr, "  %s  %s\n", iss.ID, output.OneLine(iss.Title))
 	}
-}
-
-// flattenLine collapses any newlines or tabs in s to single spaces so a
-// hand-edited multi-line title cannot break the one-line-per-candidate listing.
-func flattenLine(s string) string {
-	return strings.NewReplacer("\r\n", " ", "\n", " ", "\r", " ", "\t", " ").Replace(s)
 }

@@ -7,7 +7,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"sort"
+	"math"
 	"strings"
 	"text/tabwriter"
 	"time"
@@ -74,6 +74,20 @@ func WriteIssueWithRelationship(w io.Writer, iss issue.Issue, rel issue.Relation
 	return err
 }
 
+// WriteIssueWithCommit renders one issue together with the completion commit the
+// command may have recorded (ADR 0007) — done's shape. In JSON it is an additive
+// "commit" object beside the same issue fields, null when no commit was made (the
+// opt-in off, no adapter, a failed commit, or an idempotent no-op), so every done
+// emits one constant shape and an agent scripting around commit_on_done reads the
+// revision from the result instead of asking the VCS. Human output stays the plain
+// issue: the confirmation line already reports the revision.
+func WriteIssueWithCommit(w io.Writer, iss issue.Issue, revision string, f Format) error {
+	if f == JSON {
+		return WriteJSON(w, issueWithCommit{jsonView: toJSONView(iss), Commit: toCommitView(revision)})
+	}
+	return writeHuman(w, iss)
+}
+
 // WriteList renders a collection of issues in the given format, preserving the
 // order the caller supplies. JSON is an array of the same per-issue objects
 // WriteIssue emits — every field present, unset ones normalized to null/empty —
@@ -108,8 +122,8 @@ func writeTable(w io.Writer, issues []issue.Issue) error {
 			orDash(string(iss.Priority)),
 			iss.State,
 			orDash(iss.Assignee),
-			orDash(oneLine(strings.Join(iss.Labels, ", "))),
-			oneLine(iss.Title))
+			orDash(OneLine(strings.Join(iss.Labels, ", "))),
+			OneLine(iss.Title))
 	}
 	return tw.Flush()
 }
@@ -123,10 +137,11 @@ func orDash(s string) string {
 	return s
 }
 
-// oneLine flattens a value to a single line for a table cell, so a newline or tab
-// spliced into a title by a hand-edit or merge cannot break the column grid (a tab
-// is what tabwriter uses to delimit columns).
-func oneLine(s string) string {
+// OneLine flattens a value to a single line, so a newline or tab spliced into a
+// title by a hand-edit or merge cannot break a one-line-per-item layout — here the
+// table's column grid (a tab is what tabwriter uses to delimit columns), and in the
+// CLI's own listings (a shared-slug candidate list, a delete confirmation).
+func OneLine(s string) string {
 	return strings.NewReplacer("\r\n", " ", "\n", " ", "\r", " ", "\t", " ").Replace(s)
 }
 
@@ -188,7 +203,61 @@ func toJSONView(iss issue.Issue) jsonView {
 		Updated:   optString(formatTime(iss.Updated)),
 		Body:      iss.Body,
 		Notes:     toNoteViews(issue.ParseNotes(iss.Body)),
-		Custom:    orEmptyMap(iss.Custom),
+		Custom:    sanitizeCustom(iss.Custom),
+	}
+}
+
+// sanitizeCustom projects a preserved custom map into a JSON-encodable copy. YAML
+// admits values encoding/json refuses — the non-finite floats `.nan` and `±.inf` —
+// and one such value in one issue would otherwise fail the whole JSON write,
+// taking an entire `list` down with it and making a mutating verb report failure
+// after its write succeeded (the ADR 0005 failure mode, one layer up). Non-finite
+// floats render as their conventional names ("NaN", "Infinity", "-Infinity");
+// everything else passes through untouched, recursing into sequences and maps.
+// The result is always non-nil, per the no-missing-keys contract (ADR 0013).
+func sanitizeCustom(m map[string]any) map[string]any {
+	out := make(map[string]any, len(m))
+	for k, v := range m {
+		out[k] = jsonSafe(v)
+	}
+	return out
+}
+
+func jsonSafe(v any) any {
+	switch t := v.(type) {
+	case float64:
+		return finiteOrName(t)
+	case float32:
+		return finiteOrName(float64(t))
+	case []any:
+		out := make([]any, len(t))
+		for i, e := range t {
+			out[i] = jsonSafe(e)
+		}
+		return out
+	case map[string]any:
+		out := make(map[string]any, len(t))
+		for k, e := range t {
+			out[k] = jsonSafe(e)
+		}
+		return out
+	default:
+		return v
+	}
+}
+
+// finiteOrName passes a finite float through and names a non-finite one the way
+// JavaScript and Python spell them, so the value stays recognizably itself.
+func finiteOrName(f float64) any {
+	switch {
+	case math.IsNaN(f):
+		return "NaN"
+	case math.IsInf(f, 1):
+		return "Infinity"
+	case math.IsInf(f, -1):
+		return "-Infinity"
+	default:
+		return f
 	}
 }
 
@@ -201,6 +270,28 @@ func toNoteViews(notes []issue.Note) []noteView {
 		views[i] = noteView{Author: n.Author, Time: formatTime(n.Time), Text: n.Text}
 	}
 	return views
+}
+
+// issueWithCommit is done's JSON shape: every field of the base jsonView, plus an
+// additive "commit" key that is the completion commit when one was recorded and
+// null otherwise — always present, so a consumer never special-cases a missing key
+// (ADR 0013).
+type issueWithCommit struct {
+	jsonView
+	Commit *commitView `json:"commit"`
+}
+
+// commitView is the completion commit in JSON: today just the short revision the
+// VCS adapter reported (ADR 0007).
+type commitView struct {
+	Revision string `json:"revision"`
+}
+
+func toCommitView(revision string) *commitView {
+	if revision == "" {
+		return nil
+	}
+	return &commitView{Revision: revision}
 }
 
 // issueWithRel is show's JSON shape: every field of the base jsonView, plus an
@@ -292,7 +383,7 @@ func writeHumanHead(b *strings.Builder, iss issue.Issue) {
 	if !iss.Updated.IsZero() {
 		field(b, "updated", formatTime(iss.Updated))
 	}
-	for _, key := range sortedKeys(iss.Custom) {
+	for _, key := range issue.CustomKeys(iss.Custom) {
 		field(b, key, formatCustomValue(iss.Custom[key]))
 	}
 }
@@ -376,24 +467,6 @@ func orEmpty(xs []string) []string {
 		return []string{}
 	}
 	return xs
-}
-
-func orEmptyMap(m map[string]any) map[string]any {
-	if m == nil {
-		return map[string]any{}
-	}
-	return m
-}
-
-// sortedKeys returns m's keys in a stable order so the human rendering of custom
-// fields is deterministic, matching the sorted order the YAML encoder writes.
-func sortedKeys(m map[string]any) []string {
-	keys := make([]string, 0, len(m))
-	for k := range m {
-		keys = append(keys, k)
-	}
-	sort.Strings(keys)
-	return keys
 }
 
 // formatCustomValue renders a preserved custom value for the human view: scalars

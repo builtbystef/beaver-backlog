@@ -137,6 +137,48 @@ func TestRedundantDoneDoesNotCommit(t *testing.T) {
 	}
 }
 
+// AC / ADR 0013: the recorded revision reaches the machine consumer too. done's
+// JSON carries an always-present "commit" key: the commit object (with its short
+// revision) when one was recorded, and null whenever none was — the opt-in off,
+// or a redundant no-op done — so an agent scripting around commit_on_done reads
+// the revision from the result instead of asking the VCS, and never special-cases
+// a missing key.
+func TestDoneJSONCarriesCommit(t *testing.T) {
+	h := beavertest.New(t).Init()
+	enableCommitOnDone(h)
+	h.VCS = &vcs.Fake{Rev: "abc1234"}
+	seed(t, h, "cmt001", "Wire the widget", issue.StateTodo, beavertest.DefaultNow)
+
+	out := h.DecodeJSON(h.MustRun("done", "cmt001").Stdout)
+	commit, ok := out["commit"].(map[string]any)
+	if !ok {
+		t.Fatalf("done JSON commit = %v, want an object with the revision", out["commit"])
+	}
+	if commit["revision"] != "abc1234" {
+		t.Errorf("commit revision = %v, want abc1234", commit["revision"])
+	}
+
+	// A redundant done writes nothing and commits nothing, but the key is still
+	// there — null — so the shape is constant.
+	redundant := h.DecodeJSON(h.MustRun("done", "cmt001").Stdout)
+	if v, present := redundant["commit"]; !present || v != nil {
+		t.Errorf("redundant done commit = %v (present=%v), want null", v, present)
+	}
+}
+
+// With the opt-in off (the default), done's JSON still carries the commit key —
+// null — so a consumer sees one shape regardless of project settings.
+func TestDoneJSONCommitNullByDefault(t *testing.T) {
+	h := beavertest.New(t).Init() // commit_on_done unset
+	h.VCS = &vcs.Fake{}
+	seed(t, h, "def001", "No commit please", issue.StateTodo, beavertest.DefaultNow)
+
+	out := h.DecodeJSON(h.MustRun("done", "def001").Stdout)
+	if v, present := out["commit"]; !present || v != nil {
+		t.Errorf("done commit = %v (present=%v), want null when nothing was committed", v, present)
+	}
+}
+
 // enableCommitOnDone turns the project-level opt-in on by writing the committed
 // project config the store reads.
 func enableCommitOnDone(h *beavertest.Harness) {

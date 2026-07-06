@@ -14,6 +14,7 @@ package userconfig
 
 import (
 	"errors"
+	"maps"
 	"os"
 	"path/filepath"
 
@@ -62,9 +63,12 @@ func Load(dir string) (Config, error) {
 	return c, nil
 }
 
-// Save writes c to dir, creating the directory if needed. The file is small and
-// rewritten only on an interactive identity change, so a plain write (not the
-// store's atomic temp-and-rename) is sufficient.
+// Save writes c to dir, creating the directory if needed. The file's own header
+// declares it safe to hand-edit, so Save honors that: keys a hand-edit added are
+// read back and carried through the rewrite rather than dropped, with c's fields
+// laid over them (hand-written comments beyond the standard header are not
+// preserved). The file is small and rewritten only on an interactive identity
+// change, so a plain write (not the store's atomic temp-and-rename) is sufficient.
 func Save(dir string, c Config) error {
 	if dir == "" {
 		return errors.New("no user config directory available; set one to save an identity")
@@ -72,9 +76,38 @@ func Save(dir string, c Config) error {
 	if err := os.MkdirAll(dir, 0o755); err != nil {
 		return err
 	}
-	body, err := yaml.Marshal(c)
+	merged, err := mergeExisting(Path(dir), c)
+	if err != nil {
+		return err
+	}
+	body, err := yaml.Marshal(merged)
 	if err != nil {
 		return err
 	}
 	return os.WriteFile(Path(dir), append([]byte(header), body...), 0o644)
+}
+
+// mergeExisting lays c's own fields over whatever keys the file at path already
+// holds, so a rewrite preserves what a hand-edit added. The overlay goes through
+// YAML so any future Config field folds in without this function knowing it. A
+// missing file — or one that does not parse as a mapping — contributes nothing:
+// saving an identity must not fail on a corrupt personal config, it just rewrites
+// from c alone.
+func mergeExisting(path string, c Config) (map[string]any, error) {
+	existing := map[string]any{}
+	if data, err := os.ReadFile(path); err == nil {
+		if yaml.Unmarshal(data, &existing) != nil || existing == nil {
+			existing = map[string]any{}
+		}
+	}
+	overlay, err := yaml.Marshal(c)
+	if err != nil {
+		return nil, err
+	}
+	var own map[string]any
+	if err := yaml.Unmarshal(overlay, &own); err != nil {
+		return nil, err
+	}
+	maps.Copy(existing, own)
+	return existing, nil
 }

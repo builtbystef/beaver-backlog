@@ -46,6 +46,52 @@ func TestEmptyDirLoadsEmptySaveErrors(t *testing.T) {
 	}
 }
 
+// The file's header declares it safe to hand-edit, so a rewrite must honor that:
+// keys a hand-edit added survive a later Save (here, re-establishing the identity)
+// instead of being dropped by a rewrite from the struct alone.
+func TestSavePreservesHandAddedKeys(t *testing.T) {
+	dir := t.TempDir()
+	handEdited := "actor: old-name\nfavorite_color: green\n"
+	if err := os.WriteFile(userconfig.Path(dir), []byte(handEdited), 0o644); err != nil {
+		t.Fatalf("seed hand-edited config: %v", err)
+	}
+
+	if err := userconfig.Save(dir, userconfig.Config{Actor: "new-name"}); err != nil {
+		t.Fatalf("Save: %v", err)
+	}
+
+	got, err := userconfig.Load(dir)
+	if err != nil {
+		t.Fatalf("Load: %v", err)
+	}
+	if got.Actor != "new-name" {
+		t.Errorf("actor = %q, want the newly saved new-name", got.Actor)
+	}
+	data, err := os.ReadFile(userconfig.Path(dir))
+	if err != nil {
+		t.Fatalf("read saved file: %v", err)
+	}
+	if !strings.Contains(string(data), "favorite_color: green") {
+		t.Errorf("hand-added key was dropped by Save:\n%s", data)
+	}
+}
+
+// A corrupt existing file must not block saving an identity: Save rewrites from
+// the given config alone rather than failing.
+func TestSaveToleratesCorruptExistingFile(t *testing.T) {
+	dir := t.TempDir()
+	if err := os.WriteFile(userconfig.Path(dir), []byte(":\tnot yaml ["), 0o644); err != nil {
+		t.Fatalf("seed corrupt config: %v", err)
+	}
+	if err := userconfig.Save(dir, userconfig.Config{Actor: "stefan"}); err != nil {
+		t.Fatalf("Save over a corrupt file: %v", err)
+	}
+	got, err := userconfig.Load(dir)
+	if err != nil || got.Actor != "stefan" {
+		t.Errorf("Load = %+v, %v; want actor stefan and no error", got, err)
+	}
+}
+
 // The saved file carries a human-readable header and is never committed to a repo,
 // so it should be plainly recognizable on disk.
 func TestSavedFileIsAnnotated(t *testing.T) {

@@ -2,6 +2,7 @@ package output_test
 
 import (
 	"bytes"
+	"math"
 	"strings"
 	"testing"
 	"time"
@@ -115,5 +116,32 @@ func TestWriteIssueRendersCustomFields(t *testing.T) {
 	}
 	if !strings.Contains(jsn.String(), `"sprint": 7`) {
 		t.Errorf("JSON output missing custom sprint in:\n%s", jsn.String())
+	}
+}
+
+// YAML admits the non-finite floats (.nan, ±.inf) that encoding/json refuses, and
+// a preserved custom value is the one path they can reach a JSON write through.
+// The write must not fail on them — one odd value in one issue would take a whole
+// `list` down (the ADR 0005 failure mode, one layer up) — so they render as their
+// conventional names, wherever they nest.
+func TestWriteIssueJSONSurvivesNonFiniteCustomValues(t *testing.T) {
+	iss := issue.Issue{
+		ID: "m3k8", Title: "Title", State: issue.StateTodo,
+		Custom: map[string]any{
+			"weight": math.NaN(),
+			"bounds": []any{math.Inf(1), 1.5},
+			"nested": map[string]any{"low": math.Inf(-1)},
+		},
+	}
+
+	var buf bytes.Buffer
+	if err := output.WriteIssue(&buf, iss, output.JSON); err != nil {
+		t.Fatalf("WriteIssue with non-finite custom values: %v", err)
+	}
+	s := buf.String()
+	for _, want := range []string{`"weight": "NaN"`, `"Infinity"`, `"low": "-Infinity"`, `1.5`} {
+		if !strings.Contains(s, want) {
+			t.Errorf("JSON missing %s in:\n%s", want, s)
+		}
 	}
 }

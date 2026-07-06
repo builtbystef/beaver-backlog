@@ -6,7 +6,10 @@
 // frontmatter is authoritative and the filename only mirrors it (ADR 0002).
 package issue
 
-import "time"
+import (
+	"sort"
+	"time"
+)
 
 // State is an issue's position in its lifecycle. The set is fixed at four values
 // (ADR 0004); "open" and "closed" are derived query views, never stored.
@@ -97,4 +100,16 @@ type Issue struct {
 	// maps); Busy Beaver preserves them but never interprets them. Nil when the file
 	// has no custom keys.
 	Custom map[string]any
+}
+
+// CustomKeys returns a Custom map's keys in sorted order — the one stable
+// iteration every consumer (the human rendering, doctor's key lint) uses, matching
+// the sorted order the YAML encoder writes the keys in.
+func CustomKeys(m map[string]any) []string {
+	keys := make([]string, 0, len(m))
+	for k := range m {
+		keys = append(keys, k)
+	}
+	sort.Strings(keys)
+	return keys
 }

@@ -118,6 +118,41 @@ func TestInteractiveCreateOpensEditor(t *testing.T) {
 	}
 }
 
+// The id is machine-owned frontmatter (ADR 0014): an interactive authoring that
+// rewrites it is refused, because the canonicalizing write trusts the id to name
+// the file — an id borrowed from an existing issue would land on that issue's
+// canonical name and silently replace it. The existing issue must survive
+// byte-for-byte, and the authoring is stashed as a draft, not discarded.
+func TestInteractiveCreateRefusesEditedID(t *testing.T) {
+	h := beavertest.New(t).Init()
+	h.IsTTY, h.StdinIsTTY = true, true
+	seed(t, h, "iss001", "Existing work", issue.StateTodo, beavertest.DefaultNow)
+	before := h.ReadFile("issues/iss001-existing-work.md")
+
+	h.NewID = func() string { return "fresh1" }
+	h.Editor = editWith(t, func(s string) string {
+		s = strings.Replace(s, "id: fresh1", "id: iss001", 1)
+		return setTitleLine(s, "Existing work") + "\nA hijacking body.\n"
+	})
+
+	r := h.Run("create")
+	if r.Code == 0 {
+		t.Fatal("create that rewrote the minted id should fail, got exit 0")
+	}
+	if !strings.Contains(r.Stderr, "fresh1") || !strings.Contains(r.Stderr, "iss001") {
+		t.Errorf("refusal should name the minted and the edited id:\n%s", r.Stderr)
+	}
+	if after := h.ReadFile("issues/iss001-existing-work.md"); after != before {
+		t.Errorf("the existing issue's file was clobbered:\nbefore:\n%s\nafter:\n%s", before, after)
+	}
+	if files := h.IssueFiles(); !slices.Equal(files, []string{"iss001-existing-work.md"}) {
+		t.Errorf("issue files = %v, want only the pre-existing issue", files)
+	}
+	if draft := h.ReadFile("drafts/fresh1.md"); !strings.Contains(draft, "A hijacking body.") {
+		t.Errorf("the typed-into authoring should be stashed as a draft:\n%s", draft)
+	}
+}
+
 // AC: a non-interactive `create` still requires a title. With no title and no
 // terminal to open an editor in, it is a plain usage error — and no editor is
 // spawned and no file is written.
