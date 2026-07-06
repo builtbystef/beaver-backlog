@@ -168,6 +168,61 @@ func TestPriorityRank(t *testing.T) {
 	}
 }
 
+// TestPriorityValid pins the value set doctor lints against: the four levels and
+// the unprioritized empty value are valid, anything a hand-edit invents is not.
+func TestPriorityValid(t *testing.T) {
+	for _, p := range []issue.Priority{issue.PriorityUrgent, issue.PriorityHigh, issue.PriorityMedium, issue.PriorityLow, ""} {
+		if !p.Valid() {
+			t.Errorf("Priority(%q).Valid() = false, want true", p)
+		}
+	}
+	for _, p := range []issue.Priority{"critical", "URGENT", "p1", "none"} {
+		if p.Valid() {
+			t.Errorf("Priority(%q).Valid() = true, want false", p)
+		}
+	}
+}
+
+// TestMarshalOmitsZeroTimestamps: a zero created/updated means the file carried no
+// timestamp, and it must stay absent on write — never serialized as the year-1
+// sentinel 0001-01-01T00:00:00Z — so a mutating command on a hand-authored,
+// timestamp-less issue does not bake a bogus date in.
+func TestMarshalOmitsZeroTimestamps(t *testing.T) {
+	data, err := issue.Marshal(issue.Issue{ID: "m3k8", Title: "Title", State: issue.StateTodo})
+	if err != nil {
+		t.Fatalf("Marshal: %v", err)
+	}
+	s := string(data)
+	for _, absent := range []string{"created", "updated", "0001-01-01"} {
+		if strings.Contains(s, absent) {
+			t.Errorf("zero timestamp leaked into the file as %q:\n%s", absent, s)
+		}
+	}
+
+	// And a file with no timestamps reads back as zero times, closing the loop.
+	iss, err := issue.Unmarshal(data)
+	if err != nil {
+		t.Fatalf("Unmarshal: %v", err)
+	}
+	if !iss.Created.IsZero() || !iss.Updated.IsZero() {
+		t.Errorf("timestamps = %v / %v, want both zero", iss.Created, iss.Updated)
+	}
+}
+
+// A hand-written timestamp with fractional seconds is still a valid RFC3339
+// instant, so it parses rather than invalidating the file.
+func TestUnmarshalAcceptsFractionalSeconds(t *testing.T) {
+	src := "---\nid: m3k8\ntitle: T\nstate: todo\ncreated: 2026-06-27T18:30:00.123Z\nupdated: 2026-06-27T18:30:00Z\n---\n"
+	iss, err := issue.Unmarshal([]byte(src))
+	if err != nil {
+		t.Fatalf("Unmarshal: %v", err)
+	}
+	want := time.Date(2026, 6, 27, 18, 30, 0, 123000000, time.UTC)
+	if !iss.Created.Equal(want) {
+		t.Errorf("created = %v, want %v", iss.Created, want)
+	}
+}
+
 // TestCustomFieldsSurviveRoundTrip is the core guarantee of ADR 0014: a
 // hand-added frontmatter key Busy Beaver knows nothing about is preserved through a
 // read-modify-write, not silently dropped. It lands in Custom on read, a command

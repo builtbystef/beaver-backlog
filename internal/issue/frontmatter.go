@@ -20,6 +20,11 @@ var (
 // frontmatter is the YAML projection of an Issue. Field order here is the
 // canonical on-disk order; optional fields carry omitempty so an unset field is
 // absent from the file entirely (it reappears as null/empty only in JSON output).
+// Created/Updated carry omitempty for a different reason: they are expected on
+// every issue Busy Beaver mints, but a hand-authored file may lack them, and a
+// zero time must stay absent on rewrite rather than serialize as the year-1
+// sentinel 0001-01-01T00:00:00Z (doctor flags the missing timestamp instead).
+// omitempty honors the IsZero method yamlTime promotes from time.Time.
 //
 // Custom is an inline catch-all: any frontmatter key with no matching field
 // above lands here on read and is written back on save, so user-added fields
@@ -34,8 +39,8 @@ type frontmatter struct {
 	Labels    []string       `yaml:"labels,omitempty"`
 	DependsOn []string       `yaml:"depends_on,omitempty"`
 	Parent    string         `yaml:"parent,omitempty"`
-	Created   yamlTime       `yaml:"created"`
-	Updated   yamlTime       `yaml:"updated"`
+	Created   yamlTime       `yaml:"created,omitempty"`
+	Updated   yamlTime       `yaml:"updated,omitempty"`
 	Custom    map[string]any `yaml:",inline"`
 }
 
@@ -175,10 +180,11 @@ func (t *yamlTime) UnmarshalYAML(node *yaml.Node) error {
 }
 
 func parseTime(s string) (time.Time, error) {
-	for _, layout := range []string{time.RFC3339, time.RFC3339Nano} {
-		if t, err := time.Parse(layout, s); err == nil {
-			return t.UTC(), nil
-		}
+	// The RFC3339 layout already accepts fractional seconds, so one parse covers
+	// both the canonical form and a hand-written 2026-01-02T15:04:05.123Z.
+	t, err := time.Parse(time.RFC3339, s)
+	if err != nil {
+		return time.Time{}, fmt.Errorf("invalid timestamp %q (want RFC3339, e.g. 2006-01-02T15:04:05Z)", s)
 	}
-	return time.Time{}, fmt.Errorf("invalid timestamp %q (want RFC3339, e.g. 2006-01-02T15:04:05Z)", s)
+	return t.UTC(), nil
 }

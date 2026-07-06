@@ -151,8 +151,8 @@ type jsonView struct {
 	Labels    []string `json:"labels"`
 	DependsOn []string `json:"depends_on"`
 	Parent    *string  `json:"parent"`
-	Created   string   `json:"created"`
-	Updated   string   `json:"updated"`
+	Created   *string  `json:"created"` // null when the file carries no timestamp
+	Updated   *string  `json:"updated"`
 	Body      string   `json:"body"`
 	// Notes is the append-only log parsed out of the body's Notes section (ADR 0012)
 	// into structured entries, so an agent reads attributed, timestamped handoffs
@@ -184,8 +184,8 @@ func toJSONView(iss issue.Issue) jsonView {
 		Labels:    orEmpty(iss.Labels),
 		DependsOn: orEmpty(iss.DependsOn),
 		Parent:    optString(iss.Parent),
-		Created:   formatTime(iss.Created),
-		Updated:   formatTime(iss.Updated),
+		Created:   optString(formatTime(iss.Created)),
+		Updated:   optString(formatTime(iss.Updated)),
 		Body:      iss.Body,
 		Notes:     toNoteViews(issue.ParseNotes(iss.Body)),
 		Custom:    orEmptyMap(iss.Custom),
@@ -284,8 +284,14 @@ func writeHumanHead(b *strings.Builder, iss issue.Issue) {
 	if iss.Parent != "" {
 		field(b, "parent", iss.Parent)
 	}
-	field(b, "created", formatTime(iss.Created))
-	field(b, "updated", formatTime(iss.Updated))
+	// A zero timestamp means the file carries none (a hand-authored issue); skip
+	// the line rather than render a blank value.
+	if !iss.Created.IsZero() {
+		field(b, "created", formatTime(iss.Created))
+	}
+	if !iss.Updated.IsZero() {
+		field(b, "updated", formatTime(iss.Updated))
+	}
 	for _, key := range sortedKeys(iss.Custom) {
 		field(b, key, formatCustomValue(iss.Custom[key]))
 	}

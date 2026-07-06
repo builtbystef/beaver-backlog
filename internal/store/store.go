@@ -79,8 +79,9 @@ func (s *Store) Root() string { return s.root }
 // default) skipped files are dropped silently, as the store's readers always
 // have; the CLI installs a handler that prints each one loudly to stderr, so a
 // broken store is never mistaken for a clean one. fn may be called more than once
-// for the same path when a single command scans the store repeatedly (create's
-// id-collision loop), so a handler that renders warnings dedupes by path.
+// for the same path when a single command scans the store repeatedly (resolving a
+// reference and then reading all), so a handler that renders warnings dedupes by
+// path.
 func (s *Store) OnWarn(fn func(Warning)) { s.onWarn = fn }
 
 // warn reports a skipped file to the registered handler, if any.
@@ -103,7 +104,16 @@ func (s *Store) ConfigPath() string { return filepath.Join(s.root, "config.yml")
 // requires none (ADR 0006, ADR 0008).
 func Init(workDir string) (root string, created bool, err error) {
 	root = filepath.Join(workDir, dirName)
-	created = !dirExists(root)
+	// Mkdir both creates the root and reports whether it already existed in one
+	// step, so created never races a separate existence check.
+	switch err := os.Mkdir(root, 0o755); {
+	case err == nil:
+		created = true
+	case errors.Is(err, os.ErrExist):
+		created = false
+	default:
+		return "", false, err
+	}
 
 	if err := os.MkdirAll(filepath.Join(root, "issues"), 0o755); err != nil {
 		return "", false, err
@@ -261,6 +271,26 @@ func (s *Store) Rename(oldPath string, iss issue.Issue) (string, error) {
 	return newPath, nil
 }
 
+// StashDraft moves the file at path out of the issues directory into
+// .beaver/drafts, preserving its base name, and returns the destination. It is
+// the recovery half of interactive create's cleanup: an authoring the human
+// typed into but that did not produce a usable issue is stashed — never deleted,
+// their words are not Busy Beaver's to discard — while staying outside the
+// scanned issue set, so no read path or doctor ever mistakes a draft for an
+// issue. Drafts are plain local files; recovering one is a copy-paste, and
+// deleting it is the human's call.
+func (s *Store) StashDraft(path string) (string, error) {
+	dir := filepath.Join(s.root, "drafts")
+	if err := os.MkdirAll(dir, 0o755); err != nil {
+		return "", err
+	}
+	dest := filepath.Join(dir, filepath.Base(path))
+	if err := os.Rename(path, dest); err != nil {
+		return "", err
+	}
+	return dest, nil
+}
+
 // Delete removes the issue file at path — the hard removal of a junk issue a typo
 // or an accidental duplicate created, distinct from cancel, which keeps the file as
 // a deliberately-abandoned record (ADR 0004). Busy Beaver keeps no other copy of
@@ -275,13 +305,17 @@ func (s *Store) Delete(path string) error {
 // only mirrors it and may have drifted via a hand-edit or merge (ADR 0005). It is
 // the one resolver every issue-addressing command routes through, so they all
 // accept the same references. Matching is exact — there is no prefix or fuzzy
-// matching — and a reference may take any of three forms:
+// matching — and a reference may take any of four forms:
 //
 //  1. a full ID — the authoritative, unique identity;
 //  2. the full "<id>-<slug>" name — the canonical file name (minus .md), also
 //     unique, so a user can paste what they see on disk;
 //  3. a full slug — the title's canonical slug (not the possibly-stale filename
-//     slug), a human-friendly handle.
+//     slug), a human-friendly handle;
+//  4. a stale "<id>-<oldslug>" file name — when nothing above matched, the id
+//     before the first hyphen (with any ".md" suffix dropped) resolves alone, so
+//     a name pasted from a drifted file still lands on its issue (ADR 0002: the
+//     id is identity, the slug half only decoration).
 //
 // The first two forms carry the unique ID, so they never collide. A slug is
 // derived from the mutable title and so is not unique; only a slug that names a
@@ -289,14 +323,21 @@ func (s *Store) Delete(path string) error {
 // yields a *SharedSlugError (which Unwraps to ErrNotFound but carries the
 // candidates); an unknown reference yields ErrNotFound. There is no separate
 // "ambiguous" outcome — a shared slug simply does not resolve, and the caller
-// falls back to the ID. Invalid files carry no identity Resolve can match and are
-// skipped (ADR 0005), each reported through the store's warning handler.
+// falls back to the ID. Form 4 is tried strictly last, so it can only ever add a
+// resolution where there was none — it never shadows an exact id, canonical
+// name, or living slug. Invalid files carry no identity Resolve can match and
+// are skipped (ADR 0005), each reported through the store's warning handler.
 func (s *Store) Resolve(ref string) (issue.Issue, string, error) {
 	items, err := s.scan()
 	if err != nil {
 		return issue.Issue{}, "", err
 	}
+	return resolveIn(items, ref)
+}
 
+// resolveIn is Resolve's matching logic over an already-scanned set, shared with
+// Snapshot so a command that resolves several references pays for one scan.
+func resolveIn(items []resolvable, ref string) (issue.Issue, string, error) {
 	// The two unique forms first — the ID itself and the canonical "<id>-<slug>"
 	// name. Both carry the unique ID, so a match is decisive.
 	for _, it := range items {
@@ -306,16 +347,24 @@ func (s *Store) Resolve(ref string) (issue.Issue, string, error) {
 		}
 	}
 	// Then the slug alone. It is not unique: a single match resolves, several are a
-	// SharedSlugError naming the candidates, and none (or an empty ref) is a plain
-	// not-found.
-	switch m := matchSlug(items, ref); len(m) {
-	case 1:
+	// SharedSlugError naming the candidates, and none falls through to form 4.
+	switch m := matchSlug(items, ref); {
+	case len(m) == 1:
 		return m[0].iss, m[0].path, nil
-	case 0:
-		return issue.Issue{}, "", ErrNotFound
-	default:
+	case len(m) > 1:
 		return issue.Issue{}, "", sharedSlug(ref, m)
 	}
+	// Last, a stale on-disk name: the id-part of a "<id>-<whatever>" or "<x>.md"
+	// reference, matched only when it differs from the ref itself (a bare id was
+	// already tried above) and names an existing issue.
+	if id := issue.IDFromFileName(ref); id != ref {
+		for _, it := range items {
+			if it.iss.ID == id {
+				return it.iss, it.path, nil
+			}
+		}
+	}
+	return issue.Issue{}, "", ErrNotFound
 }
 
 // resolvable pairs a parsed issue with the path it was read from — the two things
@@ -323,6 +372,56 @@ func (s *Store) Resolve(ref string) (issue.Issue, string, error) {
 type resolvable struct {
 	iss  issue.Issue
 	path string
+}
+
+// Snapshot is one scan of the store held for several lookups. Store.Resolve,
+// ReadAll, and IDTaken each re-scan every file per call — correct, and fine for a
+// command that asks once — but a command that asks repeatedly (create resolving
+// edges, a parent, and a fresh id) would re-read the store per question. Such a
+// command takes a Snapshot up front and asks it instead: same matching logic,
+// one scan. A snapshot is deliberately explicit rather than a hidden cache inside
+// Store — it cannot serve a stale answer after a write, because the caller
+// chooses its lifetime and takes it before mutating anything.
+type Snapshot struct {
+	items []resolvable
+}
+
+// Snapshot scans the store once and returns the point-in-time view. Files that
+// are not usable issues are skipped and reported through the store's warning
+// handler, exactly as every other scan does (ADR 0005).
+func (s *Store) Snapshot() (*Snapshot, error) {
+	items, err := s.scan()
+	if err != nil {
+		return nil, err
+	}
+	return &Snapshot{items: items}, nil
+}
+
+// Resolve matches ref against the snapshot with Store.Resolve's exact contract,
+// without re-scanning.
+func (sn *Snapshot) Resolve(ref string) (issue.Issue, string, error) {
+	return resolveIn(sn.items, ref)
+}
+
+// Issues returns every valid issue in the snapshot, in the stable path order
+// ReadAll uses.
+func (sn *Snapshot) Issues() []issue.Issue {
+	issues := make([]issue.Issue, len(sn.items))
+	for i, it := range sn.items {
+		issues[i] = it.iss
+	}
+	return issues
+}
+
+// IDTaken reports whether an issue with the given id exists in the snapshot,
+// matching the authoritative frontmatter id like Store.IDTaken.
+func (sn *Snapshot) IDTaken(id string) bool {
+	for _, it := range sn.items {
+		if it.iss.ID == id {
+			return true
+		}
+	}
+	return false
 }
 
 // scan reads and validates every issue in the store, pairing each with its path

@@ -2,6 +2,7 @@ package cli_test
 
 import (
 	"os"
+	"path/filepath"
 	"slices"
 	"strings"
 	"testing"
@@ -150,11 +151,14 @@ func TestInteractiveCreateWithTitleSkipsEditor(t *testing.T) {
 }
 
 // If the editor produces a file with no title, create fails (the one input it
-// fundamentally needs is missing) and removes the skeleton it seeded, so an
-// abandoned authoring never leaves a half-formed issue in the store.
+// fundamentally needs is missing) and clears the skeleton out of the issues
+// directory, so an aborted authoring never leaves a half-formed issue in the
+// store. What the human typed is not theirs to lose: the changed file is stashed
+// under .beaver/drafts and its location reported.
 func TestInteractiveCreateAbortsOnEmptyTitle(t *testing.T) {
 	h := beavertest.New(t).Init()
 	h.IsTTY, h.StdinIsTTY = true, true
+	h.NewID = func() string { return "aaaaaa" }
 	h.Editor = editWith(t, func(s string) string { return s + "\nA body but no title.\n" })
 
 	r := h.Run("create")
@@ -167,13 +171,21 @@ func TestInteractiveCreateAbortsOnEmptyTitle(t *testing.T) {
 	if files := h.IssueFiles(); len(files) != 0 {
 		t.Errorf("aborted create left a skeleton behind: %v", files)
 	}
+	if !strings.Contains(r.Stderr, "draft") {
+		t.Errorf("stderr should point at the stashed draft:\n%s", r.Stderr)
+	}
+	if draft := h.ReadFile("drafts/aaaaaa.md"); !strings.Contains(draft, "A body but no title.") {
+		t.Errorf("draft should hold what the human typed:\n%s", draft)
+	}
 }
 
-// If the editor leaves the file unparseable, create reports it and likewise cleans
-// up the skeleton rather than importing a broken issue.
+// If the editor leaves the file unparseable, create reports it and likewise clears
+// the skeleton out of the issues directory rather than importing a broken issue —
+// but the human's typed content is stashed as a draft, never deleted.
 func TestInteractiveCreateCleansUpInvalidResult(t *testing.T) {
 	h := beavertest.New(t).Init()
 	h.IsTTY, h.StdinIsTTY = true, true
+	h.NewID = func() string { return "aaaaaa" }
 	h.Editor = editWith(t, func(string) string { return "not a valid issue file\n" })
 
 	r := h.Run("create")
@@ -182,6 +194,29 @@ func TestInteractiveCreateCleansUpInvalidResult(t *testing.T) {
 	}
 	if files := h.IssueFiles(); len(files) != 0 {
 		t.Errorf("aborted create left an invalid skeleton behind: %v", files)
+	}
+	if draft := h.ReadFile("drafts/aaaaaa.md"); !strings.Contains(draft, "not a valid issue file") {
+		t.Errorf("draft should hold what the human saved:\n%s", draft)
+	}
+}
+
+// A skeleton the human never changed — they quit the editor without writing — is
+// plain junk: it is deleted outright, and no draft is stashed.
+func TestInteractiveCreateAbandonedUnchangedIsDeleted(t *testing.T) {
+	h := beavertest.New(t).Init()
+	h.IsTTY, h.StdinIsTTY = true, true
+	h.NewID = func() string { return "aaaaaa" }
+	h.Editor = editWith(t, func(s string) string { return s }) // opened, saved untouched
+
+	r := h.Run("create")
+	if r.Code == 0 {
+		t.Error("an abandoned create should fail (no title), got exit 0")
+	}
+	if files := h.IssueFiles(); len(files) != 0 {
+		t.Errorf("abandoned create left a skeleton behind: %v", files)
+	}
+	if _, err := os.Stat(filepath.Join(h.BeaverDir(), "drafts", "aaaaaa.md")); !os.IsNotExist(err) {
+		t.Errorf("an untouched skeleton must not be stashed as a draft (stat err = %v)", err)
 	}
 }
 

@@ -44,6 +44,21 @@ func TestBlockedOnClassifiesEachDependency(t *testing.T) {
 	}
 }
 
+// A hand-edit can list the same dependency twice; it is one edge, so it appears
+// once in BlockedOn rather than rendering as a double blocker everywhere.
+func TestBlockedOnCountsADuplicatedEdgeOnce(t *testing.T) {
+	waiter := dep("waiter", issue.StateTodo, "todo00", "todo00", "gone00", "gone00")
+	r := rel(dep("todo00", issue.StateTodo), waiter)
+	got := r.BlockedOn(waiter)
+	want := []issue.Blocker{
+		{ID: "todo00", State: issue.StateTodo},
+		{ID: "gone00", Missing: true},
+	}
+	if !slices.Equal(got, want) {
+		t.Errorf("BlockedOn = %+v\nwant %+v (each duplicated edge counted once)", got, want)
+	}
+}
+
 // AC: a dependency is satisfied *only* by done — a target in any other state (or
 // missing) keeps the todo dependent out of the ready set.
 func TestOnlyDoneSatisfiesADependency(t *testing.T) {

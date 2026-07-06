@@ -50,6 +50,10 @@ The file _is_ the issue — the single source of truth. Busy Beaver's CLI (and t
 future web app) are thin clients over these files; nothing authoritative lives in
 a database.
 
+Your words are never discarded: if an interactive `beaver create` ends with a
+file that isn't a usable issue, whatever you typed is stashed as a local recovery
+file under `.beaver/drafts/` instead of being deleted.
+
 ## Coordinating work
 
 Busy Beaver is local-first and has no sync layer, so it can't _lock_ an issue. A lock

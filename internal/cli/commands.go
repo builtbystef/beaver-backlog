@@ -188,25 +188,34 @@ func cmdCreate(env Env, args []string) int {
 		return storeError(env, err)
 	}
 
+	// One snapshot answers everything create asks of the store — each edge, the
+	// parent, and the id-collision check — so the whole command scans the files
+	// once, not once per question, and every answer comes from the same instant.
+	snap, err := st.Snapshot()
+	if err != nil {
+		errf(env, "%v", err)
+		return exitError
+	}
+
 	// Resolve the relationship references to canonical ids before minting anything,
 	// so a typo'd --depends-on/--parent fails fast and the stored edges hold real
 	// ids (depends_on and parent store ids, never slugs). Every issue-addressing
 	// input routes through the shared resolver, so an edge accepts the same
 	// references show and done do.
-	deps, code := resolveEdges(env, st, dependsOn.values)
+	deps, code := resolveEdges(env, snap, dependsOn.values)
 	if code != exitOK {
 		return code
 	}
 	var parent string
 	if ref := strings.TrimSpace(*parentFlag); ref != "" {
-		p, _, c := resolveRef(env, st, ref)
+		p, _, c := resolveRef(env, snap, ref)
 		if c != exitOK {
 			return c
 		}
 		parent = p.ID
 	}
 
-	id, err := mintID(env, st)
+	id, err := mintID(env, snap)
 	if err != nil {
 		errf(env, "%v", err)
 		return exitError
@@ -479,7 +488,15 @@ func cmdShow(env Env, args []string) int {
 		return storeError(env, err)
 	}
 
-	iss, _, code := resolveRef(env, st, ref)
+	// show both resolves one issue and derives its relationships over the whole
+	// store, so it takes one snapshot and asks it twice rather than scanning the
+	// files for each question.
+	snap, err := st.Snapshot()
+	if err != nil {
+		errf(env, "%v", err)
+		return exitError
+	}
+	iss, _, code := resolveRef(env, snap, ref)
 	if code != exitOK {
 		return code
 	}
@@ -487,14 +504,9 @@ func cmdShow(env Env, args []string) int {
 	// Enrich the view with the derived relationship facts show is the natural home
 	// for: what this issue is waiting on, whether it is ready/blocked/stuck, and the
 	// inverse edges (what it blocks, its children) that are never stored (ADR 0011).
-	// Deriving them needs the whole store, so read it and index it; the resolved
+	// Deriving them needs the whole store, so index the snapshot; the resolved
 	// issue is among them.
-	all, err := st.ReadAll()
-	if err != nil {
-		errf(env, "%v", err)
-		return exitError
-	}
-	rel := issue.NewRelations(all).For(iss)
+	rel := issue.NewRelations(snap.Issues()).For(iss)
 
 	if err := output.WriteIssueWithRelationship(env.Stdout, iss, rel, format); err != nil {
 		errf(env, "%v", err)
@@ -503,17 +515,13 @@ func cmdShow(env Env, args []string) int {
 	return exitOK
 }
 
-// mintID generates a fresh ID, retrying on the rare collision with an existing
-// issue. The bound guards against a pathological generator rather than a real
-// store ever filling up.
-func mintID(env Env, st *store.Store) (string, error) {
+// mintID generates a fresh ID, retrying on the rare collision with an issue in
+// the snapshot. The bound guards against a pathological generator rather than a
+// real store ever filling up.
+func mintID(env Env, snap *store.Snapshot) (string, error) {
 	for range 100 {
 		id := env.NewID()
-		taken, err := st.IDTaken(id)
-		if err != nil {
-			return "", err
-		}
-		if !taken {
+		if !snap.IDTaken(id) {
 			return id, nil
 		}
 	}
@@ -548,8 +556,8 @@ func discover(env Env) (*store.Store, error) {
 // each skipped file once, loudly, to stderr, naming the file and the specific
 // problem (ADR 0005). It writes to stderr, never stdout, so a warning never
 // corrupts the JSON an agent parses (ADR 0013). Dedup is by path, so a command
-// that scans the store more than once (create's id-collision loop) still warns a
-// given file only once.
+// that scans the store more than once (resolving a reference and then reading
+// all) still warns a given file only once.
 func warnInvalid(env Env) func(store.Warning) {
 	seen := make(map[string]bool)
 	return func(w store.Warning) {

@@ -121,6 +121,7 @@ usage:
 
 common flags (after the command):
   --format human|json         override output format (default: auto-detect)
+  --                          end flag parsing, for a ref or title that begins with "-"
 
 create flags:
   --label <label>             tag with a label (free-form; repeatable, comma-separated)
@@ -154,7 +155,8 @@ doctor flags:
   --fix                       repair lint-class problems (e.g. drifted filenames);
                               never removes data, never touches validation errors
 
-a <ref> is a full issue ID, its slug, or the full <id>-<slug> name.
+a <ref> is a full issue ID, its slug, or an <id>-<slug> file name — even a
+stale one whose slug half has drifted; the ID part decides.
 show reports what an issue is waiting on and whether it is ready or blocked.
 run "beaver create" with no title in a terminal to author the issue in $EDITOR;
 a non-interactive create still requires a title argument.

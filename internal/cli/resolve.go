@@ -9,18 +9,26 @@ import (
 	"beaver/internal/store"
 )
 
+// resolver is the one capability resolveRef needs: turning a reference into an
+// issue. Both *store.Store (a fresh scan per call) and *store.Snapshot (one scan
+// answering many lookups) provide it, so a command picks whichever fits how often
+// it asks.
+type resolver interface {
+	Resolve(ref string) (issue.Issue, string, error)
+}
+
 // resolveRef turns a user reference into a single issue through the store's shared
 // resolver (store.Resolve) — the one path every issue-addressing command uses, so
 // show, done, cancel, and reopen all accept the same references: a full ID, its
-// slug, or the full "<id>-<slug>" name (ADR 0002). It maps a resolution failure to
-// the right diagnostic and stable exit code and returns that code; on success it
-// returns the issue, its path, and exitOK. Callers do:
+// slug, or an "<id>-<slug>" name, stale or canonical (ADR 0002). It maps a
+// resolution failure to the right diagnostic and stable exit code and returns that
+// code; on success it returns the issue, its path, and exitOK. Callers do:
 //
 //	iss, path, code := resolveRef(env, st, ref)
 //	if code != exitOK {
 //		return code
 //	}
-func resolveRef(env Env, st *store.Store, ref string) (iss issue.Issue, path string, code int) {
+func resolveRef(env Env, st resolver, ref string) (iss issue.Issue, path string, code int) {
 	iss, path, err := st.Resolve(ref)
 
 	// SharedSlugError Unwraps to ErrNotFound, so it must be checked before the
@@ -49,7 +57,7 @@ func resolveRef(env Env, st *store.Store, ref string) (iss issue.Issue, path str
 // reference that does not resolve it reports the failure (via resolveRef) and
 // returns that non-OK code, so create refuses to store an edge to an issue that is
 // not there: a typo fails fast instead of persisting as a dangling reference.
-func resolveEdges(env Env, st *store.Store, refs []string) (ids []string, code int) {
+func resolveEdges(env Env, st resolver, refs []string) (ids []string, code int) {
 	seen := make(map[string]bool)
 	for _, ref := range refs {
 		iss, _, code := resolveRef(env, st, ref)

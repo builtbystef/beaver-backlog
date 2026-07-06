@@ -202,6 +202,68 @@ func TestResolveEmptyRefMatchesNothing(t *testing.T) {
 	}
 }
 
+// Form 4: a stale on-disk name — the id joined to a slug that no longer matches
+// the title, with or without its .md suffix — still resolves, because the id part
+// is the identity and the slug half only decoration (ADR 0002). The fallback only
+// ever adds resolutions: a made-up name around a nonexistent id stays not-found.
+func TestResolveStaleFileName(t *testing.T) {
+	root := newStore(t)
+	writeIssueFile(t, root, "abc123-old-name.md", mkIssue("abc123", "New Name"))
+	st, _ := store.Discover(root)
+
+	for _, ref := range []string{"abc123-old-name", "abc123-old-name.md", "abc123.md"} {
+		if got, _, err := st.Resolve(ref); err != nil || got.ID != "abc123" {
+			t.Errorf("Resolve(%q) = %q, %v; want abc123 via the id part", ref, got.ID, err)
+		}
+	}
+	if _, _, err := st.Resolve("zzzzzz-anything"); !errors.Is(err, store.ErrNotFound) {
+		t.Errorf("Resolve(zzzzzz-anything) = %v, want ErrNotFound (no such id exists)", err)
+	}
+}
+
+// The stale-name fallback is tried strictly last, so it can never shadow a living
+// slug: a reference that is some issue's canonical slug resolves to that issue,
+// even when its leading segment happens to be another issue's id.
+func TestResolveSlugBeatsStaleNameFallback(t *testing.T) {
+	root := newStore(t)
+	writeIssueFile(t, root, "fix.md", mkIssue("fix", "Unrelated"))
+	writeIssueFile(t, root, "abc123-fix-login.md", mkIssue("abc123", "Fix login"))
+	st, _ := store.Discover(root)
+
+	got, _, err := st.Resolve("fix-login")
+	if err != nil || got.ID != "abc123" {
+		t.Errorf("Resolve(fix-login) = %q, %v; want abc123 (the slug match, not the id prefix)", got.ID, err)
+	}
+}
+
+// A Snapshot answers Resolve, Issues, and IDTaken from one scan with the store's
+// exact contracts, so a command that asks several questions gets consistent
+// answers without re-reading the files.
+func TestSnapshotAnswersLikeTheStore(t *testing.T) {
+	root := newStore(t)
+	writeIssueFile(t, root, "aaa111-first.md", mkIssue("aaa111", "First"))
+	writeIssueFile(t, root, "bbb222-second.md", mkIssue("bbb222", "Second"))
+	st, _ := store.Discover(root)
+
+	snap, err := st.Snapshot()
+	if err != nil {
+		t.Fatalf("Snapshot: %v", err)
+	}
+	if got, _, err := snap.Resolve("first"); err != nil || got.ID != "aaa111" {
+		t.Errorf("snapshot Resolve(first) = %q, %v; want aaa111", got.ID, err)
+	}
+	if _, _, err := snap.Resolve("nope"); !errors.Is(err, store.ErrNotFound) {
+		t.Errorf("snapshot Resolve(nope) = %v, want ErrNotFound", err)
+	}
+	if !snap.IDTaken("bbb222") || snap.IDTaken("zzzzzz") {
+		t.Errorf("IDTaken = %v/%v, want true/false", snap.IDTaken("bbb222"), snap.IDTaken("zzzzzz"))
+	}
+	issues := snap.Issues()
+	if len(issues) != 2 || issues[0].ID != "aaa111" || issues[1].ID != "bbb222" {
+		t.Errorf("Issues() = %+v, want both issues in path order", issues)
+	}
+}
+
 // A store whose issues/ directory has been deleted (a half-merged or hand-edited
 // store) is a normal, recoverable state: List reports zero issues rather than
 // leaking a raw OS error (ADR 0005).

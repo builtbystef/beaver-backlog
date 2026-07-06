@@ -156,6 +156,77 @@ func TestDoctorFixNeverRemovesUnknownKey(t *testing.T) {
 	}
 }
 
+// A priority that is not one of the four levels loads fine (validation stays
+// narrow, ADR 0005) but silently matches no --priority filter, so doctor flags it
+// as an unknown value — and never fixes it, since mapping it to a real level
+// would be guessing.
+func TestDoctorFlagsUnknownPriorityValue(t *testing.T) {
+	h := beavertest.New(t).Init()
+	h.WriteFile("issues/pri001-typo-priority.md",
+		"---\nid: pri001\ntitle: Typo Priority\nstate: todo\npriority: critical\n"+stamps+"---\n")
+
+	rep, r := doctorJSON(t, h, "--fix")
+	if r.Code == 0 {
+		t.Fatalf("doctor --fix exit = 0, want non-zero: an unknown priority is not auto-fixable")
+	}
+	f := findingWhere(t, rep, "unknown_value")
+	if f["fixable"] != false || f["fixed"] != false {
+		t.Errorf("unknown value finding fixable=%v fixed=%v, want both false", f["fixable"], f["fixed"])
+	}
+	msg, _ := f["message"].(string)
+	if !strings.Contains(msg, "critical") || !strings.Contains(msg, "priority") {
+		t.Errorf("message should name the bad priority value: %q", msg)
+	}
+	if body := h.ReadFile("issues/pri001-typo-priority.md"); !strings.Contains(body, "priority: critical") {
+		t.Errorf("--fix must not touch the priority; file:\n%s", body)
+	}
+}
+
+// An issue with no created/updated timestamp is usable (ADR 0005) but sorts as the
+// oldest in every list, so doctor surfaces it — and never invents a date.
+func TestDoctorFlagsMissingTimestamps(t *testing.T) {
+	h := beavertest.New(t).Init()
+	h.WriteFile("issues/nots01-no-stamps.md", "---\nid: nots01\ntitle: No Stamps\nstate: todo\n---\n")
+
+	rep, r := doctorJSON(t, h)
+	if r.Code == 0 {
+		t.Fatalf("doctor exit = 0, want non-zero for a missing timestamp")
+	}
+	f := findingWhere(t, rep, "missing_timestamp")
+	if f["fixable"] != false {
+		t.Errorf("missing timestamp finding fixable=%v, want false (no guessed dates)", f["fixable"])
+	}
+	if msg, _ := f["message"].(string); !strings.Contains(msg, "created and updated") {
+		t.Errorf("message should name the missing fields: %q", msg)
+	}
+}
+
+// A mutating command on a timestamp-less issue must not bake in the year-1 zero
+// value: created stays honestly absent (doctor keeps flagging it), updated is set
+// by the mutation, and JSON renders the absent created as null (ADR 0013).
+func TestMutationLeavesMissingCreatedAbsent(t *testing.T) {
+	h := beavertest.New(t).Init()
+	h.WriteFile("issues/nots01-no-stamps.md", "---\nid: nots01\ntitle: No Stamps\nstate: todo\n---\n")
+
+	h.MustRun("label", "nots01", "sprint-7")
+
+	file := h.ReadFile("issues/nots01-no-stamps.md")
+	if strings.Contains(file, "0001-01-01") || strings.Contains(file, "created:") {
+		t.Errorf("mutation baked a timestamp into a created-less issue:\n%s", file)
+	}
+	if !strings.Contains(file, "updated: ") {
+		t.Errorf("mutation should set updated:\n%s", file)
+	}
+	out := h.DecodeJSON(h.MustRun("show", "nots01", "--format", "json").Stdout)
+	if out["created"] != nil {
+		t.Errorf("JSON created = %v, want null for an absent timestamp", out["created"])
+	}
+	rep, _ := doctorJSON(t, h)
+	if msg, _ := findingWhere(t, rep, "missing_timestamp")["message"].(string); !strings.Contains(msg, "created") || strings.Contains(msg, "updated") {
+		t.Errorf("doctor should now flag only created as missing: %q", msg)
+	}
+}
+
 // A deliberate custom field is a first-class, supported feature (ADR 0014), not a
 // problem: it is near no known field, so doctor does not flag it and a store that
 // uses custom fields can still be perfectly healthy.

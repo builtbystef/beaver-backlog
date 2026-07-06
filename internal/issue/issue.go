@@ -39,6 +39,19 @@ const (
 	PriorityLow    Priority = "low"
 )
 
+// Valid reports whether p is one of the four levels or the empty (unprioritized)
+// value. An invalid priority is never a load failure — validation stays narrow
+// (ADR 0005) and Rank degrades gracefully — but doctor flags it, because no
+// --priority filter can ever match it.
+func (p Priority) Valid() bool {
+	switch p {
+	case PriorityUrgent, PriorityHigh, PriorityMedium, PriorityLow, "":
+		return true
+	default:
+		return false
+	}
+}
+
 // Rank maps a priority to its sort order, most urgent first (urgent=0 … low=3).
 // The unprioritized empty value — and any value not one of the four levels, which
 // a hand-edit might leave in a file — rank last, after every explicit level, so

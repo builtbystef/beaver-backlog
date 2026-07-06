@@ -51,14 +51,22 @@ type Blocker struct {
 func (b Blocker) Cancelled() bool { return !b.Missing && b.State == StateCancelled }
 
 // BlockedOn returns iss's unmet dependencies, in its stored depends_on order:
-// every target that is missing or not done. An empty result means every dependency
-// is satisfied — or the issue has none. Only the issue's direct dependencies are
-// considered: a dependency that is itself blocked is simply not done, so it keeps
-// the dependent blocked with no transitive walk (and a dependency cycle just stays
-// perpetually blocked, which doctor surfaces).
+// every target that is missing or not done. A target a hand-edit listed twice
+// counts once — a duplicated edge is redundant, not a second blocker — so every
+// consumer (show's waiting-on, start's warning, Stuck, doctor) sees each
+// dependency exactly once. An empty result means every dependency is satisfied —
+// or the issue has none. Only the issue's direct dependencies are considered: a
+// dependency that is itself blocked is simply not done, so it keeps the dependent
+// blocked with no transitive walk (and a dependency cycle just stays perpetually
+// blocked, which doctor surfaces).
 func (r *Relations) BlockedOn(iss Issue) []Blocker {
 	var blockers []Blocker
+	seen := make(map[string]bool, len(iss.DependsOn))
 	for _, dep := range iss.DependsOn {
+		if seen[dep] {
+			continue
+		}
+		seen[dep] = true
 		switch target, ok := r.byID[dep]; {
 		case !ok:
 			blockers = append(blockers, Blocker{ID: dep, Missing: true})

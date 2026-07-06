@@ -1,8 +1,10 @@
 package cli
 
 import (
+	"bytes"
 	"errors"
 	"fmt"
+	"os"
 	"strings"
 
 	"beaver/internal/issue"
@@ -142,24 +144,32 @@ func cmdDelete(env Env, args []string) int {
 // the human to supply), opens $EDITOR on it, and reads the result back. It enforces
 // the one input create fundamentally needs — a non-empty title — on top of the
 // store's usable-issue validation, and canonicalizes the filename once the title
-// (and slug) are set. Any failure after the skeleton is written removes it, so an
-// abandoned or invalid authoring never leaves a half-formed issue in the store:
-// only a good result is returned, at its canonical path.
+// (and slug) are set. Any failure after the skeleton is written cleans it out of
+// the issues directory, so an abandoned or invalid authoring never leaves a
+// half-formed issue in the store: only a good result is returned, at its canonical
+// path. The cleanup distinguishes an untouched skeleton (deleted — nothing was
+// lost) from one the human typed into (stashed under .beaver/drafts — their words
+// are never discarded, the same recovery contract git's COMMIT_EDITMSG offers).
 func authorInEditor(env Env, st *store.Store, seed issue.Issue) (issue.Issue, string, int) {
 	skeleton, err := st.Write(seed)
 	if err != nil {
 		errf(env, "%v", err)
 		return issue.Issue{}, "", exitError
 	}
-	// Until a good result is imported at its canonical name, the skeleton is junk:
-	// remove it on any early (failure) return, so an abandoned or invalid authoring
-	// never leaves a half-formed issue in the store. The success path sets committed
-	// first — by then the canonicalizing write below has already renamed or replaced
-	// the skeleton, so it must not be deleted.
+	seeded, err := issue.Marshal(seed) // the exact bytes Write just produced
+	if err != nil {
+		errf(env, "%v", err)
+		return issue.Issue{}, "", exitError
+	}
+	// Until a good result is imported at its canonical name, the skeleton is junk in
+	// the issues directory: on any early (failure) return, delete it if the human
+	// never changed it, or stash it as a draft if they did. The success path sets
+	// committed first — by then the canonicalizing write below has already renamed
+	// or replaced the skeleton, so it must be left alone.
 	committed := false
 	defer func() {
 		if !committed {
-			st.Delete(skeleton)
+			abandonSkeleton(env, st, skeleton, seeded)
 		}
 	}()
 
@@ -187,4 +197,25 @@ func authorInEditor(env Env, st *store.Store, seed issue.Issue) (issue.Issue, st
 	}
 	committed = true
 	return edited, path, exitOK
+}
+
+// abandonSkeleton cleans up after a failed interactive authoring. A skeleton the
+// human never changed (they quit without writing, or the editor failed) is plain
+// junk and is deleted. One they typed into holds their work: it is stashed under
+// .beaver/drafts — out of the scanned issue set, so the store stays clean, but
+// never deleted — and the draft's location is reported so the words are one
+// copy-paste from a retry. If even the stash fails, the file is left where it is:
+// a half-formed issue doctor will flag beats destroying what the human wrote.
+func abandonSkeleton(env Env, st *store.Store, skeleton string, seeded []byte) {
+	current, err := os.ReadFile(skeleton)
+	if err != nil || bytes.Equal(current, seeded) {
+		st.Delete(skeleton)
+		return
+	}
+	dest, err := st.StashDraft(skeleton)
+	if err != nil {
+		errf(env, "could not stash your draft (%v); it remains at %s", err, relPath(env.WorkDir, skeleton))
+		return
+	}
+	errf(env, "your draft is saved at %s", relPath(env.WorkDir, dest))
 }

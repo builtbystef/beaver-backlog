@@ -127,16 +127,16 @@ func diagnose(env Env, st *store.Store) (*report, error) {
 // clobber it, and shuffling names does not resolve the real clash anyway.
 func duplicateIDFindings(env Env, valid []located) []finding {
 	byID := make(map[string][]string)
-	order := make([]string, 0)
 	for _, lc := range valid {
-		if _, seen := byID[lc.iss.ID]; !seen {
-			order = append(order, lc.iss.ID)
-		}
 		byID[lc.iss.ID] = append(byID[lc.iss.ID], relPath(env.WorkDir, lc.path))
 	}
-	sort.Strings(order)
+	ids := make([]string, 0, len(byID))
+	for id := range byID {
+		ids = append(ids, id)
+	}
+	sort.Strings(ids)
 	var out []finding
-	for _, id := range order {
+	for _, id := range ids {
 		if paths := byID[id]; len(paths) > 1 {
 			sort.Strings(paths)
 			out = append(out, finding{
@@ -150,11 +150,17 @@ func duplicateIDFindings(env Env, valid []located) []finding {
 }
 
 // lintFindings reports the per-file lint of a valid issue: a filename that has
-// drifted from the canonical <id>-<slug> its frontmatter dictates, and any
-// frontmatter key that looks like a typo of a known field. Filename drift is the one
-// class doctor can repair, so its finding carries the payload --fix needs; it is
-// withheld (not merely marked unfixable) for a duplicated id, whose contested
-// canonical name no rename can safely take.
+// drifted from the canonical <id>-<slug> its frontmatter dictates, any frontmatter
+// key that looks like a typo of a known field, a priority that is not one of the
+// four levels, and a missing created/updated timestamp. The value and timestamp
+// lints exist because both states are silent damage a hand-edit can cause — an
+// unrecognized priority matches no --priority filter (not even none), and an issue
+// with no created time sorts as the oldest in every list — yet neither is a load
+// failure (ADR 0005), so only doctor ever surfaces them. Neither is fixable:
+// guessing the intended level, or inventing a date, is exactly what --fix never
+// does. Filename drift is the one class doctor can repair, so its finding carries
+// the payload --fix needs; it is withheld (not merely marked unfixable) for a
+// duplicated id, whose contested canonical name no rename can safely take.
 func lintFindings(env Env, valid []located) []finding {
 	dup := duplicatedIDs(valid)
 	var out []finding
@@ -182,8 +188,40 @@ func lintFindings(env Env, valid []located) []finding {
 				})
 			}
 		}
+		if !lc.iss.Priority.Valid() {
+			out = append(out, finding{
+				cat:    catUnknownValue,
+				file:   relPath(env.WorkDir, lc.path),
+				ids:    []string{lc.iss.ID},
+				detail: fmt.Sprintf("%s: priority %q is not a recognized level (urgent|high|medium|low); no --priority filter will match it", lc.iss.ID, lc.iss.Priority),
+			})
+		}
+		if missing := missingTimestamps(lc.iss); missing != "" {
+			out = append(out, finding{
+				cat:    catNoTimestamp,
+				file:   relPath(env.WorkDir, lc.path),
+				ids:    []string{lc.iss.ID},
+				detail: fmt.Sprintf("%s: missing %s timestamp (an issue with no created time sorts as the oldest)", lc.iss.ID, missing),
+			})
+		}
 	}
 	return out
+}
+
+// missingTimestamps names the timestamp fields iss lacks ("created", "updated", or
+// "created and updated"), or "" when both are set. A zero time means the field was
+// absent from the file — Marshal never writes a zero — and stays absent on rewrite.
+func missingTimestamps(iss issue.Issue) string {
+	switch {
+	case iss.Created.IsZero() && iss.Updated.IsZero():
+		return "created and updated"
+	case iss.Created.IsZero():
+		return "created"
+	case iss.Updated.IsZero():
+		return "updated"
+	default:
+		return ""
+	}
 }
 
 // graphFindings reports the relationship problems that only show up across the whole
@@ -302,6 +340,8 @@ const (
 	catDangling
 	catStuck
 	catUnknownKey
+	catUnknownValue
+	catNoTimestamp
 	catDrift
 )
 
@@ -321,6 +361,10 @@ func (c category) slug() string {
 		return "stuck"
 	case catUnknownKey:
 		return "unknown_key"
+	case catUnknownValue:
+		return "unknown_value"
+	case catNoTimestamp:
+		return "missing_timestamp"
 	case catDrift:
 		return "filename_drift"
 	}
@@ -342,6 +386,10 @@ func (c category) label() string {
 		return "stuck"
 	case catUnknownKey:
 		return "unknown key"
+	case catUnknownValue:
+		return "unknown value"
+	case catNoTimestamp:
+		return "missing time"
 	case catDrift:
 		return "filename drift"
 	}
