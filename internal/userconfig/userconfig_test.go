@@ -5,7 +5,7 @@ import (
 	"strings"
 	"testing"
 
-	"beaver/internal/userconfig"
+	"github.com/builtbystef/busy-beaver/internal/userconfig"
 )
 
 // A saved identity round-trips through Save and Load.

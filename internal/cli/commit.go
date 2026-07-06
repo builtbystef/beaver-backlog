@@ -3,8 +3,8 @@ package cli
 import (
 	"fmt"
 
-	"beaver/internal/issue"
-	"beaver/internal/store"
+	"github.com/builtbystef/busy-beaver/internal/issue"
+	"github.com/builtbystef/busy-beaver/internal/store"
 )
 
 // commitCompletion records the just-written issue file(s) as one atomic commit

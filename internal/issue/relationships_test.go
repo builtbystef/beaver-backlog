@@ -4,7 +4,7 @@ import (
 	"slices"
 	"testing"
 
-	"beaver/internal/issue"
+	"github.com/builtbystef/busy-beaver/internal/issue"
 )
 
 // rel builds a Relations index from issues described inline.

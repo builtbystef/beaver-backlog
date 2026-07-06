@@ -9,8 +9,8 @@ import (
 	"fmt"
 	"io"
 
-	"beaver/internal/clock"
-	"beaver/internal/vcs"
+	"github.com/builtbystef/busy-beaver/internal/clock"
+	"github.com/builtbystef/busy-beaver/internal/vcs"
 )
 
 // Exit codes. 0 is success; the rest are stable so scripts and agents can branch

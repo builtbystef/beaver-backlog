@@ -7,8 +7,8 @@ import (
 	"testing"
 	"time"
 
-	"beaver/internal/beavertest"
-	"beaver/internal/issue"
+	"github.com/builtbystef/busy-beaver/internal/beavertest"
+	"github.com/builtbystef/busy-beaver/internal/issue"
 )
 
 func TestListDefaultShowsAll(t *testing.T) {

@@ -1,0 +1,15 @@
+# Compiled binary
+/beaver
+
+# Test and coverage output
+*.test
+*.out
+
+# Local recovery drafts (per-machine, never shared)
+.beaver/drafts/
+
+# Editor and OS cruft
+.idea/
+.vscode/
+*.swp
+.DS_Store

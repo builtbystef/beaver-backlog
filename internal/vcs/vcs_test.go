@@ -8,7 +8,7 @@ import (
 	"strings"
 	"testing"
 
-	"beaver/internal/vcs"
+	"github.com/builtbystef/busy-beaver/internal/vcs"
 )
 
 // The Git adapter reads user.name from the repository it points at; git is

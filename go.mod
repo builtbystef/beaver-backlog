@@ -1,4 +1,4 @@
-module beaver
+module github.com/builtbystef/busy-beaver
 
 go 1.26
 

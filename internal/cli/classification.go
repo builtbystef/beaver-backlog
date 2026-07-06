@@ -5,7 +5,7 @@ import (
 	"slices"
 	"strings"
 
-	"beaver/internal/issue"
+	"github.com/builtbystef/busy-beaver/internal/issue"
 )
 
 // This file holds the classification verbs — priority and label — that mutate

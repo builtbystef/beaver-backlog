@@ -5,7 +5,7 @@ import (
 	"strings"
 	"time"
 
-	"beaver/internal/issue"
+	"github.com/builtbystef/busy-beaver/internal/issue"
 )
 
 // cmdNote appends an attributed, timestamped entry under the issue body's

@@ -5,8 +5,8 @@ import (
 	"strings"
 	"testing"
 
-	"beaver/internal/beavertest"
-	"beaver/internal/issue"
+	"github.com/builtbystef/busy-beaver/internal/beavertest"
+	"github.com/builtbystef/busy-beaver/internal/issue"
 )
 
 // stamps are the two required timestamp lines every seeded raw frontmatter needs.

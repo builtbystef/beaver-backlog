@@ -1,80 +1,207 @@
 # Busy Beaver
 
-**Busy Beaver** is a local-first issue tracker for software projects. It stores issues
-as Markdown files inside your project, so humans and coding agents can coordinate
-work through the files themselves. No external service, account, or database necessary.
+[![CI](https://github.com/builtbystef/busy-beaver/actions/workflows/ci.yml/badge.svg)](https://github.com/builtbystef/busy-beaver/actions/workflows/ci.yml)
+[![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+[![Go Reference](https://pkg.go.dev/badge/github.com/builtbystef/busy-beaver.svg)](https://pkg.go.dev/github.com/builtbystef/busy-beaver)
+
+**Busy Beaver is a local-first issue tracker that stores issues as Markdown
+files inside your project.** Humans and coding agents coordinate work through
+the files themselves. No external service, account, or database needed.
+
+```console
+$ beaver create "Login form rejects valid passwords" --label bug --priority high
+Created ix2guj  Login form rejects valid passwords
+  .beaver/issues/ix2guj-login-form-rejects-valid-passwords.md
+```
 
 ## Why Busy Beaver?
 
 Most issue trackers live outside the codebase, behind a web app and an API.
-Busy Beaver keeps project work _in_ the repository, as plain files that travel with
-your code:
+Busy Beaver keeps project work _in_ the repository, as plain files that travel
+with your code:
 
 - **Markdown-first** — every issue is a human-readable `.md` file with a small
   YAML header. Read it, edit it, diff it, and review it like any other file.
 - **Local by default** — issues live on your disk, in your project. Nothing to
   sign up for, nothing to sync, works offline.
-- **Version-control-friendly** — the files are plain
-  text that Git (or any version control system) diffs and merges cleanly. But Busy Beaver never _requires_
-  a VCS: it works correctly with Git, with another VCS, or with none at all.
-- **Optionally drives your VCS** — when you want it to, Busy Beaver can act as one way
-  of recording work: e.g. committing a completed issue as its own atomic commit.
-- **Agent-friendly** — coding agents read, create, and update issues as plain
-  files, and coordinate parallel work through the same store you use.
-- **CLI-driven** — drive everything from the terminal, with a web GUI
-  planned for those who prefer one.
+- **Version-control-friendly** — plain text that Git (or any VCS) diffs and
+  merges cleanly. But Busy Beaver never _requires_ a VCS: it works with Git,
+  with another system, or with none at all.
+- **Agent-friendly** — coding agents read, create, and update issues through
+  the same CLI and files you use. Output auto-switches to JSON when piped, and
+  exit codes are stable, so scripts never parse prose.
+- **Nothing hidden** — the files are the only source of truth. The CLI is a
+  thin client over them; hand-editing an issue file is a first-class operation.
 
-## How it works
+## Installation
 
-Each issue is a single Markdown file in `.beaver/issues/`, identified by a short
-stable ID and named for human readability:
+With Go 1.26 or later:
 
+```sh
+go install github.com/builtbystef/busy-beaver/cmd/beaver@latest
 ```
-.beaver/issues/k3n9x7-login-form-rejects-valid-passwords.md
+
+Or build from a clone:
+
+```sh
+git clone https://github.com/builtbystef/busy-beaver.git
+cd busy-beaver
+go build ./cmd/beaver
 ```
+
+## Quick start
+
+```console
+$ beaver init
+Initialized empty Busy Beaver store in /home/you/project/.beaver
+
+$ beaver create "Login form rejects valid passwords" --label bug --priority high
+Created ix2guj  Login form rejects valid passwords
+  .beaver/issues/ix2guj-login-form-rejects-valid-passwords.md
+
+$ beaver list
+ID      PRIORITY  STATE  ASSIGNEE  LABELS  TITLE
+ix2guj  high      todo   -         bug     Login form rejects valid passwords
+
+$ beaver start ix2guj
+Started ix2guj (claimed for stefan)
+
+$ beaver note ix2guj "root cause: form strips ! before hashing"
+Added note to ix2guj as stefan
+
+$ beaver done ix2guj
+Marked ix2guj done
+```
+
+Running `beaver create` with no title in a terminal opens your `$EDITOR` to
+author the issue interactively.
+
+## The issue file
+
+Each issue is one file in `.beaver/issues/`, named `<id>-<slug>.md` for
+readability. The short random ID is the identity; the slug just mirrors the
+title.
 
 ```markdown
 ---
-id: k3n9x7
+id: ix2guj
 title: Login form rejects valid passwords
-state: todo
-created: 2026-06-27T14:30:00Z
-updated: 2026-06-27T14:30:00Z
+state: done
+assignee: stefan
+priority: high
+labels:
+  - bug
+created: 2026-07-06T20:28:40Z
+updated: 2026-07-06T20:28:59Z
 ---
 
 When a user submits a correct password containing a `!`, the form clears and
 shows "invalid credentials". Expected: the login succeeds.
+
+## Notes
+
+**stefan** — 2026-07-06T20:28:59Z
+
+root cause: form strips ! before hashing
 ```
 
-The file _is_ the issue — the single source of truth. Busy Beaver's CLI (and the
-future web app) are thin clients over these files; nothing authoritative lives in
-a database.
+The frontmatter is machine-owned (Busy Beaver keeps it canonically formatted,
+and unknown keys you add by hand are preserved verbatim, never interpreted);
+the body is yours (Busy Beaver only ever appends notes to it). State is one of
+`todo`, `in-progress`, `done`, or `cancelled` — cancelled meaning deliberately
+abandoned, kept visible so nobody re-files it.
 
-Your words are never discarded: if an interactive `beaver create` ends with a
-file that isn't a usable issue, whatever you typed is stashed as a local recovery
-file under `.beaver/drafts/` instead of being deleted.
+## Commands
 
-## Coordinating work
+| Command                           | What it does                                                                           |
+| --------------------------------- | -------------------------------------------------------------------------------------- |
+| `beaver init`                     | Initialize a store in the current project                                              |
+| `beaver create "<title>"`         | Create an issue (`--label`, `--priority`, `--depends-on`, `--parent`)                  |
+| `beaver list`                     | List issues (`--state`, `--ready`, `--blocked`, `--label`, `--priority`, `--assignee`) |
+| `beaver show <ref>`               | Show an issue, including what it waits on and whether it is ready                      |
+| `beaver start <ref>`              | Move to in-progress, auto-claiming if unowned                                          |
+| `beaver done <ref>`               | Mark done                                                                              |
+| `beaver cancel <ref>`             | Deliberately abandon (terminal, but not completed)                                     |
+| `beaver reopen <ref>`             | Return a done or cancelled issue to todo                                               |
+| `beaver claim / assign / release` | Set or clear the assignee                                                              |
+| `beaver priority <ref> <level>`   | Set or clear priority (`urgent`–`low`, `none`)                                         |
+| `beaver label <ref> <label>`      | Add labels (`--remove` to take them off)                                               |
+| `beaver note <ref> "<text>"`      | Append an attributed, timestamped note                                                 |
+| `beaver edit <ref>`               | Open the issue file in `$EDITOR`                                                       |
+| `beaver delete <ref>`             | Delete the file (for junk; the VCS keeps history)                                      |
+| `beaver doctor`                   | Check store health; `--fix` repairs what is safe to repair                             |
+| `beaver whoami`                   | Print the actor you resolve as                                                         |
 
-Busy Beaver is local-first and has no sync layer, so it can't _lock_ an issue. A lock
-would need a central server, which is the thing local-first leaves out. Instead,
-an actor **claims** an issue by setting its `assignee` field, and that claim
-travels through Git like any other change. It's a signal, not a rule: two
-actors on different branches can claim the same issue, and Git shows the
-clash at merge.
+A `<ref>` is an issue's ID, its slug, or its file name — resolved by exact
+match only, never by prefix or fuzzy match. Run `beaver help` for full usage.
 
-In practice this is easy to manage. Push the claim _before_ you start work,
-assign or split issues by area, and integrate often. The one case to watch is
-many parallel agents pulling from the same queue; there, add a small dispatch
-layer instead of a lock.
+## For scripts and agents
 
-Give each concurrent agent its **own working tree** — a separate `git worktree`
-or clone. The working tree is the unit of concurrency: with one tree per agent,
-every concurrent edit lands on a different copy of the file and Git reconciles it
-at merge. Two agents sharing a single checkout can silently overwrite each other's
+Output format auto-detects: human-readable tables on a terminal, JSON when
+piped (override with `--format human|json`). Exit codes are stable — `0`
+success, `1` runtime failure, `2` usage error, `3` issue or store not found.
+
+Every mutation is attributed to an **actor** — a free-form name; humans and
+agents are treated identically. Identity resolves from `--as`, then the
+`BUSY_BEAVER_ACTOR` environment variable, then per-machine user config (a
+human is prompted once, in a terminal). Set `BUSY_BEAVER_ACTOR` in an agent's
+environment and every claim and note it makes is attributed correctly.
+
+## Coordinating parallel work
+
+Busy Beaver is local-first and has no sync layer, so it cannot _lock_ an
+issue. Instead an actor **claims** one by setting its `assignee` field, and
+that claim travels through the VCS like any other change. It is a signal, not
+a rule: two actors on different branches can claim the same issue, and the
+merge surfaces the clash. Push claims early and integrate often.
+
+Give each concurrent agent its **own working tree** (a separate `git worktree`
+or clone). Two agents sharing one checkout can silently overwrite each other's
 edits — that configuration is unsupported.
+
+Issues relate through `depends_on` and `parent`, stored one-sided on the
+dependent or child. `beaver list --ready` shows what is actionable now (todo,
+every dependency done); `--blocked` shows what is waiting.
+
+## Configuration
+
+`beaver init` writes `.beaver/config.yml`, which is committed and shared like
+the issues. One optional behavior today: with `commit_on_done: true`, `beaver
+done` records each completed issue as its own atomic commit through the Git
+adapter. Off by default — Busy Beaver otherwise commits nothing and never
+requires a VCS.
+
+Your identity lives in per-machine user config, never in the repository. If an
+interactive `create` ends with a file that isn't a usable issue, your words
+are stashed under `.beaver/drafts/` instead of being deleted.
+
+## Keeping the store healthy
+
+Distributed, hand-editable files can drift: filenames out of sync with titles,
+dangling references after a bad merge, dependency cycles, typo'd frontmatter
+keys. Everyday commands degrade gracefully — an invalid file is skipped with a
+warning, never a crash — and `beaver doctor` reports everything it finds.
+`doctor --fix` repairs only what is unambiguous (like drifted filenames) and
+never removes data.
+
+## Documentation
+
+- [`CONTEXT.md`](CONTEXT.md) — the project's language: what an issue, actor,
+  claim, and note precisely mean.
+- [`docs/adr/`](docs/adr/) — the architecture decisions behind the design and
+  their tradeoffs.
 
 ## Status
 
-Busy Beaver is in early design. See [`CONTEXT.md`](./CONTEXT.md) for the project's
-language, and [`docs/adr/`](./docs/adr/) for the decisions behind the design.
+Busy Beaver is pre-1.0. The CLI works and is well tested, but the file format
+and command surface may still change without a deprecation cycle. A web UI
+over the same files is planned.
+
+## Contributing
+
+Contributions are welcome — see [`CONTRIBUTING.md`](CONTRIBUTING.md) for how
+to build, test, and submit changes.
+
+## License
+
+[MIT](LICENSE)

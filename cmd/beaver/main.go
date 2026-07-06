@@ -8,10 +8,10 @@ import (
 
 	"golang.org/x/term"
 
-	"beaver/internal/cli"
-	"beaver/internal/clock"
-	"beaver/internal/issue"
-	"beaver/internal/vcs"
+	"github.com/builtbystef/busy-beaver/internal/cli"
+	"github.com/builtbystef/busy-beaver/internal/clock"
+	"github.com/builtbystef/busy-beaver/internal/issue"
+	"github.com/builtbystef/busy-beaver/internal/vcs"
 )
 
 func main() {

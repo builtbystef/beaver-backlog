@@ -5,7 +5,7 @@ import (
 	"testing"
 	"time"
 
-	"beaver/internal/issue"
+	"github.com/builtbystef/busy-beaver/internal/issue"
 )
 
 // A well-formed id and a legal state make an issue valid. The id check turns on

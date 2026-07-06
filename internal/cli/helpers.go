@@ -9,8 +9,8 @@ import (
 	"path/filepath"
 	"strings"
 
-	"beaver/internal/output"
-	"beaver/internal/store"
+	"github.com/builtbystef/busy-beaver/internal/output"
+	"github.com/builtbystef/busy-beaver/internal/store"
 )
 
 // csvList collects a repeatable, comma-separated string flag into an ordered

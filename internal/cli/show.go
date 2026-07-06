@@ -1,8 +1,8 @@
 package cli
 
 import (
-	"beaver/internal/issue"
-	"beaver/internal/output"
+	"github.com/builtbystef/busy-beaver/internal/issue"
+	"github.com/builtbystef/busy-beaver/internal/output"
 )
 
 // cmdShow renders one issue resolved from a reference.

@@ -3,9 +3,9 @@ package cli
 import (
 	"fmt"
 
-	"beaver/internal/output"
-	"beaver/internal/store"
-	"beaver/internal/userconfig"
+	"github.com/builtbystef/busy-beaver/internal/output"
+	"github.com/builtbystef/busy-beaver/internal/store"
+	"github.com/builtbystef/busy-beaver/internal/userconfig"
 )
 
 // cmdInit initializes the store in the working directory. It is idempotent.

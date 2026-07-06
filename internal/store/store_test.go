@@ -9,8 +9,8 @@ import (
 	"testing"
 	"time"
 
-	"beaver/internal/issue"
-	"beaver/internal/store"
+	"github.com/builtbystef/busy-beaver/internal/issue"
+	"github.com/builtbystef/busy-beaver/internal/store"
 )
 
 func TestDiscoverFromSubdirectory(t *testing.T) {

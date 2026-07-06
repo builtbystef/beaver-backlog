@@ -12,7 +12,7 @@ import (
 	"text/tabwriter"
 	"time"
 
-	"beaver/internal/issue"
+	"github.com/builtbystef/busy-beaver/internal/issue"
 )
 
 // Format is a rendering style.

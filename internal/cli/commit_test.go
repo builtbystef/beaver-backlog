@@ -5,9 +5,9 @@ import (
 	"strings"
 	"testing"
 
-	"beaver/internal/beavertest"
-	"beaver/internal/issue"
-	"beaver/internal/vcs"
+	"github.com/builtbystef/busy-beaver/internal/beavertest"
+	"github.com/builtbystef/busy-beaver/internal/issue"
+	"github.com/builtbystef/busy-beaver/internal/vcs"
 )
 
 func TestDoneCommitsWhenEnabled(t *testing.T) {

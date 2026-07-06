@@ -7,8 +7,8 @@ import (
 	"testing"
 	"time"
 
-	"beaver/internal/issue"
-	"beaver/internal/output"
+	"github.com/builtbystef/busy-beaver/internal/issue"
+	"github.com/builtbystef/busy-beaver/internal/output"
 )
 
 func TestResolve(t *testing.T) {

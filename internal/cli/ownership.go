@@ -5,9 +5,9 @@ import (
 	"strings"
 	"time"
 
-	"beaver/internal/issue"
-	"beaver/internal/output"
-	"beaver/internal/store"
+	"github.com/builtbystef/busy-beaver/internal/issue"
+	"github.com/builtbystef/busy-beaver/internal/output"
+	"github.com/builtbystef/busy-beaver/internal/store"
 )
 
 // Ownership is advisory coordination, not a lock: claim reserves an issue for the

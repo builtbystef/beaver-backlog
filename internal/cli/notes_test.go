@@ -5,8 +5,8 @@ import (
 	"testing"
 	"time"
 
-	"beaver/internal/beavertest"
-	"beaver/internal/issue"
+	"github.com/builtbystef/busy-beaver/internal/beavertest"
+	"github.com/builtbystef/busy-beaver/internal/issue"
 )
 
 // The entry is exposed as a structured note, not just spliced into the body text.

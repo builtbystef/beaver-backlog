@@ -6,8 +6,8 @@ import (
 	"sort"
 	"strings"
 
-	"beaver/internal/issue"
-	"beaver/internal/store"
+	"github.com/builtbystef/busy-beaver/internal/issue"
+	"github.com/builtbystef/busy-beaver/internal/store"
 )
 
 // cmdDoctor scans every file in the store, reports problems, and exits non-zero

@@ -6,9 +6,9 @@ import (
 	"strings"
 	"time"
 
-	"beaver/internal/issue"
-	"beaver/internal/output"
-	"beaver/internal/store"
+	"github.com/builtbystef/busy-beaver/internal/issue"
+	"github.com/builtbystef/busy-beaver/internal/output"
+	"github.com/builtbystef/busy-beaver/internal/store"
 )
 
 // cmdCreate mints a new issue from a title, optionally wiring relationship

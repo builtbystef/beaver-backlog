@@ -11,7 +11,7 @@ import (
 	"sort"
 	"strings"
 
-	"beaver/internal/issue"
+	"github.com/builtbystef/busy-beaver/internal/issue"
 )
 
 // dirName is the store directory created at a project's root.

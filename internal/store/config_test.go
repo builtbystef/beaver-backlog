@@ -5,7 +5,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	"beaver/internal/store"
+	"github.com/builtbystef/busy-beaver/internal/store"
 )
 
 // A freshly initialized store reads back the defaults: the shipped format

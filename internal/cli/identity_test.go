@@ -5,9 +5,9 @@ import (
 	"strings"
 	"testing"
 
-	"beaver/internal/beavertest"
-	"beaver/internal/userconfig"
-	"beaver/internal/vcs"
+	"github.com/builtbystef/busy-beaver/internal/beavertest"
+	"github.com/builtbystef/busy-beaver/internal/userconfig"
+	"github.com/builtbystef/busy-beaver/internal/vcs"
 )
 
 // Overlapping signals are set on purpose so each case proves the precedence, not

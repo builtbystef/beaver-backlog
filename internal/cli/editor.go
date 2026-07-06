@@ -6,8 +6,8 @@ import (
 	"os"
 	"strings"
 
-	"beaver/internal/issue"
-	"beaver/internal/store"
+	"github.com/builtbystef/busy-beaver/internal/issue"
+	"github.com/builtbystef/busy-beaver/internal/store"
 )
 
 // This file holds the editor plumbing edit and interactive create share: both

@@ -14,9 +14,9 @@ import (
 	"testing"
 	"time"
 
-	"beaver/internal/cli"
-	"beaver/internal/issue"
-	"beaver/internal/vcs"
+	"github.com/builtbystef/busy-beaver/internal/cli"
+	"github.com/builtbystef/busy-beaver/internal/issue"
+	"github.com/builtbystef/busy-beaver/internal/vcs"
 )
 
 // DefaultNow is the instant the harness clock starts at, unless a test changes

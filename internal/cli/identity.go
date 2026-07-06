@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"strings"
 
-	"beaver/internal/output"
-	"beaver/internal/userconfig"
+	"github.com/builtbystef/busy-beaver/internal/output"
+	"github.com/builtbystef/busy-beaver/internal/userconfig"
 )
 
 // Identity resolution answers "who is doing this?" for every command that

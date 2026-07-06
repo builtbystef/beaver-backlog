@@ -4,9 +4,9 @@ import (
 	"errors"
 	"fmt"
 
-	"beaver/internal/issue"
-	"beaver/internal/output"
-	"beaver/internal/store"
+	"github.com/builtbystef/busy-beaver/internal/issue"
+	"github.com/builtbystef/busy-beaver/internal/output"
+	"github.com/builtbystef/busy-beaver/internal/store"
 )
 
 // resolver turns a reference into an issue. Both *store.Store (a fresh scan per

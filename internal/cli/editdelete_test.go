@@ -7,8 +7,8 @@ import (
 	"strings"
 	"testing"
 
-	"beaver/internal/beavertest"
-	"beaver/internal/issue"
+	"github.com/builtbystef/busy-beaver/internal/beavertest"
+	"github.com/builtbystef/busy-beaver/internal/issue"
 )
 
 // The fake editor stands in for a human hand-editing the raw file.
