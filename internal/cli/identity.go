@@ -235,12 +235,3 @@ func cmdWhoami(env Env, args []string) int {
 	fmt.Fprintln(env.Stdout, a.name)
 	return exitOK
 }
-
-// resolveFormat picks the output format for a command, centralizing agent
-// detection: output no longer sniffs the environment itself but is told whether an
-// agent is present, using the one registry (knownAgent) that also drives identity
-// resolution (ADR 0010, ADR 0013).
-func resolveFormat(env Env, override string) (output.Format, error) {
-	_, isAgent := knownAgent(env.Getenv)
-	return output.Resolve(override, env.StdoutIsTTY, isAgent)
-}
