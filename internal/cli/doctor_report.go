@@ -1,8 +1,7 @@
 package cli
 
-// This file holds doctor's report half: the finding and report types diagnosis
-// produces, the --fix application over them, and the human and JSON renderings.
-// The scanning that produces the findings lives in doctor.go.
+// This file holds doctor's report half: the finding and report types, the --fix
+// application, and the human and JSON renderings. The scanning lives in doctor.go.
 
 import (
 	"fmt"
@@ -17,10 +16,8 @@ import (
 	"beaver/internal/store"
 )
 
-// category is the class of a health problem. The declaration order is also the
-// report's severity order — invalid (a file Busy Beaver cannot use) first, filename
-// drift (cosmetic, and the only auto-fixable class) last — so findings sort into a
-// stable, most-serious-first list.
+// category is the class of a health problem. Declaration order is the report's
+// severity order, most serious first, so findings sort into a stable list.
 type category int
 
 const (
@@ -36,17 +33,14 @@ const (
 	catDrift
 )
 
-// advisory reports whether findings of this class are informational rather than
-// problems: still reported — a key resembling a known field is worth a look — but
+// advisory reports whether findings of this class are informational: reported, but
 // never counted toward the exit code or the ok flag. Unknown-key is advisory
-// because resemblance is only ever a guess: a deliberate custom field like
-// `status` sits within typo distance of `state`, and a first-class supported
-// feature (ADR 0014) must not keep an otherwise healthy store permanently failing
-// doctor. Every other class states a fact, not a guess, and stays a problem.
+// because resemblance is only a guess — a deliberate custom field like `status`
+// sits within typo distance of `state` and must not fail an otherwise healthy
+// store.
 func (c category) advisory() bool { return c == catUnknownKey }
 
-// slug is the stable machine name of a category, used in JSON so a consumer can
-// branch on the problem class (ADR 0013).
+// slug is the stable machine name of a category, used in JSON.
 func (c category) slug() string {
 	switch c {
 	case catInvalid:
@@ -101,10 +95,9 @@ func (c category) label() string {
 }
 
 // finding is one health problem. detail is a self-contained, human-readable summary
-// (it embeds the file or ids it concerns), so it doubles as the JSON message and the
-// human detail; file and ids expose the same anchors structurally for a machine
-// consumer. Only filename drift is fixable, and only it carries the fix payload
-// (want/fixSrc/fixIss); fixed flips to true once --fix has renamed it.
+// that doubles as the JSON message; file and ids expose the same anchors
+// structurally. Only filename drift is fixable and carries the fix payload; fixed
+// flips to true once --fix has renamed it.
 type finding struct {
 	cat     category
 	file    string   // relative path of the primary file, or "" when the finding spans files
@@ -119,17 +112,15 @@ type finding struct {
 	fixIss issue.Issue // issue whose canonical name is the destination
 }
 
-// report is the whole health scan: how many valid issues were checked, and every
-// finding, ordered most-serious-first.
+// report is the whole health scan: how many valid issues were checked and every
+// finding, most serious first.
 type report struct {
 	checked  int
 	findings []finding
 }
 
-// remaining counts the problems still standing — every non-advisory finding not
-// repaired this run — which is what the exit code and the "ok" flag turn on.
-// Advisory findings are excluded by definition: they are reported, never held
-// against the store's health.
+// remaining counts the non-advisory findings not repaired this run, which is what
+// the exit code and the ok flag turn on.
 func (r *report) remaining() int {
 	n := 0
 	for _, f := range r.findings {
@@ -140,8 +131,7 @@ func (r *report) remaining() int {
 	return n
 }
 
-// advisoryCount counts the informational findings, reported apart from the
-// problems in every summary.
+// advisoryCount counts the informational findings.
 func (r *report) advisoryCount() int {
 	n := 0
 	for _, f := range r.findings {
@@ -172,13 +162,10 @@ func (r *report) fixableCount() int {
 	return n
 }
 
-// applyFixes repairs the fixable findings — today, filename drift — by renaming each
-// drifted file to its canonical name through the store, which refuses to overwrite
-// another file (ErrNameCollision) so a fix never destroys data. It runs to a fixed
-// point: a pass repairs every finding whose destination is currently free, and
-// repeats while any pass makes progress, so a chain of drifts that free each other's
-// names (A wants B's name, B wants C's) all resolve in one invocation. A finding
-// whose destination stays occupied — the rare mutual swap — is simply left standing
+// applyFixes renames each drifted file to its canonical name through the store,
+// which refuses to overwrite another file, so a fix never destroys data. Passes
+// repeat while any makes progress, so chained drifts that free each other's names
+// all resolve; a destination that stays occupied (a mutual swap) is left standing
 // and reported, never forced.
 func (r *report) applyFixes(st *store.Store) {
 	for {
@@ -210,10 +197,8 @@ func (r *report) render(w io.Writer, format output.Format, fix bool) error {
 	return r.renderHuman(w, fix)
 }
 
-// renderHuman writes the report as a human reads it: a headline, an aligned
-// class/detail table of the findings (ones repaired this run marked "fixed"), and a
-// closing summary that either points at --fix or accounts for what it repaired and
-// what still needs a person.
+// renderHuman writes a headline, an aligned class/detail table of the findings,
+// and a closing summary.
 func (r *report) renderHuman(w io.Writer, fix bool) error {
 	if len(r.findings) == 0 {
 		_, err := fmt.Fprintf(w, "No problems found (checked %d issue%s).\n", r.checked, plural(r.checked))
@@ -237,9 +222,8 @@ func (r *report) renderHuman(w io.Writer, fix bool) error {
 	return err
 }
 
-// foundClause words the headline's count: problems, advisory notes, or both. The
-// two are kept apart so an advisory-only report does not read as an unhealthy
-// store.
+// foundClause words the headline's count, keeping problems and advisory notes
+// apart so an advisory-only report does not read as an unhealthy store.
 func foundClause(problems, advisories int) string {
 	switch {
 	case advisories == 0:
@@ -251,14 +235,12 @@ func foundClause(problems, advisories int) string {
 	}
 }
 
-// advisoryOnlyLine closes a report whose only findings are advisory: nothing is
-// wrong, doctor just has something worth a look.
+// advisoryOnlyLine closes a report whose only findings are advisory.
 const advisoryOnlyLine = "Advisory notes are informational and do not fail doctor; the store is otherwise healthy."
 
-// writeSummary writes the closing line: before --fix, an offer to repair the fixable
-// findings; after --fix, an accounting of what was repaired and what still needs a
-// human. A report of only advisory notes closes by saying so, in both modes, rather
-// than talking about problems that are not there.
+// writeSummary writes the closing line: before --fix, an offer to repair the
+// fixable findings; after --fix, an accounting of what was repaired and what still
+// needs a human.
 func writeSummary(b *strings.Builder, r *report, fix bool) {
 	remaining := r.remaining()
 	if fix {
@@ -286,9 +268,8 @@ func writeSummary(b *strings.Builder, r *report, fix bool) {
 	fmt.Fprintln(b, "None of these can be fixed automatically; each needs a human.")
 }
 
-// reportView is the report's stable JSON shape (ADR 0013): the summary counts, an
-// ok flag a consumer can read instead of the exit code, and every finding. ok is
-// true exactly when no problems remain.
+// reportView is the report's stable JSON shape. ok is true exactly when no
+// problems remain, so a consumer can read it instead of the exit code.
 type reportView struct {
 	OK       bool          `json:"ok"`
 	Checked  int           `json:"checked"`
@@ -297,10 +278,10 @@ type reportView struct {
 	Findings []findingView `json:"findings"`
 }
 
-// findingView is one finding in JSON. Every key is always present (file is null when
-// the finding spans files; ids is [] never null), so a consumer never special-cases
-// a missing key (ADR 0013). advisory marks the informational classes a consumer may
-// filter out: an advisory finding never counts toward problems or flips ok.
+// findingView is one finding in JSON. Every key is always present (file is null
+// when the finding spans files; ids is [] never null), so a consumer never
+// special-cases a missing key. advisory marks the informational classes, which
+// never count toward problems or flip ok.
 type findingView struct {
 	Category string   `json:"category"`
 	File     *string  `json:"file"`
@@ -333,9 +314,9 @@ func (r *report) renderJSON(w io.Writer) error {
 	})
 }
 
-// sortFindings orders findings most-serious-first (by category), then by file, then
-// by first id, then detail — a total order, so the report is byte-for-byte
-// deterministic regardless of file iteration order.
+// sortFindings orders findings by category (most serious first), then file, first
+// id, and detail — a total order, so the report is deterministic regardless of
+// file iteration order.
 func sortFindings(fs []finding) {
 	sort.Slice(fs, func(i, j int) bool {
 		a, b := fs[i], fs[j]
@@ -375,8 +356,7 @@ func strsOrEmpty(xs []string) []string {
 	return xs
 }
 
-// plural returns the plural suffix for a count, so a message can read "1 issue" and
-// "2 issues" from one format string.
+// plural returns the plural suffix for a count ("1 issue", "2 issues").
 func plural(n int) string {
 	if n == 1 {
 		return ""
@@ -384,8 +364,8 @@ func plural(n int) string {
 	return "s"
 }
 
-// verbS returns the present-tense verb suffix agreeing with a count ("1 problem
-// needs" vs "2 problems need").
+// verbS returns the verb suffix agreeing with a count ("1 problem needs" vs
+// "2 problems need").
 func verbS(n int) string {
 	if n == 1 {
 		return "s"

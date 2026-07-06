@@ -11,8 +11,6 @@ import (
 	"beaver/internal/issue"
 )
 
-// AC: `beaver list` lists all issues by default, and the default is exactly
-// `--state all`.
 func TestListDefaultShowsAll(t *testing.T) {
 	h := beavertest.New(t).Init()
 	s := seedAllStates(t, h)
@@ -26,7 +24,6 @@ func TestListDefaultShowsAll(t *testing.T) {
 	}
 }
 
-// AC: `--state todo|in-progress|done|cancelled` filters to that one state.
 func TestListStateFilters(t *testing.T) {
 	h := beavertest.New(t).Init()
 	s := seedAllStates(t, h)
@@ -47,9 +44,9 @@ func TestListStateFilters(t *testing.T) {
 	}
 }
 
-// AC: ordering is deterministic. seedAllStates deliberately misaligns creation
-// time from ID order, so `--state all` returning creation order (not the id-sorted
-// file order the store hands back) proves the display sort is doing the work.
+// seedAllStates deliberately misaligns creation time from id order, so output in
+// creation order proves the display sort is doing the work, not the store's
+// id-sorted file order.
 func TestListOrdersByCreationNotFileOrder(t *testing.T) {
 	h := beavertest.New(t).Init()
 	s := seedAllStates(t, h)
@@ -66,8 +63,8 @@ func TestListOrdersByCreationNotFileOrder(t *testing.T) {
 	}
 }
 
-// Issues minted at the same instant (routine under a fixed clock) still sort
-// reproducibly — the ID is the total-order tiebreak.
+// Issues minted at the same instant (routine under a fixed clock) still need a
+// reproducible order, so the id is the tiebreak.
 func TestListOrderingTieBreaksByID(t *testing.T) {
 	h := beavertest.New(t).Init()
 	same := beavertest.DefaultNow
@@ -81,8 +78,6 @@ func TestListOrderingTieBreaksByID(t *testing.T) {
 	}
 }
 
-// AC: JSON output carries every field, with unset options normalized to
-// null/empty — the same per-issue contract `show` emits, one object per element.
 func TestListJSONCarriesAllFields(t *testing.T) {
 	h := beavertest.New(t).Init()
 	seed(t, h, "aaa111", "Only issue", issue.StateTodo, beavertest.DefaultNow)
@@ -114,8 +109,6 @@ func TestListJSONCarriesAllFields(t *testing.T) {
 	}
 }
 
-// AC: human table output. At a TTY the format auto-detects to the table, which
-// carries the column headers and the issue's fields — and is not JSON.
 func TestListHumanTable(t *testing.T) {
 	h := beavertest.New(t).Init()
 	h.IsTTY = true
@@ -132,8 +125,8 @@ func TestListHumanTable(t *testing.T) {
 	}
 }
 
-// An empty result renders as an empty JSON array (never null) for machines and a
-// friendly line for humans — whether the store is empty or a filter matched none.
+// An empty result must be [] (never null) for machines, whether the store is empty
+// or a filter matched none.
 func TestListEmptyRendersEmpty(t *testing.T) {
 	h := beavertest.New(t).Init()
 
@@ -152,8 +145,6 @@ func TestListEmptyRendersEmpty(t *testing.T) {
 	}
 }
 
-// A read command without a store exits 3 (not-found) and points at init, matching
-// the other commands.
 func TestListRequiresStore(t *testing.T) {
 	h := beavertest.New(t) // no init
 	r := h.Run("list")
@@ -165,13 +156,11 @@ func TestListRequiresStore(t *testing.T) {
 	}
 }
 
-// Misuse is a usage error (exit 2): an unknown state, a state flag with no value,
-// a stray positional, or an invalid format.
 func TestListUsageErrors(t *testing.T) {
 	h := beavertest.New(t).Init()
 	cases := [][]string{
 		{"list", "--state", "bogus"},
-		{"list", "--state", "open"},   // a removed umbrella value is now rejected
+		{"list", "--state", "open"},   // umbrella values are rejected
 		{"list", "--state", "closed"}, // likewise
 		{"list", "--state"},
 		{"list", "todo"},
@@ -184,10 +173,8 @@ func TestListUsageErrors(t *testing.T) {
 	}
 }
 
-// A file that fails validation is skipped so the command keeps working on the
-// valid issues (ADR 0005), rather than crashing or aborting. This asserts the
-// graceful skip; the loud warning that names the file is asserted in
-// TestListWarnsAndSkipsInvalidFiles.
+// An invalid file is skipped so the command keeps serving the valid issues; the
+// loud warning is asserted in TestListWarnsAndSkipsInvalidFiles.
 func TestListSkipsInvalidFiles(t *testing.T) {
 	h := beavertest.New(t).Init()
 	seed(t, h, "aaa111", "valid one", issue.StateTodo, beavertest.DefaultNow)
@@ -217,8 +204,8 @@ func seedAllStates(t *testing.T, h *beavertest.Harness) seeded {
 	return s
 }
 
-// seed writes an issue file directly, so tests can produce states no command can
-// set yet (transitions arrive in w9c42c) and control ids and timestamps exactly.
+// seed writes an issue file directly, so tests can set arbitrary states and
+// control ids and timestamps exactly.
 func seed(t *testing.T, h *beavertest.Harness, id, title string, state issue.State, created time.Time) {
 	t.Helper()
 	data, err := issue.Marshal(issue.Issue{

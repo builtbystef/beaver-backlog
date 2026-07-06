@@ -2,9 +2,9 @@ package issue
 
 import "strings"
 
-// slugMaxLen caps a slug so filenames stay reasonable. Titles longer than this
-// are cut on a word (hyphen) boundary. The ID, not the slug, is identity, so a
-// truncated or stale slug never affects correctness (ADR 0002).
+// slugMaxLen caps a slug so filenames stay reasonable; longer titles are cut on
+// a word boundary. The ID, not the slug, is identity, so a truncated or stale
+// slug never affects correctness.
 const slugMaxLen = 60
 
 // Slug derives a human-readable, filename-safe label from a title: lowercase,
@@ -53,9 +53,9 @@ func FileName(id, slug string) string {
 
 // IDFromFileName extracts the ID portion of a canonical issue file name — the
 // text before the first hyphen, or the whole stem when there is none. This reads
-// the *filename's* idea of the ID; the frontmatter remains authoritative.
+// the filename's idea of the ID; the frontmatter remains authoritative.
 func IDFromFileName(name string) string {
 	name = strings.TrimSuffix(name, ".md")
-	id, _, _ := strings.Cut(name, "-") // before the first '-', or all of name
+	id, _, _ := strings.Cut(name, "-")
 	return id
 }

@@ -7,17 +7,11 @@ import (
 	"beaver/internal/store"
 )
 
-// commitCompletion honors the project's opt-in commit-per-issue when an issue is
-// completed (ADR 0007). When commit_on_done is enabled and a VCS adapter is present,
-// it records the just-written issue file(s) as one atomic commit and returns the new
-// revision for the confirmation line.
-//
-// It is a convenience layered over a store that is already updated, so it never
-// fails the command and returns "" whenever no commit was made: the default
-// (disabled) is a silent no-op, and an explicit opt-in that cannot be honored — no
-// adapter, an unreadable config, or a failed commit — is a loud but non-fatal stderr
-// warning. The issue is done either way; the file is the source of truth and
-// Busy Beaver never requires a VCS (ADR 0006).
+// commitCompletion records the just-written issue file(s) as one atomic commit
+// when commit_on_done is enabled and a VCS adapter is present, returning the
+// new revision. It never fails the command and returns "" when no commit was
+// made: the default (disabled) is silent, and an opt-in that cannot be honored
+// is a non-fatal stderr warning — the issue is done either way.
 func commitCompletion(env Env, st *store.Store, iss issue.Issue, paths []string) string {
 	cfg, err := st.Config()
 	if err != nil {
@@ -25,7 +19,7 @@ func commitCompletion(env Env, st *store.Store, iss issue.Issue, paths []string)
 		return ""
 	}
 	if !cfg.CommitOnDone {
-		return "" // the default: Busy Beaver commits nothing (ADR 0006)
+		return "" // the default: commit nothing
 	}
 	if env.VCS == nil {
 		errf(env, "commit_on_done is enabled but no VCS adapter is configured; %s is done, nothing committed", iss.ID)
@@ -39,16 +33,16 @@ func commitCompletion(env Env, st *store.Store, iss issue.Issue, paths []string)
 	return rev
 }
 
-// commitMessage is the subject of a completion commit: the issue's id and title, so
-// the commit reads clearly in `git log` and points back at the issue it completed.
+// commitMessage is the subject of a completion commit: the issue's id and
+// title, so the commit points back at the issue it completed.
 func commitMessage(iss issue.Issue) string {
 	return fmt.Sprintf("Complete %s: %s", iss.ID, iss.Title)
 }
 
-// commitPaths is the set of files a completion commit stages: the issue's canonical
-// file, plus the old path when the write canonicalized a drifted filename (ADR 0005)
-// — so the commit records the rename as one change rather than leaving a stale
-// duplicate behind. The surviving file comes first.
+// commitPaths is the set of files a completion commit stages: the issue's
+// canonical file, plus the old path when the write canonicalized a drifted
+// filename, so the rename is recorded as one change. The surviving file comes
+// first.
 func commitPaths(newPath, oldPath string) []string {
 	if oldPath == "" || oldPath == newPath {
 		return []string{newPath}

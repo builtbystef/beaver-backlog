@@ -12,9 +12,6 @@ import (
 
 // --- create: setting labels and priority ---
 
-// AC: `create --label --priority` sets the fields. They land in the JSON result and
-// on disk, and unset ones stay off the file entirely while showing as null/[] in
-// JSON (the no-missing-keys contract, ADR 0013).
 func TestCreateSetsLabelsAndPriority(t *testing.T) {
 	h := beavertest.New(t).Init()
 
@@ -35,8 +32,7 @@ func TestCreateSetsLabelsAndPriority(t *testing.T) {
 	}
 }
 
-// An issue created with neither flag omits both keys from the file (omitempty), yet
-// still reports priority: null and labels: [] in JSON.
+// Unset fields stay off the file entirely but still render as null/[] in JSON.
 func TestCreateOmitsUnsetClassification(t *testing.T) {
 	h := beavertest.New(t).Init()
 
@@ -56,8 +52,6 @@ func TestCreateOmitsUnsetClassification(t *testing.T) {
 	}
 }
 
-// A repeated or comma-joined --label collapses to one label per distinct value, in
-// first-seen order — the same normalization edges get.
 func TestCreateDedupesAndSplitsLabels(t *testing.T) {
 	h := beavertest.New(t).Init()
 
@@ -67,8 +61,6 @@ func TestCreateDedupesAndSplitsLabels(t *testing.T) {
 	}
 }
 
-// An invalid --priority is a usage error (exit 2) caught before any store work, so
-// no file is written.
 func TestCreateRejectsInvalidPriority(t *testing.T) {
 	h := beavertest.New(t).Init()
 
@@ -86,8 +78,6 @@ func TestCreateRejectsInvalidPriority(t *testing.T) {
 
 // --- priority command: mutate after creation ---
 
-// AC: priority is mutable after creation. `priority <ref> <level>` sets it and
-// bumps `updated`; the change persists; state is untouched.
 func TestPrioritySetsAndChanges(t *testing.T) {
 	h := beavertest.New(t).Init()
 	seedClassified(t, h, "iss001", "Some work", issue.StateTodo, "", nil, "", beavertest.DefaultNow)
@@ -104,15 +94,12 @@ func TestPrioritySetsAndChanges(t *testing.T) {
 		t.Errorf("updated = %v, want bumped by the write", out["updated"])
 	}
 
-	// A second call changes it, and the new value persists.
 	h.MustRun("priority", "iss001", "low")
 	if got := showJSON(t, h, "iss001")["priority"]; got != "low" {
 		t.Errorf("persisted priority = %v, want low", got)
 	}
 }
 
-// `priority <ref> none` clears a set priority back to unprioritized (null in JSON,
-// absent from the file).
 func TestPriorityClears(t *testing.T) {
 	h := beavertest.New(t).Init()
 	seedClassified(t, h, "iss001", "Some work", issue.StateTodo, issue.PriorityHigh, nil, "", beavertest.DefaultNow)
@@ -126,8 +113,6 @@ func TestPriorityClears(t *testing.T) {
 	}
 }
 
-// Setting the priority an issue already has is an idempotent no-op: success, but no
-// rewrite, so `updated` is not churned and the file bytes are unchanged.
 func TestPriorityIdempotentNoop(t *testing.T) {
 	h := beavertest.New(t).Init()
 	seedClassified(t, h, "iss001", "Work", issue.StateTodo, issue.PriorityMedium, nil, "", beavertest.DefaultNow)
@@ -144,7 +129,6 @@ func TestPriorityIdempotentNoop(t *testing.T) {
 	}
 }
 
-// An invalid level, or the wrong number of arguments, is a usage error (exit 2).
 func TestPriorityUsageErrors(t *testing.T) {
 	h := beavertest.New(t).Init()
 	seedClassified(t, h, "iss001", "Work", issue.StateTodo, "", nil, "", beavertest.DefaultNow)
@@ -163,9 +147,6 @@ func TestPriorityUsageErrors(t *testing.T) {
 
 // --- label command: mutate after creation ---
 
-// AC: labels are mutable after creation. Positional labels are added; --remove drops
-// them. Labels are a set, existing ones are kept, and the change persists with a
-// bumped `updated`.
 func TestLabelAddsAndRemoves(t *testing.T) {
 	h := beavertest.New(t).Init()
 	seedClassified(t, h, "iss001", "Work", issue.StateTodo, "", []string{"bug"}, "", beavertest.DefaultNow)
@@ -176,15 +157,14 @@ func TestLabelAddsAndRemoves(t *testing.T) {
 		t.Errorf("after add = %v, want [bug ux]", got)
 	}
 
-	// Remove one; the rest persists to disk.
 	h.MustRun("label", "iss001", "--remove", "bug")
 	if got := strSlice(showJSON(t, h, "iss001")["labels"]); !slices.Equal(got, []string{"ux"}) {
 		t.Errorf("after remove = %v, want [ux]", got)
 	}
 }
 
-// Adds and removes may be combined in one call, and a label named in both is removed
-// (removal wins), so the outcome is independent of ordering.
+// A label named in both add and remove is removed — removal wins, so the outcome
+// is independent of ordering.
 func TestLabelAddAndRemoveInOneCall(t *testing.T) {
 	h := beavertest.New(t).Init()
 	seedClassified(t, h, "iss001", "Work", issue.StateTodo, "", []string{"old"}, "", beavertest.DefaultNow)
@@ -195,8 +175,6 @@ func TestLabelAddAndRemoveInOneCall(t *testing.T) {
 	}
 }
 
-// An invocation whose net effect changes nothing is an idempotent no-op: no rewrite,
-// so `updated` and the file bytes are untouched.
 func TestLabelNoopWhenUnchanged(t *testing.T) {
 	h := beavertest.New(t).Init()
 	seedClassified(t, h, "iss001", "Work", issue.StateTodo, "", []string{"bug"}, "", beavertest.DefaultNow)
@@ -214,7 +192,6 @@ func TestLabelNoopWhenUnchanged(t *testing.T) {
 	}
 }
 
-// label with no add and no remove, or no reference at all, is a usage error (exit 2).
 func TestLabelUsageErrors(t *testing.T) {
 	h := beavertest.New(t).Init()
 	seedClassified(t, h, "iss001", "Work", issue.StateTodo, "", nil, "", beavertest.DefaultNow)
@@ -231,11 +208,8 @@ func TestLabelUsageErrors(t *testing.T) {
 
 // --- list: sorting and filtering ---
 
-// AC: list sorts by priority — urgent first, then high, medium, low, then the
-// unprioritized — and within one priority falls back to the stable creation order.
-// The fixture misaligns priority from creation time so both rules are exercised at
-// once: bbb (urgent, newest) leads, the two highs order by creation (ccc before
-// aaa), and ddd (no priority, oldest) sorts last, not first.
+// The fixture misaligns priority from creation time, so it exercises both rules at
+// once: priority level first, creation order within a level, unprioritized last.
 func TestListSortsByPriority(t *testing.T) {
 	h := beavertest.New(t).Init()
 	base := beavertest.DefaultNow
@@ -252,8 +226,6 @@ func TestListSortsByPriority(t *testing.T) {
 	}
 }
 
-// AC: list filters by priority. --priority <level> keeps only that level; --priority
-// none keeps only the unprioritized.
 func TestListFiltersByPriority(t *testing.T) {
 	h := beavertest.New(t).Init()
 	base := beavertest.DefaultNow
@@ -269,8 +241,6 @@ func TestListFiltersByPriority(t *testing.T) {
 	}
 }
 
-// AC: list filters by label, with AND semantics — repeating --label narrows to the
-// issues carrying every named label.
 func TestListFiltersByLabelAND(t *testing.T) {
 	h := beavertest.New(t).Init()
 	base := beavertest.DefaultNow
@@ -286,7 +256,6 @@ func TestListFiltersByLabelAND(t *testing.T) {
 	}
 }
 
-// AC: list filters by assignee — exact match on the assignee field.
 func TestListFiltersByAssignee(t *testing.T) {
 	h := beavertest.New(t).Init()
 	base := beavertest.DefaultNow
@@ -298,9 +267,8 @@ func TestListFiltersByAssignee(t *testing.T) {
 	}
 }
 
-// The attribute filters combine with each other (AND) and refine a base selector
-// rather than replacing it, so `--priority high --label bug --state todo` is the
-// intersection of all three.
+// Attribute filters AND together and refine the state selector rather than
+// replacing it.
 func TestListFiltersCombineAndRefineSelectors(t *testing.T) {
 	h := beavertest.New(t).Init()
 	base := beavertest.DefaultNow
@@ -315,7 +283,6 @@ func TestListFiltersCombineAndRefineSelectors(t *testing.T) {
 	}
 }
 
-// An invalid --priority filter value is a usage error (exit 2), like the setter.
 func TestListRejectsInvalidPriorityFilter(t *testing.T) {
 	h := beavertest.New(t).Init()
 	if r := h.Run("list", "--priority", "huge"); r.Code != 2 {
@@ -325,8 +292,6 @@ func TestListRejectsInvalidPriorityFilter(t *testing.T) {
 
 // --- show ---
 
-// AC: show exposes labels and priority. The human view lists both fields; the JSON
-// view carries them under their keys.
 func TestShowExposesPriorityAndLabels(t *testing.T) {
 	h := beavertest.New(t).Init()
 	seedClassified(t, h, "iss001", "Visible fields", issue.StateTodo, issue.PriorityHigh, []string{"bug", "v1"}, "", beavertest.DefaultNow)

@@ -9,8 +9,6 @@ import (
 	"beaver/internal/issue"
 )
 
-// AC: a clean store reports healthy — exit 0, no findings, and (in JSON) an ok flag
-// a consumer can read instead of the exit code.
 func TestDoctorCleanStoreIsHealthy(t *testing.T) {
 	h := beavertest.New(t).Init()
 	seed(t, h, "good11", "First", issue.StateTodo, beavertest.DefaultNow)
@@ -33,18 +31,16 @@ func TestDoctorCleanStoreIsHealthy(t *testing.T) {
 	}
 }
 
-// AC: doctor detects and reports every problem class, and exits non-zero when any
-// exist. Each class is seeded so it stands alone (its issues produce only their own
-// finding), and all coexist in one store, so this asserts both detection and that
-// the classes do not mask one another.
+// Every problem class coexists in one store, so this asserts both detection and
+// that the classes do not mask one another.
 func TestDoctorDetectsEachProblemClass(t *testing.T) {
 	h := beavertest.New(t).Init()
 
-	// A hard validation error: reported, never fixed (ADR 0005).
+	// A hard validation error.
 	h.WriteFile("issues/bad-state.md", "---\nid: bad222\ntitle: Bad\nstate: archived\n"+stamps+"---\n")
-	// Filename drift: a valid issue under a name that is not its canonical <id>-<slug>.
+	// Filename drift: a valid issue under a non-canonical name.
 	seedAt(t, h, "drift-wrong.md", "drft01", "Drift Title", issue.StateTodo)
-	// A frontmatter key that looks like a typo of a known field (ADR 0014).
+	// A frontmatter key that looks like a typo of a known field.
 	seedCustom(t, h, "unkey1", "Unknown Key", map[string]any{"assigne": "someone"})
 	// Dangling references: a depends_on and a parent to an id no issue holds.
 	seedDep(t, h, "dang01", "Dangling Depends", issue.StateTodo, []string{"ghost0"}, "")
@@ -58,7 +54,7 @@ func TestDoctorDetectsEachProblemClass(t *testing.T) {
 	// Stuck on a cancelled dependency: an open issue whose dependency can never be met.
 	seedDep(t, h, "cnl001", "Cancelled Dep", issue.StateCancelled, nil, "")
 	seedDep(t, h, "stk001", "Stuck Issue", issue.StateTodo, []string{"cnl001"}, "")
-	// Two files claiming one id — a half-merged clash validation cannot catch.
+	// Two files claiming one id — a clash validation cannot catch.
 	seedAt(t, h, "dup-a.md", "dup001", "Dup A", issue.StateTodo)
 	seedAt(t, h, "dup-b.md", "dup001", "Dup B", issue.StateTodo)
 
@@ -90,9 +86,7 @@ func TestDoctorDetectsEachProblemClass(t *testing.T) {
 	}
 }
 
-// AC: doctor --fix repairs filename drift — the one mechanically safe lint. The file
-// is renamed to its canonical name on disk, the finding is marked fixed, and with no
-// other problem the store comes out clean (exit 0).
+// Filename drift is the one mechanically safe fix.
 func TestDoctorFixRepairsFilenameDrift(t *testing.T) {
 	h := beavertest.New(t).Init()
 	seedAt(t, h, "drift-wrong.md", "drft01", "New Title", issue.StateTodo)
@@ -113,9 +107,8 @@ func TestDoctorFixRepairsFilenameDrift(t *testing.T) {
 	}
 }
 
-// AC: --fix repairs the lint but reports validation errors rather than auto-fixing
-// them. The drifted file is renamed; the invalid file is left untouched and still
-// reported, so the run exits non-zero for the problem a human must resolve.
+// --fix repairs lint but never auto-fixes a validation error, which a human must
+// resolve.
 func TestDoctorFixLeavesValidationErrors(t *testing.T) {
 	h := beavertest.New(t).Init()
 	h.WriteFile("issues/bad-state.md", "---\nid: bad222\ntitle: Bad\nstate: archived\n"+stamps+"---\n")
@@ -140,10 +133,8 @@ func TestDoctorFixLeavesValidationErrors(t *testing.T) {
 	}
 }
 
-// AC / ADR 0014: --fix never removes an unknown frontmatter key — removal is data
-// loss, not tidying. The typo'd key is reported (never fixed) and remains in the file
-// after --fix. The finding is advisory: resemblance to a known field is only ever a
-// guess, so it does not fail the run.
+// Removing an unknown key would be data loss, not tidying, so --fix never touches
+// it; resemblance to a known field is only ever a guess, so the finding is advisory.
 func TestDoctorFixNeverRemovesUnknownKey(t *testing.T) {
 	h := beavertest.New(t).Init()
 	seedCustom(t, h, "unkey1", "Typo Key", map[string]any{"assigne": "bob"})
@@ -161,11 +152,9 @@ func TestDoctorFixNeverRemovesUnknownKey(t *testing.T) {
 	}
 }
 
-// A likely-typo'd key is worth a human's eye but is only ever a guess — a deliberate
-// custom key like `status` sits within typo distance of `state` — so the unknown-key
-// class is advisory: reported (with the advisory flag in JSON, and worded as a note
-// in the human report) while the store still counts as healthy (ok, exit 0, zero
-// problems). A first-class custom field must never fail doctor forever (ADR 0014).
+// A likely-typo'd key is only ever a guess — a deliberate custom key like `status`
+// sits within typo distance of `state` — so it is reported as an advisory note but
+// must never fail doctor.
 func TestDoctorUnknownKeyIsAdvisory(t *testing.T) {
 	h := beavertest.New(t).Init()
 	seedCustom(t, h, "note01", "Deliberate Custom Key", map[string]any{"status": "shipping"})
@@ -191,9 +180,8 @@ func TestDoctorUnknownKeyIsAdvisory(t *testing.T) {
 	}
 }
 
-// A genuine problem and an advisory note coexist without muddying each other: the
-// problem alone drives the exit code and counts, while the note stays visible in the
-// findings and the headline names both.
+// The problem alone drives the exit code and counts; the advisory note stays
+// visible alongside it.
 func TestDoctorAdvisoryDoesNotMaskProblems(t *testing.T) {
 	h := beavertest.New(t).Init()
 	h.WriteFile("issues/bad-state.md", "---\nid: bad222\ntitle: Bad\nstate: archived\n"+stamps+"---\n")
@@ -212,10 +200,9 @@ func TestDoctorAdvisoryDoesNotMaskProblems(t *testing.T) {
 	}
 }
 
-// A priority that is not one of the four levels loads fine (validation stays
-// narrow, ADR 0005) but silently matches no --priority filter, so doctor flags it
-// as an unknown value — and never fixes it, since mapping it to a real level
-// would be guessing.
+// An unrecognized priority loads fine but silently matches no --priority filter,
+// so doctor flags it — and never fixes it, since mapping it to a real level would
+// be guessing.
 func TestDoctorFlagsUnknownPriorityValue(t *testing.T) {
 	h := beavertest.New(t).Init()
 	h.WriteFile("issues/pri001-typo-priority.md",
@@ -238,8 +225,8 @@ func TestDoctorFlagsUnknownPriorityValue(t *testing.T) {
 	}
 }
 
-// An issue with no created/updated timestamp is usable (ADR 0005) but sorts as the
-// oldest in every list, so doctor surfaces it — and never invents a date.
+// An issue with no timestamps is usable but sorts as the oldest in every list, so
+// doctor surfaces it — and never invents a date.
 func TestDoctorFlagsMissingTimestamps(t *testing.T) {
 	h := beavertest.New(t).Init()
 	h.WriteFile("issues/nots01-no-stamps.md", "---\nid: nots01\ntitle: No Stamps\nstate: todo\n---\n")
@@ -257,9 +244,8 @@ func TestDoctorFlagsMissingTimestamps(t *testing.T) {
 	}
 }
 
-// A mutating command on a timestamp-less issue must not bake in the year-1 zero
-// value: created stays honestly absent (doctor keeps flagging it), updated is set
-// by the mutation, and JSON renders the absent created as null (ADR 0013).
+// A mutation on a timestamp-less issue must not bake in the year-1 zero value:
+// created stays honestly absent and renders as null in JSON.
 func TestMutationLeavesMissingCreatedAbsent(t *testing.T) {
 	h := beavertest.New(t).Init()
 	h.WriteFile("issues/nots01-no-stamps.md", "---\nid: nots01\ntitle: No Stamps\nstate: todo\n---\n")
@@ -283,9 +269,7 @@ func TestMutationLeavesMissingCreatedAbsent(t *testing.T) {
 	}
 }
 
-// A deliberate custom field is a first-class, supported feature (ADR 0014), not a
-// problem: it is near no known field, so doctor does not flag it and a store that
-// uses custom fields can still be perfectly healthy.
+// Custom fields are a supported feature: a key near no known field is not flagged.
 func TestDoctorAllowsDeliberateCustomFields(t *testing.T) {
 	h := beavertest.New(t).Init()
 	seedCustom(t, h, "cust01", "Has Custom Fields", map[string]any{"sprint": 7, "estimate": "3d"})
@@ -299,10 +283,8 @@ func TestDoctorAllowsDeliberateCustomFields(t *testing.T) {
 	}
 }
 
-// A parent chain that loops back on itself has no root, so no hierarchy could ever
-// render it — the degenerate case being an issue that names itself as its own
-// parent, which show would list among its own children. Doctor reports it (never
-// fixes it: which edge to drop is a human's call), like a dependency cycle.
+// A looping parent chain has no root, so no hierarchy could render it. Which edge
+// to drop is a human's call, so doctor reports it and never fixes it.
 func TestDoctorFlagsParentCycles(t *testing.T) {
 	h := beavertest.New(t).Init()
 	seedDep(t, h, "self01", "Own Parent", issue.StateTodo, nil, "self01")
@@ -320,10 +302,8 @@ func TestDoctorFlagsParentCycles(t *testing.T) {
 	}
 }
 
-// A duplicate id is reported and never auto-fixed: renaming one file onto the other's
-// canonical name would clobber it, so --fix leaves both files exactly where they are
-// and the clash is left for a human. Because the id is contested, no filename-drift
-// repair is offered for those files either.
+// Renaming either duplicate-id file onto the canonical name would clobber the
+// other, so --fix leaves both alone — and offers no drift repair for a contested id.
 func TestDoctorDuplicateIDIsReportedNotFixed(t *testing.T) {
 	h := beavertest.New(t).Init()
 	seedAt(t, h, "dup-a.md", "dup001", "Dup A", issue.StateTodo)
@@ -345,9 +325,6 @@ func TestDoctorDuplicateIDIsReportedNotFixed(t *testing.T) {
 	}
 }
 
-// AC: output is human or JSON per the standard auto-detection. The human report
-// headlines the count, lists each problem by class, and points at --fix for the
-// fixable ones.
 func TestDoctorHumanOutput(t *testing.T) {
 	h := beavertest.New(t).Init()
 	h.WriteFile("issues/bad-state.md", "---\nid: bad222\ntitle: Bad\nstate: archived\n"+stamps+"---\n")
@@ -364,8 +341,6 @@ func TestDoctorHumanOutput(t *testing.T) {
 	}
 }
 
-// doctor needs a store, like every other command: run outside one and it fails with
-// the not-found exit code and the init hint, rather than pretending all is well.
 func TestDoctorRequiresAStore(t *testing.T) {
 	h := beavertest.New(t) // not initialized
 	r := h.Run("doctor")
@@ -377,9 +352,8 @@ func TestDoctorRequiresAStore(t *testing.T) {
 	}
 }
 
-// The JSON report is a clean object on stdout — nothing leaks onto it (doctor reports
-// invalid files in the report itself, not through the store's stderr warnings), so an
-// agent parses stdout directly (ADR 0013).
+// Doctor reports invalid files in the report itself, not through the store's stderr
+// warnings, so nothing leaks onto the JSON stdout an agent parses.
 func TestDoctorJSONStaysCleanOnStdout(t *testing.T) {
 	h := beavertest.New(t).Init()
 	h.WriteFile("issues/broken.md", "not an issue file\n")

@@ -14,7 +14,7 @@ import (
 )
 
 // Exit codes. 0 is success; the rest are stable so scripts and agents can branch
-// on outcome without parsing text (ADR 0013).
+// on outcome without parsing text.
 const (
 	exitOK       = 0
 	exitError    = 1 // an unexpected or runtime failure
@@ -34,11 +34,11 @@ type Env struct {
 	Getenv        func(string) string // environment lookup
 	Clock         clock.Clock         // source of timestamps
 	NewID         func() string       // issue ID generator (injectable for tests)
-	Edit          func(string) error  // open a file in the user's editor, blocking until it exits; nil (or a non-interactive session) means no editor, so edit and interactive create refuse rather than hang
+	Edit          func(string) error  // open a file in the user's editor, blocking until it exits; nil means no editor, so edit and interactive create refuse rather than hang
 	StdoutIsTTY   bool                // whether stdout is an interactive terminal
-	StdinIsTTY    bool                // whether stdin is interactive: the signal that gates human identity setup (ADR 0010)
-	VCS           vcs.System          // version-control integration (identity seed + commit); nil means no adapter (ADR 0006/0007)
-	UserConfigDir string              // per-machine user-config dir (identity lives here, never committed; ADR 0008)
+	StdinIsTTY    bool                // whether stdin is interactive; gates human identity setup
+	VCS           vcs.System          // version-control integration (identity seed + commit); nil means no adapter
+	UserConfigDir string              // per-machine user-config dir; identity lives here, never committed
 }
 
 // Run dispatches one command and returns its exit code. It never calls os.Exit;
@@ -178,10 +178,10 @@ func newFlagSet(env Env, name string) (fs *flag.FlagSet, format *string) {
 	return fs, format
 }
 
-// parseArgs parses flags that may appear anywhere among the positional
-// arguments, returning the positionals. The standard flag package stops at the
-// first positional, which would reject the natural `beaver show <ref> --format
-// json`;
+// parseArgs parses flags that may appear anywhere among the positional arguments,
+// returning the positionals; the standard flag package stops at the first
+// positional, which would reject the natural `beaver show <ref> --format json`.
+// Everything after -- is taken as literal positionals.
 func parseArgs(fs *flag.FlagSet, args []string) (positionals []string, ok bool) {
 	var literals []string
 	for i, a := range args {

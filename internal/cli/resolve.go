@@ -9,30 +9,21 @@ import (
 	"beaver/internal/store"
 )
 
-// resolver is the one capability resolveRef needs: turning a reference into an
-// issue. Both *store.Store (a fresh scan per call) and *store.Snapshot (one scan
-// answering many lookups) provide it, so a command picks whichever fits how often
-// it asks.
+// resolver turns a reference into an issue. Both *store.Store (a fresh scan per
+// call) and *store.Snapshot (one scan answering many lookups) provide it.
 type resolver interface {
 	Resolve(ref string) (issue.Issue, string, error)
 }
 
-// resolveRef turns a user reference into a single issue through the store's shared
-// resolver (store.Resolve) — the one path every issue-addressing command uses, so
-// show, done, cancel, and reopen all accept the same references: a full ID, its
-// slug, or an "<id>-<slug>" name, stale or canonical (ADR 0002). It maps a
-// resolution failure to the right diagnostic and stable exit code and returns that
-// code; on success it returns the issue, its path, and exitOK. Callers do:
-//
-//	iss, path, code := resolveRef(env, st, ref)
-//	if code != exitOK {
-//		return code
-//	}
+// resolveRef turns a user reference — a full ID, a slug, or an "<id>-<slug>"
+// name, stale or canonical — into a single issue. It maps a resolution failure
+// to a diagnostic and its exit code; on success it returns the issue, its path,
+// and exitOK.
 func resolveRef(env Env, st resolver, ref string) (iss issue.Issue, path string, code int) {
 	iss, path, err := st.Resolve(ref)
 
-	// SharedSlugError Unwraps to ErrNotFound, so it must be checked before the
-	// generic not-found branch below would swallow it.
+	// SharedSlugError unwraps to ErrNotFound, so it must be checked before the
+	// generic not-found branch swallows it.
 	var shared *store.SharedSlugError
 	switch {
 	case err == nil:
@@ -49,14 +40,10 @@ func resolveRef(env Env, st resolver, ref string) (iss issue.Issue, path string,
 	}
 }
 
-// resolveEdges turns the raw references from a relationship flag (--depends-on)
-// into canonical issue ids, routing each through resolveRef so an edge accepts an
-// id, a slug, or an <id>-<slug> name — the same references every other command
-// takes. It dedupes by resolved id while preserving first-seen order, so repeats
-// and two references to one issue collapse to a single stored edge. On the first
-// reference that does not resolve it reports the failure (via resolveRef) and
-// returns that non-OK code, so create refuses to store an edge to an issue that is
-// not there: a typo fails fast instead of persisting as a dangling reference.
+// resolveEdges turns raw relationship references into canonical issue ids,
+// deduping by resolved id while preserving first-seen order. The first
+// reference that does not resolve is reported and its non-OK code returned, so
+// a typo fails fast instead of persisting as a dangling edge.
 func resolveEdges(env Env, st resolver, refs []string) (ids []string, code int) {
 	seen := make(map[string]bool)
 	for _, ref := range refs {
@@ -72,10 +59,8 @@ func resolveEdges(env Env, st resolver, refs []string) (ids []string, code int) 
 	return ids, exitOK
 }
 
-// reportSharedSlug explains that a slug names several issues and lists them, each
-// as "id  title", so the user can pick one by its unique ID. store.Resolve already
-// sorted the matches by ID, so the listing is deterministic. It counts as a
-// not-found (there is no single issue), so the caller still exits exitNotFound.
+// reportSharedSlug explains that a slug names several issues and lists them so
+// the user can pick one by its unique ID.
 func reportSharedSlug(env Env, e *store.SharedSlugError) {
 	errf(env, "%q is the slug of %d issues; use a full ID:", e.Slug, len(e.Matches))
 	for _, iss := range e.Matches {

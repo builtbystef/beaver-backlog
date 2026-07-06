@@ -10,9 +10,6 @@ import (
 	"beaver/internal/vcs"
 )
 
-// AC: with commit-on-done enabled, finishing an issue produces one atomic commit
-// through the (fake) VCS adapter — with the completed issue's file as the pathspec
-// and a message naming the issue — and the human confirmation reports the revision.
 func TestDoneCommitsWhenEnabled(t *testing.T) {
 	h := beavertest.New(t).Init()
 	h.IsTTY = true
@@ -38,8 +35,7 @@ func TestDoneCommitsWhenEnabled(t *testing.T) {
 	}
 }
 
-// AC: default behavior commits nothing. Even with an adapter present, an unset
-// commit_on_done means done never commits — the opt-in is off by default (ADR 0006).
+// Even with an adapter present, an unset commit_on_done means done never commits.
 func TestDoneDoesNotCommitByDefault(t *testing.T) {
 	h := beavertest.New(t).Init() // default config: commit_on_done unset
 	fake := &vcs.Fake{}
@@ -55,9 +51,8 @@ func TestDoneDoesNotCommitByDefault(t *testing.T) {
 	}
 }
 
-// AC: all core commands work with no VCS present. With commit_on_done enabled but no
-// adapter, done still succeeds (the issue is done on disk) and only warns — Busy Beaver
-// never requires a VCS (ADR 0006).
+// A VCS is never required: with commit_on_done enabled but no adapter, done still
+// succeeds on disk and only warns.
 func TestDoneWithoutAdapterIsNonFatal(t *testing.T) {
 	h := beavertest.New(t).Init()
 	enableCommitOnDone(h)
@@ -76,9 +71,8 @@ func TestDoneWithoutAdapterIsNonFatal(t *testing.T) {
 	}
 }
 
-// A commit that fails at the adapter is non-fatal: the issue is still marked done on
-// disk and the failure is a warning, not a command failure — the file is the source
-// of truth (ADR 0006).
+// The file is the source of truth: a failed commit is a warning, not a command
+// failure, and the issue is still done on disk.
 func TestDoneCommitFailureIsNonFatal(t *testing.T) {
 	h := beavertest.New(t).Init()
 	enableCommitOnDone(h)
@@ -101,9 +95,7 @@ func TestDoneCommitFailureIsNonFatal(t *testing.T) {
 	}
 }
 
-// Only completion commits: cancel and reopen never record a commit even with
-// commit_on_done enabled and an adapter present. Abandoning or restoring an issue is
-// not a completion (ADR 0007).
+// Abandoning or restoring an issue is not a completion, so only done commits.
 func TestCancelAndReopenDoNotCommit(t *testing.T) {
 	h := beavertest.New(t).Init()
 	enableCommitOnDone(h)
@@ -120,8 +112,7 @@ func TestCancelAndReopenDoNotCommit(t *testing.T) {
 	}
 }
 
-// A redundant done (already done) is an idempotent no-op that writes nothing, so it
-// records no commit even when commit_on_done is enabled.
+// A redundant done writes nothing, so it must record no commit either.
 func TestRedundantDoneDoesNotCommit(t *testing.T) {
 	h := beavertest.New(t).Init()
 	enableCommitOnDone(h)
@@ -137,12 +128,9 @@ func TestRedundantDoneDoesNotCommit(t *testing.T) {
 	}
 }
 
-// AC / ADR 0013: the recorded revision reaches the machine consumer too. done's
-// JSON carries an always-present "commit" key: the commit object (with its short
-// revision) when one was recorded, and null whenever none was — the opt-in off,
-// or a redundant no-op done — so an agent scripting around commit_on_done reads
-// the revision from the result instead of asking the VCS, and never special-cases
-// a missing key.
+// done's JSON carries an always-present "commit" key — the commit object when one
+// was recorded, null otherwise — so an agent reads the revision from the result
+// instead of asking the VCS, and never special-cases a missing key.
 func TestDoneJSONCarriesCommit(t *testing.T) {
 	h := beavertest.New(t).Init()
 	enableCommitOnDone(h)
@@ -158,16 +146,16 @@ func TestDoneJSONCarriesCommit(t *testing.T) {
 		t.Errorf("commit revision = %v, want abc1234", commit["revision"])
 	}
 
-	// A redundant done writes nothing and commits nothing, but the key is still
-	// there — null — so the shape is constant.
+	// A redundant done commits nothing, but the key is still there — null — so the
+	// shape is constant.
 	redundant := h.DecodeJSON(h.MustRun("done", "cmt001").Stdout)
 	if v, present := redundant["commit"]; !present || v != nil {
 		t.Errorf("redundant done commit = %v (present=%v), want null", v, present)
 	}
 }
 
-// With the opt-in off (the default), done's JSON still carries the commit key —
-// null — so a consumer sees one shape regardless of project settings.
+// With the opt-in off, the commit key is still present (null), so a consumer sees
+// one shape regardless of project settings.
 func TestDoneJSONCommitNullByDefault(t *testing.T) {
 	h := beavertest.New(t).Init() // commit_on_done unset
 	h.VCS = &vcs.Fake{}
@@ -179,8 +167,7 @@ func TestDoneJSONCommitNullByDefault(t *testing.T) {
 	}
 }
 
-// enableCommitOnDone turns the project-level opt-in on by writing the committed
-// project config the store reads.
+// enableCommitOnDone turns the project-level opt-in on.
 func enableCommitOnDone(h *beavertest.Harness) {
 	h.WriteFile("config.yml", "format_version: 1\ncommit_on_done: true\n")
 }

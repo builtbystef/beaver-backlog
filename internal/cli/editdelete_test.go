@@ -11,10 +11,7 @@ import (
 	"beaver/internal/issue"
 )
 
-// AC: `edit` opens the file in $EDITOR and the result is re-validated. The fake
-// editor stands in for a human hand-editing the raw file — here flipping the state
-// and adding a description — and the change must land on disk (re-read through
-// show), not merely be echoed.
+// The fake editor stands in for a human hand-editing the raw file.
 func TestEditOpensEditorAndRevalidates(t *testing.T) {
 	h := beavertest.New(t).Init()
 	h.IsTTY, h.StdinIsTTY = true, true
@@ -39,10 +36,8 @@ func TestEditOpensEditorAndRevalidates(t *testing.T) {
 	}
 }
 
-// AC: a non-interactive `edit` errors instead of hanging. The refusal must come
-// before any editor is spawned (a real editor would block forever on a non-tty
-// stdin), so the fake editor here fails the test if it is ever opened, and the
-// file is left byte-for-byte unchanged.
+// The refusal must come before any editor spawns — a real one would block forever
+// on a non-tty stdin — so the fake editor fails the test if it is ever opened.
 func TestEditRefusesNonInteractive(t *testing.T) {
 	h := beavertest.New(t).Init() // non-interactive by default
 	seed(t, h, "iss001", "Some work", issue.StateTodo, beavertest.DefaultNow)
@@ -63,10 +58,8 @@ func TestEditRefusesNonInteractive(t *testing.T) {
 	}
 }
 
-// The re-validation has teeth: an edit that leaves the file no longer a usable
-// issue (here an illegal state) fails and says so. The file is left as the human
-// saved it — ADR 0005 tolerates an invalid file for doctor rather than reverting
-// the human's work — so it is still present, not deleted.
+// An edit that leaves the file invalid fails, but the file stays as the human
+// saved it — tolerated for doctor rather than reverting their work.
 func TestEditRevalidationRejectsBrokenResult(t *testing.T) {
 	h := beavertest.New(t).Init()
 	h.IsTTY, h.StdinIsTTY = true, true
@@ -88,10 +81,6 @@ func TestEditRevalidationRejectsBrokenResult(t *testing.T) {
 	}
 }
 
-// AC: interactive `create` opens an editor for the description. With no title on
-// the command line but an interactive session, create seeds the new file, hands it
-// to the editor, and takes the title and body the human writes. The empty-title
-// skeleton is canonicalized away, leaving exactly one file at its <id>-<slug> name.
 func TestInteractiveCreateOpensEditor(t *testing.T) {
 	h := beavertest.New(t).Init()
 	h.IsTTY, h.StdinIsTTY = true, true
@@ -118,11 +107,9 @@ func TestInteractiveCreateOpensEditor(t *testing.T) {
 	}
 }
 
-// The id is machine-owned frontmatter (ADR 0014): an interactive authoring that
-// rewrites it is refused, because the canonicalizing write trusts the id to name
-// the file — an id borrowed from an existing issue would land on that issue's
-// canonical name and silently replace it. The existing issue must survive
-// byte-for-byte, and the authoring is stashed as a draft, not discarded.
+// The canonicalizing write trusts the id to name the file, so an authoring that
+// rewrites the machine-owned id to an existing issue's would silently replace that
+// issue. It is refused, and the authoring stashed as a draft, not discarded.
 func TestInteractiveCreateRefusesEditedID(t *testing.T) {
 	h := beavertest.New(t).Init()
 	h.IsTTY, h.StdinIsTTY = true, true
@@ -153,9 +140,6 @@ func TestInteractiveCreateRefusesEditedID(t *testing.T) {
 	}
 }
 
-// AC: a non-interactive `create` still requires a title. With no title and no
-// terminal to open an editor in, it is a plain usage error — and no editor is
-// spawned and no file is written.
 func TestNonInteractiveCreateRequiresTitle(t *testing.T) {
 	h := beavertest.New(t).Init() // non-interactive
 	h.Editor = neverCalled(t)
@@ -172,8 +156,6 @@ func TestNonInteractiveCreateRequiresTitle(t *testing.T) {
 	}
 }
 
-// A title on the command line is sufficient input, so an interactive create with
-// one goes straight to writing the issue and never opens the editor.
 func TestInteractiveCreateWithTitleSkipsEditor(t *testing.T) {
 	h := beavertest.New(t).Init()
 	h.IsTTY, h.StdinIsTTY = true, true
@@ -185,11 +167,8 @@ func TestInteractiveCreateWithTitleSkipsEditor(t *testing.T) {
 	}
 }
 
-// If the editor produces a file with no title, create fails (the one input it
-// fundamentally needs is missing) and clears the skeleton out of the issues
-// directory, so an aborted authoring never leaves a half-formed issue in the
-// store. What the human typed is not theirs to lose: the changed file is stashed
-// under .beaver/drafts and its location reported.
+// An aborted authoring must not leave a half-formed issue in the store, but what
+// the human typed is not ours to lose: it is stashed as a draft, not deleted.
 func TestInteractiveCreateAbortsOnEmptyTitle(t *testing.T) {
 	h := beavertest.New(t).Init()
 	h.IsTTY, h.StdinIsTTY = true, true
@@ -214,9 +193,8 @@ func TestInteractiveCreateAbortsOnEmptyTitle(t *testing.T) {
 	}
 }
 
-// If the editor leaves the file unparseable, create reports it and likewise clears
-// the skeleton out of the issues directory rather than importing a broken issue —
-// but the human's typed content is stashed as a draft, never deleted.
+// An unparseable result is not imported, but the human's typed content is stashed
+// as a draft, never deleted.
 func TestInteractiveCreateCleansUpInvalidResult(t *testing.T) {
 	h := beavertest.New(t).Init()
 	h.IsTTY, h.StdinIsTTY = true, true
@@ -235,8 +213,7 @@ func TestInteractiveCreateCleansUpInvalidResult(t *testing.T) {
 	}
 }
 
-// A skeleton the human never changed — they quit the editor without writing — is
-// plain junk: it is deleted outright, and no draft is stashed.
+// A skeleton the human never changed is plain junk: deleted outright, no draft.
 func TestInteractiveCreateAbandonedUnchangedIsDeleted(t *testing.T) {
 	h := beavertest.New(t).Init()
 	h.IsTTY, h.StdinIsTTY = true, true
@@ -255,7 +232,6 @@ func TestInteractiveCreateAbandonedUnchangedIsDeleted(t *testing.T) {
 	}
 }
 
-// AC: `delete` removes the issue file, and subsequent commands no longer see it.
 func TestDeleteRemovesIssue(t *testing.T) {
 	h := beavertest.New(t).Init()
 	seed(t, h, "keep11", "Keep me", issue.StateTodo, beavertest.DefaultNow)
@@ -277,9 +253,6 @@ func TestDeleteRemovesIssue(t *testing.T) {
 	}
 }
 
-// delete's error paths mirror the other issue-addressing commands: a missing issue
-// is not-found (exit 3), a missing ref is a usage error (exit 2), and no store at
-// all is not-found (exit 3) pointing at init.
 func TestDeleteNotFoundAndUsage(t *testing.T) {
 	h := beavertest.New(t).Init()
 	if r := h.Run("delete", "zzzzzz"); r.Code != 3 {
@@ -301,9 +274,8 @@ func TestDeleteNotFoundAndUsage(t *testing.T) {
 
 // --- helpers ---
 
-// editWith returns a fake editor standing in for $EDITOR: it reads the file it is
-// handed, applies transform to the contents, and writes the result back — the same
-// read-modify-write a human performs in an editor.
+// editWith returns a fake $EDITOR that applies transform to the file it is handed —
+// the same read-modify-write a human performs in an editor.
 func editWith(t *testing.T, transform func(string) string) func(string) error {
 	t.Helper()
 	return func(path string) error {

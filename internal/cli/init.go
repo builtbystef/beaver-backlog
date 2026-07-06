@@ -31,11 +31,10 @@ func cmdInit(env Env, args []string) int {
 		return exitError
 	}
 
-	// Proactively establish the runner's identity: init is the moment to run step 4
-	// of resolution for the person setting up, so the common solo case is "one
-	// command and you're ready" (ADR 0008). This only ever seeds interactively and
-	// only when nothing is saved yet — a non-interactive init (agent or CI) neither
-	// prompts nor borrows the human's VCS name (ADR 0010).
+	// Seed the runner's identity so the common solo case is "one command and
+	// you're ready". This only happens interactively and only when nothing is
+	// saved yet — a non-interactive init (agent or CI) neither prompts nor
+	// borrows the human's VCS name.
 	seeded := seedIdentity(env)
 
 	if format == output.JSON {
@@ -61,13 +60,12 @@ func cmdInit(env Env, args []string) int {
 }
 
 // seedIdentity establishes the runner's saved identity when init can — an
-// interactive session with none saved yet — and returns the name it saved, or ""
-// when it does nothing. It never fails init: identity setup is a convenience laid
-// over a store that is already created, so a declined or unreadable prompt only
-// warns and leaves the store initialized.
+// interactive session with none saved yet — and returns the name it saved, or
+// "" when it does nothing. It never fails init: a declined or unreadable prompt
+// only warns and leaves the store initialized.
 func seedIdentity(env Env) string {
 	if !env.StdinIsTTY {
-		return "" // never seed non-interactively (ADR 0010)
+		return "" // never seed non-interactively
 	}
 	cfg, err := userconfig.Load(env.UserConfigDir)
 	if err != nil || cfg.Actor != "" {

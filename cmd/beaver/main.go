@@ -33,14 +33,11 @@ func main() {
 	}))
 }
 
-// editor returns the function the CLI uses to open a file in the user's editor for
-// edit and interactive create, or nil when neither $VISUAL nor $EDITOR names one —
-// the "no editor" state the CLI's editorGate refuses cleanly, up front, before any
-// file is written (rather than an "editor failed" error after the fact). The
-// setting is resolved once at startup and split into a command and arguments, so a
-// multi-word value like "code --wait" works; the command runs with the file
-// appended and its standard streams wired to the real terminal, blocking until the
-// editor exits.
+// editor returns the function the CLI uses to open a file in the user's editor,
+// or nil when neither $VISUAL nor $EDITOR names one so the CLI can refuse up
+// front. The value is split into a command and arguments so a multi-word
+// setting like "code --wait" works; the command runs with its streams wired to
+// the real terminal, blocking until the editor exits.
 func editor(getenv func(string) string) func(string) error {
 	spec := strings.TrimSpace(getenv("VISUAL"))
 	if spec == "" {
@@ -65,9 +62,8 @@ func workDir() string {
 }
 
 // userConfigDir is where the per-machine identity lives — Busy Beaver's own
-// subdirectory of the OS user-config directory (e.g. ~/.config/beaver), never the
-// project (ADR 0008). An empty string when the OS location cannot be determined;
-// resolution then falls back to a prompt and reports if it cannot save.
+// subdirectory of the OS user-config directory (e.g. ~/.config/beaver), never
+// the project. It returns "" when the OS location cannot be determined.
 func userConfigDir() string {
 	base, err := os.UserConfigDir()
 	if err != nil {

@@ -23,8 +23,7 @@ func TestSaveLoadRoundTrip(t *testing.T) {
 	}
 }
 
-// A missing config file is a normal "no saved identity yet" state, not an error —
-// this is what makes the interactive setup trigger on first use.
+// A missing config file is a normal "no saved identity yet" state, not an error.
 func TestLoadMissingIsEmpty(t *testing.T) {
 	got, err := userconfig.Load(t.TempDir()) // dir exists, file does not
 	if err != nil {
@@ -35,8 +34,7 @@ func TestLoadMissingIsEmpty(t *testing.T) {
 	}
 }
 
-// An empty directory path (e.g. the OS user-config dir could not be determined)
-// loads as empty without error, but cannot be saved to.
+// An empty directory path loads as empty without error, but cannot be saved to.
 func TestEmptyDirLoadsEmptySaveErrors(t *testing.T) {
 	if _, err := userconfig.Load(""); err != nil {
 		t.Errorf("Load(\"\") errored: %v", err)
@@ -46,9 +44,8 @@ func TestEmptyDirLoadsEmptySaveErrors(t *testing.T) {
 	}
 }
 
-// The file's header declares it safe to hand-edit, so a rewrite must honor that:
-// keys a hand-edit added survive a later Save (here, re-establishing the identity)
-// instead of being dropped by a rewrite from the struct alone.
+// Keys a hand-edit added survive a later Save instead of being dropped by a
+// rewrite from the struct alone.
 func TestSavePreservesHandAddedKeys(t *testing.T) {
 	dir := t.TempDir()
 	handEdited := "actor: old-name\nfavorite_color: green\n"
@@ -92,8 +89,7 @@ func TestSaveToleratesCorruptExistingFile(t *testing.T) {
 	}
 }
 
-// The saved file carries a human-readable header and is never committed to a repo,
-// so it should be plainly recognizable on disk.
+// The saved file carries a human-readable header so it is recognizable on disk.
 func TestSavedFileIsAnnotated(t *testing.T) {
 	dir := t.TempDir()
 	if err := userconfig.Save(dir, userconfig.Config{Actor: "claude"}); err != nil {

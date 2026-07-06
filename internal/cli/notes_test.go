@@ -9,9 +9,7 @@ import (
 	"beaver/internal/issue"
 )
 
-// AC: `note` appends an entry attributed to the current actor and stamped from the
-// clock, and the write bumps `updated` (while leaving `created` alone). The entry is
-// exposed as a structured note, not just spliced into the body text.
+// The entry is exposed as a structured note, not just spliced into the body text.
 func TestNoteAppendsAttributedTimestampedEntry(t *testing.T) {
 	h := beavertest.New(t).Init()
 	seed(t, h, "iss001", "Some work", issue.StateTodo, beavertest.DefaultNow)
@@ -44,10 +42,8 @@ func TestNoteAppendsAttributedTimestampedEntry(t *testing.T) {
 	}
 }
 
-// AC: the entry appends under a Notes section in the body, and existing content is
-// preserved — both the human-owned description and any custom frontmatter (ADR 0014).
-// The note is also visible structurally on the re-read, proving it round-trips through
-// the on-disk file, not just the in-memory issue.
+// Re-reading through show proves the note round-trips through the on-disk file,
+// not just the in-memory issue.
 func TestNotePreservesBodyAndCustomAndAppendsSection(t *testing.T) {
 	h := beavertest.New(t).Init()
 	h.WriteFile("issues/pre111-keep-me.md", `---
@@ -79,10 +75,8 @@ Original **description** stays.
 	}
 }
 
-// AC: notes are append-only. A second note adds another entry under the same section
-// rather than editing or replacing the first, and the two keep their order and their
-// separate attributions. That the second command sees the first proves the first was
-// persisted and parsed back from disk.
+// That the second note sees the first proves the first was persisted and parsed
+// back from disk.
 func TestNoteIsAppendOnlyAcrossMultipleNotes(t *testing.T) {
 	h := beavertest.New(t).Init()
 	seed(t, h, "iss001", "Handoff", issue.StateTodo, beavertest.DefaultNow)
@@ -106,8 +100,6 @@ func TestNoteIsAppendOnlyAcrossMultipleNotes(t *testing.T) {
 	}
 }
 
-// AC: `show` renders the notes. Since notes live in the human-owned body, they render
-// as part of the verbatim body — the attribution and text both appear.
 func TestNoteRendersInHumanShow(t *testing.T) {
 	h := beavertest.New(t).Init()
 	h.IsTTY = true
@@ -122,8 +114,7 @@ func TestNoteRendersInHumanShow(t *testing.T) {
 	}
 }
 
-// note attributes through the one identity chain every attributing command uses, so
-// with no --as it honors BUSY_BEAVER_ACTOR (the agent/CI override).
+// With no --as, the shared identity chain honors BUSY_BEAVER_ACTOR (the agent/CI override).
 func TestNoteAttributesThroughIdentityChain(t *testing.T) {
 	h := beavertest.New(t).Init()
 	h.Env["BUSY_BEAVER_ACTOR"] = "ci-bot"
@@ -135,8 +126,8 @@ func TestNoteAttributesThroughIdentityChain(t *testing.T) {
 	}
 }
 
-// A note is allowed on a closed issue — a for-the-record observation is legitimate,
-// and the log never gates on lifecycle. The state is not moved by the note.
+// A for-the-record note on a closed issue is legitimate; the log never gates on
+// lifecycle.
 func TestNoteAllowedOnClosedIssue(t *testing.T) {
 	for _, st := range []issue.State{issue.StateDone, issue.StateCancelled} {
 		t.Run(string(st), func(t *testing.T) {
@@ -158,8 +149,6 @@ func TestNoteAllowedOnClosedIssue(t *testing.T) {
 	}
 }
 
-// The human confirmation line is a concise attribution of what happened (not JSON):
-// it names the issue and the actor the note was attributed to.
 func TestNoteHumanConfirmationLine(t *testing.T) {
 	h := beavertest.New(t).Init()
 	h.IsTTY = true
@@ -177,8 +166,6 @@ func TestNoteHumanConfirmationLine(t *testing.T) {
 	}
 }
 
-// The entry lands in the file on disk in the documented format — a "## Notes" section
-// with a "**<author>** — <timestamp>" attribution line — not merely echoed to stdout.
 func TestNotePersistsToDiskInFormat(t *testing.T) {
 	h := beavertest.New(t).Init()
 	seed(t, h, "iss001", "Work", issue.StateTodo, beavertest.DefaultNow)
@@ -192,8 +179,6 @@ func TestNotePersistsToDiskInFormat(t *testing.T) {
 	}
 }
 
-// Misuse of note is a usage error (exit 2): a missing ref or text, blank text, an
-// extra argument, or an invalid format — and none of these writes the issue.
 func TestNoteUsageErrors(t *testing.T) {
 	h := beavertest.New(t).Init()
 	seed(t, h, "iss001", "x", issue.StateTodo, beavertest.DefaultNow)
@@ -216,8 +201,6 @@ func TestNoteUsageErrors(t *testing.T) {
 	}
 }
 
-// A note targeting a missing issue exits 3 (not-found); without a store at all it
-// exits 3 and points at init, like every other command.
 func TestNoteNotFoundAndNoStore(t *testing.T) {
 	h := beavertest.New(t).Init()
 	if r := h.Run("note", "zzzzzz", "hi"); r.Code != 3 {
@@ -234,8 +217,7 @@ func TestNoteNotFoundAndNoStore(t *testing.T) {
 	}
 }
 
-// notesOf extracts the structured notes array from a decoded issue result, asserting
-// its shape so the individual tests read cleanly.
+// notesOf extracts the structured notes array from a decoded issue result.
 func notesOf(t *testing.T, out map[string]any) []map[string]any {
 	t.Helper()
 	raw, ok := out["notes"].([]any)

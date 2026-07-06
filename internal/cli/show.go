@@ -29,8 +29,7 @@ func cmdShow(env Env, args []string) int {
 	}
 
 	// show both resolves one issue and derives its relationships over the whole
-	// store, so it takes one snapshot and asks it twice rather than scanning the
-	// files for each question.
+	// store, so one snapshot answers both rather than scanning the files twice.
 	snap, err := st.Snapshot()
 	if err != nil {
 		errf(env, "%v", err)
@@ -41,11 +40,9 @@ func cmdShow(env Env, args []string) int {
 		return code
 	}
 
-	// Enrich the view with the derived relationship facts show is the natural home
-	// for: what this issue is waiting on, whether it is ready/blocked/stuck, and the
-	// inverse edges (what it blocks, its children) that are never stored (ADR 0011).
-	// Deriving them needs the whole store, so index the snapshot; the resolved
-	// issue is among them.
+	// Enrich the view with derived relationship facts: what this issue waits
+	// on, whether it is ready/blocked/stuck, and the inverse edges (what it
+	// blocks, its children) that are never stored.
 	rel := issue.NewRelations(snap.Issues()).For(iss)
 
 	if err := output.WriteIssueWithRelationship(env.Stdout, iss, rel, format); err != nil {

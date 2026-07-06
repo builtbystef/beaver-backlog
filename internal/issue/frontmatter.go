@@ -10,26 +10,21 @@ import (
 	"go.yaml.in/yaml/v3"
 )
 
-// Errors returned by Unmarshal when a file is not a well-formed issue. The store
-// layer wraps these with the offending file name (ADR 0005).
+// Errors returned by Unmarshal when a file is not a well-formed issue.
 var (
 	ErrMissingFrontmatter      = errors.New("missing YAML frontmatter (file must start with '---')")
 	ErrUnterminatedFrontmatter = errors.New("unterminated YAML frontmatter (missing closing '---')")
 )
 
-// frontmatter is the YAML projection of an Issue. Field order here is the
-// canonical on-disk order; optional fields carry omitempty so an unset field is
-// absent from the file entirely (it reappears as null/empty only in JSON output).
-// Created/Updated carry omitempty for a different reason: they are expected on
-// every issue Busy Beaver mints, but a hand-authored file may lack them, and a
-// zero time must stay absent on rewrite rather than serialize as the year-1
-// sentinel 0001-01-01T00:00:00Z (doctor flags the missing timestamp instead).
-// omitempty honors the IsZero method yamlTime promotes from time.Time.
+// frontmatter is the YAML projection of an Issue; field order here is the
+// canonical on-disk order. Optional fields carry omitempty so an unset field is
+// absent from the file. Created/Updated also carry omitempty because a
+// hand-authored file may lack them, and a zero time must stay absent on rewrite
+// rather than serialize as the year-1 sentinel.
 //
 // Custom is an inline catch-all: any frontmatter key with no matching field
-// above lands here on read and is written back on save, so user-added fields
-// survive a round-trip instead of being silently dropped (ADR 0014). The known
-// fields keep their canonical order; custom keys follow, sorted by the encoder.
+// lands here on read and is written back on save, so user-added fields survive
+// a round-trip. Custom keys follow the known fields, sorted by the encoder.
 type frontmatter struct {
 	ID        string         `yaml:"id"`
 	Title     string         `yaml:"title"`
@@ -106,10 +101,9 @@ func Unmarshal(data []byte) (Issue, error) {
 	}, nil
 }
 
-// splitFrontmatter separates the YAML frontmatter from the body. The frontmatter
-// is the block between the opening "---" fence (which must be the first line) and
-// the first subsequent "---" fence; everything after that fence is the body, with
-// a single blank separator line dropped.
+// splitFrontmatter separates the YAML frontmatter — the block between the
+// opening "---" fence on the first line and the next "---" fence — from the
+// body, dropping a single blank separator line.
 func splitFrontmatter(data []byte) (front, body []byte, err error) {
 	s := bytes.TrimPrefix(data, []byte("\ufeff")) // drop a UTF-8 BOM if present
 
@@ -157,9 +151,8 @@ func trimOneLeadingNewline(b []byte) []byte {
 	}
 }
 
-// yamlTime serializes a time.Time as a plain, unquoted RFC3339 timestamp in UTC
-// (e.g. 2026-06-27T18:30:00Z), matching the documented frontmatter example,
-// rather than the quoted form the default string encoding would produce.
+// yamlTime serializes a time.Time as a plain, unquoted RFC3339 timestamp in
+// UTC, rather than the quoted form the default string encoding would produce.
 type yamlTime struct{ time.Time }
 
 func (t yamlTime) MarshalYAML() (any, error) {
@@ -180,8 +173,8 @@ func (t *yamlTime) UnmarshalYAML(node *yaml.Node) error {
 }
 
 func parseTime(s string) (time.Time, error) {
-	// The RFC3339 layout already accepts fractional seconds, so one parse covers
-	// both the canonical form and a hand-written 2026-01-02T15:04:05.123Z.
+	// The RFC3339 layout also accepts fractional seconds, so one parse covers
+	// both the canonical form and a hand-written fractional timestamp.
 	t, err := time.Parse(time.RFC3339, s)
 	if err != nil {
 		return time.Time{}, fmt.Errorf("invalid timestamp %q (want RFC3339, e.g. 2006-01-02T15:04:05Z)", s)

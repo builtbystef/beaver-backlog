@@ -9,8 +9,8 @@ import (
 	"beaver/internal/issue"
 )
 
-// AC: create --depends-on/--parent stores the edges on this issue alone; the
-// inverse is derived, never written to the referenced files.
+// Edges live on the dependent alone; the inverse (blocks/children) is derived on
+// read, never written to the referenced files.
 func TestCreateStoresEdgesOneSided(t *testing.T) {
 	h := beavertest.New(t).Init()
 	base := h.DecodeJSON(h.MustRun("create", "Foundational work").Stdout)["id"].(string)
@@ -25,8 +25,6 @@ func TestCreateStoresEdgesOneSided(t *testing.T) {
 		t.Errorf("created parent = %v, want %s", out["parent"], epic)
 	}
 
-	// The dependency target stores nothing about the dependent: its own edges stay
-	// empty, and the inverse (what it blocks) is derived on read.
 	shownBase := showJSON(t, h, base)
 	if got := strSlice(shownBase["depends_on"]); len(got) != 0 {
 		t.Errorf("target depends_on = %v, want [] (edges are one-sided)", got)
@@ -34,19 +32,17 @@ func TestCreateStoresEdgesOneSided(t *testing.T) {
 	if got := strSlice(rels(t, shownBase)["blocks"]); !slices.Equal(got, []string{child}) {
 		t.Errorf("target derived blocks = %v, want [%s]", got, child)
 	}
-	// And the parent stores nothing about its child; the child is a derived inverse.
 	shownEpic := showJSON(t, h, epic)
 	if got := strSlice(rels(t, shownEpic)["children"]); !slices.Equal(got, []string{child}) {
 		t.Errorf("epic derived children = %v, want [%s]", got, child)
 	}
-	// Concretely: the target's file text never names the dependent.
 	if baseFile := readIssueFile(t, h, base, "Foundational work"); strings.Contains(baseFile, child) {
 		t.Errorf("target file names the dependent %q — the inverse must not be stored:\n%s", child, baseFile)
 	}
 }
 
-// AC: an edge accepts any reference the resolver takes (here a slug), storing the
-// canonical id; repeats and two references to one issue collapse to one edge.
+// An edge accepts any reference the resolver takes but stores the canonical id, and
+// two references to one issue collapse to one edge.
 func TestCreateResolvesAndDedupesEdges(t *testing.T) {
 	h := beavertest.New(t).Init()
 	base := h.DecodeJSON(h.MustRun("create", "Shared base").Stdout)["id"].(string)
@@ -61,8 +57,7 @@ func TestCreateResolvesAndDedupesEdges(t *testing.T) {
 	}
 }
 
-// A --depends-on or --parent that resolves to nothing is a not-found (exit 3), and
-// create writes no file — a typo cannot persist as a dangling edge.
+// A typo must not persist as a dangling edge, so create writes no file.
 func TestCreateRejectsUnknownEdge(t *testing.T) {
 	for _, flag := range []string{"--depends-on", "--parent"} {
 		h := beavertest.New(t).Init()
@@ -76,8 +71,6 @@ func TestCreateRejectsUnknownEdge(t *testing.T) {
 	}
 }
 
-// AC: list --ready is exactly the todo issues whose every dependency is done, and
-// so excludes blocked issues, in-progress work, and closed issues.
 func TestListReadyExcludesBlocked(t *testing.T) {
 	h := beavertest.New(t).Init()
 	seedGraph(t, h)
@@ -89,11 +82,8 @@ func TestListReadyExcludesBlocked(t *testing.T) {
 	}
 }
 
-// The blocked queue is the todo half of the unstarted work whose dependencies are
-// not all done — ordinary blocked and stuck issues — and is the exact complement of
-// --ready over the todo set. It excludes work that is not unstarted-todo even when
-// an edge is unmet: an in-progress issue (ipb100, already being worked) and a
-// closed one (dnb100, doctor's to flag) both stay out.
+// --blocked is only unstarted todo work: an in-progress or closed issue stays out
+// even when an edge is unmet.
 func TestListBlockedQueue(t *testing.T) {
 	h := beavertest.New(t).Init()
 	seedGraph(t, h)
@@ -105,8 +95,6 @@ func TestListBlockedQueue(t *testing.T) {
 	}
 }
 
-// --ready and --blocked partition the todo set: over the graph's todo issues, every
-// one is in exactly one queue, and no non-todo issue is in either.
 func TestReadyAndBlockedPartitionTodo(t *testing.T) {
 	h := beavertest.New(t).Init()
 	seedGraph(t, h)
@@ -125,8 +113,8 @@ func TestReadyAndBlockedPartitionTodo(t *testing.T) {
 	}
 }
 
-// AC: a cancelled dependency yields a stuck dependent — not ready, held in the
-// blocked queue, and surfaced by show as stuck rather than silently freed.
+// A cancelled dependency can never be met: the dependent is surfaced as stuck
+// rather than silently freed.
 func TestCancelledDependencyIsStuckNotReady(t *testing.T) {
 	h := beavertest.New(t).Init()
 	seedDep(t, h, "cncl00", "Abandoned base", issue.StateCancelled, nil, "")
@@ -151,15 +139,13 @@ func TestCancelledDependencyIsStuckNotReady(t *testing.T) {
 		t.Errorf("blocked_on[0] = %v, want {cncl00, cancelled, missing=false}", b)
 	}
 
-	// The human view says "stuck" out loud.
 	h.IsTTY = true
 	if out := h.MustRun("show", "wait00").Stdout; !strings.Contains(out, "stuck") {
 		t.Errorf("human show of a stuck issue should say 'stuck':\n%s", out)
 	}
 }
 
-// AC: only done satisfies a dependency — a not-yet-done dependency keeps the
-// dependent out of the ready queue until the real `done` command clears it.
+// Only done satisfies a dependency.
 func TestReadyClearsOnlyWhenDependencyDone(t *testing.T) {
 	h := beavertest.New(t).Init()
 	seedDep(t, h, "prog00", "The prerequisite", issue.StateInProgress, nil, "")
@@ -179,9 +165,8 @@ func TestReadyClearsOnlyWhenDependencyDone(t *testing.T) {
 	}
 }
 
-// A dangling dependency (a ref to a missing issue) degrades gracefully: the
-// dependent is not ready, sits in the blocked queue, and show marks the blocker
-// missing rather than erroring (ADR 0005/0011).
+// A dangling dependency degrades gracefully: the dependent is blocked and the
+// blocker marked missing, rather than an error.
 func TestMissingDependencyBlocksGracefully(t *testing.T) {
 	h := beavertest.New(t).Init()
 	seedDep(t, h, "wait00", "Waits on a ghost", issue.StateTodo, []string{"gone00"}, "")
@@ -201,8 +186,6 @@ func TestMissingDependencyBlocksGracefully(t *testing.T) {
 	}
 }
 
-// show is the per-issue blocked view: it lists what an issue is waiting on and, for
-// a plain unblocked issue with no dependents or children, adds nothing.
 func TestShowReportsWaitingOn(t *testing.T) {
 	h := beavertest.New(t).Init()
 	h.IsTTY = true
@@ -243,9 +226,7 @@ func TestListQueueUsageErrors(t *testing.T) {
 // --- helpers ---
 
 // seedGraph writes a small dependency graph exercising every readiness outcome,
-// all at the default time so display order is the id order. The dependency targets
-// are done0 (satisfied), prog0 (not done but itself neither ready nor blocked), and
-// cncl0 (cancelled, so its dependents are stuck).
+// all at the default time so display order is the id order.
 func seedGraph(t *testing.T, h *beavertest.Harness) {
 	t.Helper()
 	seedDep(t, h, "done00", "Satisfied prerequisite", issue.StateDone, nil, "")

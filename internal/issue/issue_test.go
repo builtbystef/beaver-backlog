@@ -62,8 +62,7 @@ func TestIDFromFileName(t *testing.T) {
 	}
 }
 
-// TestNewIDFormat asserts IDs are short, lowercase-alphanumeric, and actually
-// random (ADR 0002).
+// IDs are short, lowercase-alphanumeric, and actually random.
 func TestNewIDFormat(t *testing.T) {
 	const alphabet = "abcdefghijklmnopqrstuvwxyz0123456789"
 	seen := make(map[string]bool)
@@ -84,8 +83,8 @@ func TestNewIDFormat(t *testing.T) {
 	}
 }
 
-// TestFrontmatterRoundTrip checks that an issue with every field set survives a
-// Marshal/Unmarshal cycle, including a body that itself contains "---" fences.
+// An issue with every field set survives a Marshal/Unmarshal cycle, including
+// a body that itself contains "---" fences.
 func TestFrontmatterRoundTrip(t *testing.T) {
 	created := time.Date(2026, 6, 27, 18, 30, 0, 0, time.UTC)
 	in := issue.Issue{
@@ -121,8 +120,8 @@ func TestFrontmatterRoundTrip(t *testing.T) {
 	}
 }
 
-// TestMarshalOmitsUnsetOptionals verifies that a minimal issue writes only the
-// required fields, in canonical order, with plain RFC3339 timestamps.
+// A minimal issue writes only the required fields, in canonical order, with
+// plain RFC3339 timestamps.
 func TestMarshalOmitsUnsetOptionals(t *testing.T) {
 	now := time.Date(2026, 6, 27, 18, 30, 0, 0, time.UTC)
 	data, err := issue.Marshal(issue.Issue{
@@ -146,10 +145,8 @@ func TestMarshalOmitsUnsetOptionals(t *testing.T) {
 	}
 }
 
-// TestPriorityRank pins the ordering contract sorting relies on: the four levels
-// rank most-urgent-first and strictly increasing, and both the unprioritized empty
-// value and any unknown (hand-edited) value rank last, tied below every real level
-// so they sort to the bottom rather than the top.
+// The four levels rank most-urgent-first, and empty and unknown values rank
+// last, tied below every real level.
 func TestPriorityRank(t *testing.T) {
 	ordered := []issue.Priority{issue.PriorityUrgent, issue.PriorityHigh, issue.PriorityMedium, issue.PriorityLow}
 	for i := 1; i < len(ordered); i++ {
@@ -168,8 +165,8 @@ func TestPriorityRank(t *testing.T) {
 	}
 }
 
-// TestPriorityValid pins the value set doctor lints against: the four levels and
-// the unprioritized empty value are valid, anything a hand-edit invents is not.
+// The four levels and the unprioritized empty value are valid; anything else
+// is not.
 func TestPriorityValid(t *testing.T) {
 	for _, p := range []issue.Priority{issue.PriorityUrgent, issue.PriorityHigh, issue.PriorityMedium, issue.PriorityLow, ""} {
 		if !p.Valid() {
@@ -183,10 +180,8 @@ func TestPriorityValid(t *testing.T) {
 	}
 }
 
-// TestMarshalOmitsZeroTimestamps: a zero created/updated means the file carried no
-// timestamp, and it must stay absent on write — never serialized as the year-1
-// sentinel 0001-01-01T00:00:00Z — so a mutating command on a hand-authored,
-// timestamp-less issue does not bake a bogus date in.
+// A zero created/updated stays absent on write, never serialized as the year-1
+// sentinel, so a rewrite does not bake a bogus date into a timestamp-less file.
 func TestMarshalOmitsZeroTimestamps(t *testing.T) {
 	data, err := issue.Marshal(issue.Issue{ID: "m3k8", Title: "Title", State: issue.StateTodo})
 	if err != nil {
@@ -199,7 +194,7 @@ func TestMarshalOmitsZeroTimestamps(t *testing.T) {
 		}
 	}
 
-	// And a file with no timestamps reads back as zero times, closing the loop.
+	// A file with no timestamps reads back as zero times.
 	iss, err := issue.Unmarshal(data)
 	if err != nil {
 		t.Fatalf("Unmarshal: %v", err)
@@ -223,10 +218,8 @@ func TestUnmarshalAcceptsFractionalSeconds(t *testing.T) {
 	}
 }
 
-// TestCustomFieldsSurviveRoundTrip is the core guarantee of ADR 0014: a
-// hand-added frontmatter key Busy Beaver knows nothing about is preserved through a
-// read-modify-write, not silently dropped. It lands in Custom on read, a command
-// mutates a known field, and the custom key is still there on write.
+// A hand-added frontmatter key is preserved through a read-modify-write, not
+// silently dropped.
 func TestCustomFieldsSurviveRoundTrip(t *testing.T) {
 	now := time.Date(2026, 6, 27, 18, 30, 0, 0, time.UTC)
 	src := "---\n" +
@@ -274,8 +267,7 @@ func TestCustomFieldsSurviveRoundTrip(t *testing.T) {
 	}
 }
 
-// TestNoCustomFieldsLeavesCustomNil guards the DeepEqual round-trip contract: an
-// issue with no user keys unmarshals to a nil Custom map, not an empty one.
+// An issue with no user keys unmarshals to a nil Custom map, not an empty one.
 func TestNoCustomFieldsLeavesCustomNil(t *testing.T) {
 	now := time.Date(2026, 6, 27, 18, 30, 0, 0, time.UTC)
 	data, err := issue.Marshal(issue.Issue{

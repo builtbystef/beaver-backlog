@@ -9,8 +9,7 @@ import (
 )
 
 // A well-formed id and a legal state make an issue valid. The id check turns on
-// the character set, not the length, so a legacy short id minted before the
-// length was widened (ADR 0002) stays valid rather than being read as broken.
+// the character set, not the length, so a shorter or longer id stays valid.
 func TestValidateAccepts(t *testing.T) {
 	now := time.Date(2026, 6, 27, 18, 30, 0, 0, time.UTC)
 	base := issue.Issue{ID: "a1b2c3", Title: "Fine", State: issue.StateTodo, Created: now, Updated: now}
@@ -22,7 +21,7 @@ func TestValidateAccepts(t *testing.T) {
 			t.Errorf("state %q rejected: %v", state, err)
 		}
 	}
-	for _, id := range []string{"m3k8" /* legacy 4-char */, "abcdef", "012345", "a1b2c3d4e5" /* longer */} {
+	for _, id := range []string{"m3k8" /* shorter */, "abcdef", "012345", "a1b2c3d4e5" /* longer */} {
 		iss := base
 		iss.ID = id
 		if err := issue.Validate(iss); err != nil {
@@ -31,9 +30,8 @@ func TestValidateAccepts(t *testing.T) {
 	}
 }
 
-// A file that parses but is not a usable issue — no id, a malformed id, or an
-// illegal/absent state — is a hard validation error. The message names the
-// specific defect so the store can pair it with the file name (ADR 0005).
+// A missing or malformed id or state is a hard validation error, and the
+// message names the specific defect.
 func TestValidateRejects(t *testing.T) {
 	now := time.Date(2026, 6, 27, 18, 30, 0, 0, time.UTC)
 	ok := issue.Issue{ID: "a1b2c3", Title: "T", State: issue.StateTodo, Created: now, Updated: now}

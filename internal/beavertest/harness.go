@@ -32,8 +32,7 @@ func (c *FakeClock) Now() time.Time { return c.now }
 // Set jumps the clock to t.
 func (c *FakeClock) Set(t time.Time) { c.now = t }
 
-// Advance moves the clock forward by d (handy for asserting `updated` bumps in
-// later slices).
+// Advance moves the clock forward by d.
 func (c *FakeClock) Advance(d time.Duration) { c.now = c.now.Add(d) }
 
 // Result captures one in-process command run.
@@ -47,7 +46,7 @@ type Result struct {
 type Harness struct {
 	t             *testing.T
 	Dir           string             // project directory; the store lives at Dir/.beaver
-	UserConfigDir string             // per-machine user-config dir; separate from Dir, never committed (ADR 0008)
+	UserConfigDir string             // per-machine user-config dir; separate from Dir, never committed
 	Clock         *FakeClock         // controllable time source
 	Env           map[string]string  // environment seen by the CLI
 	IsTTY         bool               // whether stdout looks interactive (default false → JSON)
@@ -59,9 +58,8 @@ type Harness struct {
 }
 
 // New returns a harness backed by a fresh temp directory. The store is not yet
-// initialized — call Init or Run("init"). The user-config directory is a distinct
-// temp dir, so identity (per-machine, never committed) is always kept apart from
-// the project store.
+// initialized — call Init or Run("init"). The user-config directory is a
+// distinct temp dir, keeping identity apart from the project store.
 func New(t *testing.T) *Harness {
 	t.Helper()
 	return &Harness{

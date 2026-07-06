@@ -12,11 +12,8 @@ import (
 // stamps are the two required timestamp lines every seeded raw frontmatter needs.
 const stamps = "created: 2026-06-27T18:30:00Z\nupdated: 2026-06-27T18:30:00Z\n"
 
-// AC: an invalid file is skipped with a loud warning; valid issues still list. The
-// command succeeds (graceful, not fail-fast), lists only the valid issue, and
-// prints one stderr warning per invalid file that names the file and the specific
-// problem (ADR 0005). The three invalid classes — unparseable frontmatter, a
-// missing id, and an illegal state — are each skipped and each named.
+// Invalid files are skipped, not fatal: the command still serves the valid issues,
+// with one stderr warning per invalid file naming it and its specific problem.
 func TestListWarnsAndSkipsInvalidFiles(t *testing.T) {
 	h := beavertest.New(t).Init()
 	seed(t, h, "good11", "Keep me", issue.StateTodo, beavertest.DefaultNow)
@@ -26,7 +23,6 @@ func TestListWarnsAndSkipsInvalidFiles(t *testing.T) {
 
 	r := h.Run("list", "--state", "all")
 
-	// Graceful: the command still succeeds and serves the valid issue.
 	if r.Code != 0 {
 		t.Fatalf("list exit = %d, want 0 (skip invalid, keep going)\nstderr: %s", r.Code, r.Stderr)
 	}
@@ -34,8 +30,6 @@ func TestListWarnsAndSkipsInvalidFiles(t *testing.T) {
 		t.Errorf("listed %v, want just the valid issue [good11]", got)
 	}
 
-	// Loud: one warning per invalid file, each naming the file and its specific
-	// problem (not a generic "a file was bad").
 	for _, w := range []struct{ file, problem string }{
 		{"bad-yaml.md", "frontmatter"},
 		{"no-id.md", "missing id"},
@@ -50,12 +44,9 @@ func TestListWarnsAndSkipsInvalidFiles(t *testing.T) {
 	}
 }
 
-// A custom frontmatter value YAML admits but JSON refuses — the non-finite floats
-// .nan and ±.inf — must not break the JSON paths: the issue is valid (ADR 0014
-// preserves custom values, ADR 0005 keeps validation narrow), so `list` still
-// serves the whole store and a mutating verb still reports the success it had.
-// Before sanitization, one such value failed every JSON write: list died for the
-// entire store, and `done` applied its transition and then exited 1.
+// YAML admits non-finite floats (.nan, ±.inf) that encoding/json refuses. One such
+// custom value must not fail an entire list, or make done report failure after its
+// write succeeded.
 func TestNonFiniteCustomValueDoesNotBreakJSON(t *testing.T) {
 	h := beavertest.New(t).Init()
 	seed(t, h, "good11", "Innocent bystander", issue.StateTodo, beavertest.DefaultNow)
@@ -83,7 +74,7 @@ func TestNonFiniteCustomValueDoesNotBreakJSON(t *testing.T) {
 }
 
 // The warning lands on stderr, never stdout, so it cannot corrupt the JSON an
-// agent parses (ADR 0013): stdout is still a clean, parseable array.
+// agent parses.
 func TestInvalidFileWarningStaysOffStdout(t *testing.T) {
 	h := beavertest.New(t).Init()
 	seed(t, h, "good11", "Keep me", issue.StateTodo, beavertest.DefaultNow)
@@ -101,8 +92,6 @@ func TestInvalidFileWarningStaysOffStdout(t *testing.T) {
 	}
 }
 
-// AC: show keeps working past an unrelated invalid file — it renders the resolved
-// issue and warns about the broken one, rather than failing the whole command.
 func TestShowWarnsButStillRendersValidIssue(t *testing.T) {
 	h := beavertest.New(t).Init()
 	seed(t, h, "good11", "Show me", issue.StateTodo, beavertest.DefaultNow)
@@ -120,10 +109,8 @@ func TestShowWarnsButStillRendersValidIssue(t *testing.T) {
 	}
 }
 
-// AC / ADR 0014: an unknown frontmatter key is lint, not a validation failure. A
-// file carrying one still lists and shows (the issue is valid and usable), the key
-// is preserved in output, and read paths do NOT warn about it here — reporting a
-// stray/typo'd key is doctor's job (n9b4a7), not a per-read skip.
+// An unknown frontmatter key is preserved lint, not a validation failure: read
+// paths do not warn about it — reporting a stray/typo'd key is doctor's job.
 func TestUnknownFrontmatterKeyIsLintNotInvalid(t *testing.T) {
 	h := beavertest.New(t).Init()
 	h.WriteFile("issues/cst111-custom.md", "---\nid: cst111\ntitle: Custom\nstate: todo\nsprint: 7\n"+stamps+"---\n\nBody.\n")
@@ -145,10 +132,8 @@ func TestUnknownFrontmatterKeyIsLintNotInvalid(t *testing.T) {
 	}
 }
 
-// ADR 0014 supersedes this issue's original closed-schema criterion: a rewriting
-// command must NOT refuse a file that carries unknown frontmatter keys. It
-// preserves the key and completes the transition, rather than dropping data or
-// aborting.
+// A rewriting command preserves unknown frontmatter keys and completes, rather
+// than dropping data or refusing.
 func TestRewriteDoesNotRefuseUnknownKeys(t *testing.T) {
 	h := beavertest.New(t).Init()
 	h.WriteFile("issues/cst111-custom.md", "---\nid: cst111\ntitle: Custom\nstate: todo\nsprint: 7\n"+stamps+"---\n\nBody.\n")

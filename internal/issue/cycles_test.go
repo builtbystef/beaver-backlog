@@ -5,8 +5,7 @@ import (
 	"testing"
 )
 
-// dep builds a todo issue with the given id and depends_on edges — enough to shape a
-// dependency graph for the cycle tests.
+// dep builds a todo issue with the given id and depends_on edges.
 func dep(id string, deps ...string) Issue {
 	return Issue{ID: id, Title: id, State: StateTodo, DependsOn: deps}
 }
@@ -16,8 +15,6 @@ func cyclesOf(issues ...Issue) [][]string {
 }
 
 func TestCyclesNoneWhenAcyclic(t *testing.T) {
-	// A plain chain a -> b -> c and a diamond both have no cycle: every path
-	// eventually dead-ends, so nothing is mutually reachable.
 	cases := map[string][]Issue{
 		"empty":  nil,
 		"single": {dep("aaaaaa")},
@@ -37,8 +34,6 @@ func TestCyclesNoneWhenAcyclic(t *testing.T) {
 }
 
 func TestCyclesTwoNodeCycle(t *testing.T) {
-	// a waits on b and b waits on a: neither can ever be done, so the pair is a cycle,
-	// reported with its members sorted.
 	got := cyclesOf(dep("aaaaaa", "bbbbbb"), dep("bbbbbb", "aaaaaa"))
 	want := [][]string{{"aaaaaa", "bbbbbb"}}
 	if !reflect.DeepEqual(got, want) {
@@ -47,8 +42,7 @@ func TestCyclesTwoNodeCycle(t *testing.T) {
 }
 
 func TestCyclesSelfDependency(t *testing.T) {
-	// An issue that depends on itself is a cycle of one — the degenerate case Tarjan
-	// alone would miss (a lone node is a trivial SCC), so Cycles tracks the self-edge.
+	// A self-dependency is a cycle of one — the case Tarjan alone would miss.
 	got := cyclesOf(dep("aaaaaa", "aaaaaa"))
 	want := [][]string{{"aaaaaa"}}
 	if !reflect.DeepEqual(got, want) {
@@ -65,8 +59,7 @@ func TestCyclesThreeNodeCycle(t *testing.T) {
 }
 
 func TestCyclesIgnoreDanglingEdges(t *testing.T) {
-	// An edge to an id no issue holds is a dangling reference, not part of a cycle:
-	// the a<->b cycle is reported, and a's edge to the absent "ghost" is ignored.
+	// An edge to an absent id is a dangling reference, not part of a cycle.
 	got := cyclesOf(dep("aaaaaa", "bbbbbb", "ghost0"), dep("bbbbbb", "aaaaaa"))
 	want := [][]string{{"aaaaaa", "bbbbbb"}}
 	if !reflect.DeepEqual(got, want) {
@@ -75,8 +68,7 @@ func TestCyclesIgnoreDanglingEdges(t *testing.T) {
 }
 
 func TestCyclesMultipleDisjoint(t *testing.T) {
-	// Two independent cycles are each reported, ordered by their smallest id, so the
-	// result is deterministic regardless of input order.
+	// Independent cycles are each reported, ordered by their smallest id.
 	got := cyclesOf(
 		dep("xxxxxx", "yyyyyy"),
 		dep("yyyyyy", "xxxxxx"),
@@ -90,8 +82,6 @@ func TestCyclesMultipleDisjoint(t *testing.T) {
 }
 
 func TestCyclesDeterministicAcrossInputOrder(t *testing.T) {
-	// The same graph indexed in a different order yields the identical result — the
-	// property doctor relies on for byte-stable output.
 	a := cyclesOf(dep("aaaaaa", "bbbbbb"), dep("bbbbbb", "cccccc"), dep("cccccc", "aaaaaa"))
 	b := cyclesOf(dep("cccccc", "aaaaaa"), dep("aaaaaa", "bbbbbb"), dep("bbbbbb", "cccccc"))
 	if !reflect.DeepEqual(a, b) {
@@ -100,8 +90,7 @@ func TestCyclesDeterministicAcrossInputOrder(t *testing.T) {
 }
 
 func TestCyclesTailOffCycleNotIncluded(t *testing.T) {
-	// c depends on the a<->b cycle but nothing depends back on c, so c is blocked
-	// forever yet is not itself part of the cycle: only a and b are reported.
+	// c is blocked forever by the a<->b cycle but is not itself part of it.
 	got := cyclesOf(dep("aaaaaa", "bbbbbb"), dep("bbbbbb", "aaaaaa"), dep("cccccc", "aaaaaa"))
 	want := [][]string{{"aaaaaa", "bbbbbb"}}
 	if !reflect.DeepEqual(got, want) {
@@ -111,8 +100,7 @@ func TestCyclesTailOffCycleNotIncluded(t *testing.T) {
 
 // --- parent cycles ---
 
-// child builds an issue with a parent edge — enough to shape a hierarchy for the
-// parent-cycle tests.
+// child builds an issue with a parent edge.
 func child(id, parent string) Issue {
 	return Issue{ID: id, Title: id, State: StateTodo, Parent: parent}
 }
@@ -122,8 +110,7 @@ func parentCyclesOf(issues ...Issue) [][]string {
 }
 
 func TestParentCyclesNoneInProperTrees(t *testing.T) {
-	// A rooted chain, a branching tree, a dangling parent (doctor's separate
-	// dangling-reference concern), and no parents at all: none loops.
+	// A rooted chain, a branching tree, a dangling parent, and no parents: none loops.
 	cases := map[string][]Issue{
 		"empty":    nil,
 		"rootless": {child("aaaaaa", "")},
@@ -139,8 +126,7 @@ func TestParentCyclesNoneInProperTrees(t *testing.T) {
 }
 
 func TestParentCyclesSelfParent(t *testing.T) {
-	// An issue naming itself as its own parent is a cycle of one — the degenerate
-	// hierarchy show would otherwise render as an issue among its own children.
+	// An issue naming itself as its own parent is a cycle of one.
 	got := parentCyclesOf(child("aaaaaa", "aaaaaa"))
 	want := [][]string{{"aaaaaa"}}
 	if !reflect.DeepEqual(got, want) {
@@ -157,9 +143,7 @@ func TestParentCyclesMutualPair(t *testing.T) {
 }
 
 func TestParentCyclesTailIntoLoopNotIncluded(t *testing.T) {
-	// c hangs off the a<->b loop: its chain drains into the cycle, but c itself is
-	// not part of it, and the cycle is reported exactly once however many chains
-	// lead in.
+	// Chains draining into the loop are not part of it, and the loop is reported once.
 	got := parentCyclesOf(
 		child("aaaaaa", "bbbbbb"),
 		child("bbbbbb", "aaaaaa"),
@@ -173,9 +157,8 @@ func TestParentCyclesTailIntoLoopNotIncluded(t *testing.T) {
 }
 
 func TestParentCyclesMultipleDisjointDeterministic(t *testing.T) {
-	// Two independent loops are each reported, ordered by their smallest id, and the
-	// result is identical however the issues were indexed — the property doctor
-	// relies on for byte-stable output.
+	// Independent loops are each reported, ordered by their smallest id,
+	// regardless of indexing order.
 	a := parentCyclesOf(
 		child("xxxxxx", "yyyyyy"), child("yyyyyy", "xxxxxx"),
 		child("aaaaaa", "bbbbbb"), child("bbbbbb", "aaaaaa"),

@@ -11,10 +11,10 @@ import (
 	"beaver/internal/store"
 )
 
-// cmdCreate mints a new issue from a title, optionally wiring its one-sided
-// relationship edges: --depends-on names issues this one waits on, --parent the
-// issue it is a sub-issue of. Both are stored on this issue alone; the inverse is
-// derived, never written (ADR 0011).
+// cmdCreate mints a new issue from a title, optionally wiring relationship
+// edges: --depends-on names issues this one waits on, --parent the issue it is
+// a sub-issue of. Both are stored on this issue alone; the inverse is derived,
+// never written.
 func cmdCreate(env Env, args []string) int {
 	fs, formatFlag := newFlagSet(env, "create")
 	var dependsOn csvList
@@ -27,18 +27,14 @@ func cmdCreate(env Env, args []string) int {
 	if !ok {
 		return exitUsage
 	}
-	// Validate the priority up front, before any store work, so a bad value fails
-	// fast as a usage error. An omitted flag ("") maps to the unprioritized empty
-	// value, so create defaults to no priority.
+	// Validate the priority before any store work so a bad value fails fast.
 	priority, err := parsePriority(*priorityFlag)
 	if err != nil {
 		errf(env, "%v", err)
 		return exitUsage
 	}
-	// A title comes from the command line or, in an interactive session, from the
-	// editor create opens on the new file. Exactly one positional is the title; none
-	// is allowed only when an editor can supply it — otherwise create still requires a
-	// title, and says so before any store work (a non-interactive create, ADR 0010).
+	// Zero positionals is allowed only when an interactive editor can supply
+	// the title; otherwise create requires one and fails before any store work.
 	var title string
 	switch len(pos) {
 	case 1:
@@ -68,20 +64,17 @@ func cmdCreate(env Env, args []string) int {
 		return storeError(env, err)
 	}
 
-	// One snapshot answers everything create asks of the store — each edge, the
-	// parent, and the id-collision check — so the whole command scans the files
-	// once, not once per question, and every answer comes from the same instant.
+	// One snapshot answers every store question — edges, parent, id collision —
+	// so the command scans the files once, not once per question.
 	snap, err := st.Snapshot()
 	if err != nil {
 		errf(env, "%v", err)
 		return exitError
 	}
 
-	// Resolve the relationship references to canonical ids before minting anything,
-	// so a typo'd --depends-on/--parent fails fast and the stored edges hold real
-	// ids (depends_on and parent store ids, never slugs). Every issue-addressing
-	// input routes through the shared resolver, so an edge accepts the same
-	// references show and done do.
+	// Resolve relationship references to canonical ids before minting anything,
+	// so a typo'd --depends-on/--parent fails fast and the stored edges hold
+	// real ids, never slugs.
 	deps, code := resolveEdges(env, snap, dependsOn.values)
 	if code != exitOK {
 		return code
@@ -114,9 +107,8 @@ func cmdCreate(env Env, args []string) int {
 		Updated:   now,
 	}
 
-	// With a title in hand, write the issue directly. With none, the gate above has
-	// already guaranteed an interactive session with an editor: seed the file, hand it
-	// to $EDITOR, and take the title and body the human writes back (authorInEditor).
+	// With no title, the gate above has already guaranteed an interactive
+	// session with an editor, so authorInEditor can supply it.
 	var path string
 	if title != "" {
 		if path, err = st.Write(iss); err != nil {
@@ -141,9 +133,8 @@ func cmdCreate(env Env, args []string) int {
 	return exitOK
 }
 
-// mintID generates a fresh ID, retrying on the rare collision with an issue in
-// the snapshot. The bound guards against a pathological generator rather than a
-// real store ever filling up.
+// mintID generates a fresh ID, retrying on the rare collision with an existing
+// issue. The bound guards against a pathological generator, not a full store.
 func mintID(env Env, snap *store.Snapshot) (string, error) {
 	for range 100 {
 		id := env.NewID()

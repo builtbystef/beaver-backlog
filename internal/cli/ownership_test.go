@@ -9,9 +9,7 @@ import (
 	"beaver/internal/issue"
 )
 
-// AC: claim sets `assignee` to the current actor and leaves `state` untouched —
-// claiming reserves an issue, it does not start it (ADR 0009). The write bumps
-// `updated`, and the change is on disk, not just echoed.
+// Claim reserves an issue; it never starts it.
 func TestClaimSetsAssigneeLeavesState(t *testing.T) {
 	h := beavertest.New(t).Init()
 	seed(t, h, "iss001", "Some work", issue.StateTodo, beavertest.DefaultNow)
@@ -34,9 +32,6 @@ func TestClaimSetsAssigneeLeavesState(t *testing.T) {
 	}
 }
 
-// AC: the guard refuses an issue already assigned to a different actor, naming the
-// owner; --force steals it. The refusal writes nothing (best-effort local guard,
-// ADR 0009), so the file is byte-for-byte unchanged.
 func TestClaimRefusesAnothersIssueUnlessForce(t *testing.T) {
 	h := beavertest.New(t).Init()
 	seedOwned(t, h, "iss001", "Owned work", issue.StateTodo, "bob")
@@ -61,8 +56,6 @@ func TestClaimRefusesAnothersIssueUnlessForce(t *testing.T) {
 	}
 }
 
-// AC: re-claiming one's own issue is an idempotent no-op — success, but no rewrite,
-// so `updated` is not churned and the file bytes are unchanged.
 func TestReclaimingOwnIsIdempotentNoop(t *testing.T) {
 	h := beavertest.New(t).Init()
 	seedOwned(t, h, "iss001", "Mine already", issue.StateTodo, "alice")
@@ -86,8 +79,7 @@ func TestReclaimingOwnIsIdempotentNoop(t *testing.T) {
 	}
 }
 
-// claim resolves the actor through the one identity chain every attributing command
-// uses, so with no --as it honors BUSY_BEAVER_ACTOR (the agent/CI override).
+// With no --as, the shared identity chain honors BUSY_BEAVER_ACTOR (the agent/CI override).
 func TestClaimResolvesActorFromEnv(t *testing.T) {
 	h := beavertest.New(t).Init()
 	h.Env["BUSY_BEAVER_ACTOR"] = "ci-bot"
@@ -99,9 +91,7 @@ func TestClaimResolvesActorFromEnv(t *testing.T) {
 	}
 }
 
-// AC: assign sets a named assignee. It is explicit delegation, so unlike claim it
-// carries no guard — it reassigns already-owned work without --force — and never
-// touches state. Assigning the current assignee is an idempotent no-op.
+// Assign is explicit delegation, so unlike claim it reassigns owned work without --force.
 func TestAssignDelegatesWithoutGuard(t *testing.T) {
 	h := beavertest.New(t).Init()
 	seedOwned(t, h, "iss001", "Held by bob", issue.StateInProgress, "bob")
@@ -125,8 +115,6 @@ func TestAssignDelegatesWithoutGuard(t *testing.T) {
 	}
 }
 
-// AC: release clears the assignee, leaving state untouched; releasing an
-// already-unassigned issue is an idempotent no-op.
 func TestReleaseClearsAssignee(t *testing.T) {
 	h := beavertest.New(t).Init()
 	seedOwned(t, h, "iss001", "Owned", issue.StateTodo, "bob")
@@ -150,8 +138,6 @@ func TestReleaseClearsAssignee(t *testing.T) {
 	}
 }
 
-// AC: start moves a todo to in-progress and auto-claims it when unowned — the one
-// implicit assignment (ADR 0009). The change is persisted.
 func TestStartMovesToInProgressAndAutoClaims(t *testing.T) {
 	h := beavertest.New(t).Init()
 	seed(t, h, "iss001", "Unowned todo", issue.StateTodo, beavertest.DefaultNow)
@@ -170,8 +156,7 @@ func TestStartMovesToInProgressAndAutoClaims(t *testing.T) {
 	}
 }
 
-// start auto-claims an unowned issue even when the state does not move: an
-// already-in-progress but ownerless issue is claimed rather than left unattributed.
+// The auto-claim applies even when the state does not move.
 func TestStartClaimsUnownedInProgress(t *testing.T) {
 	h := beavertest.New(t).Init()
 	seed(t, h, "iss001", "Ownerless active", issue.StateInProgress, beavertest.DefaultNow)
@@ -182,9 +167,6 @@ func TestStartClaimsUnownedInProgress(t *testing.T) {
 	}
 }
 
-// AC: start guards ownership exactly as claim does — it refuses an issue held by a
-// different actor unless --force steals it. A refusal moves neither the assignee nor
-// the state (nothing is written).
 func TestStartGuardsAndStealsLikeClaim(t *testing.T) {
 	h := beavertest.New(t).Init()
 	seedOwned(t, h, "iss001", "Bob's work", issue.StateTodo, "bob")
@@ -209,8 +191,6 @@ func TestStartGuardsAndStealsLikeClaim(t *testing.T) {
 	}
 }
 
-// A closed issue cannot be started; start refuses it (exit 2) and points at reopen,
-// the same graceful refusal the transition verbs give, and writes nothing.
 func TestStartRejectsClosedIssue(t *testing.T) {
 	for _, st := range []issue.State{issue.StateDone, issue.StateCancelled} {
 		t.Run(string(st), func(t *testing.T) {
@@ -234,8 +214,6 @@ func TestStartRejectsClosedIssue(t *testing.T) {
 	}
 }
 
-// Starting one's own in-progress issue is an idempotent no-op: success, no rewrite,
-// no `updated` churn.
 func TestStartOnOwnInProgressIsNoop(t *testing.T) {
 	h := beavertest.New(t).Init()
 	seedOwned(t, h, "iss001", "Already going", issue.StateInProgress, "alice")
@@ -259,8 +237,7 @@ func TestStartOnOwnInProgressIsNoop(t *testing.T) {
 	}
 }
 
-// AC: the assignee survives `done` — retained as the record of who completed the
-// work (ADR 0009). claim, start, then done, and the assignee is still there.
+// The assignee is kept through done as the record of who completed the work.
 func TestAssigneeSurvivesDone(t *testing.T) {
 	h := beavertest.New(t).Init()
 	seed(t, h, "iss001", "Work to finish", issue.StateTodo, beavertest.DefaultNow)
@@ -272,7 +249,7 @@ func TestAssigneeSurvivesDone(t *testing.T) {
 		t.Fatalf("state = %v, want done", out["state"])
 	}
 	if out["assignee"] != "alice" {
-		t.Errorf("assignee after done = %v, want alice retained (ADR 0009)", out["assignee"])
+		t.Errorf("assignee after done = %v, want alice retained", out["assignee"])
 	}
 
 	shown := h.DecodeJSON(h.MustRun("show", "iss001").Stdout)
@@ -281,24 +258,21 @@ func TestAssigneeSurvivesDone(t *testing.T) {
 	}
 }
 
-// AC: start is dependency-aware but never gated by it. When it moves a not-ready
-// todo to in-progress, it warns (non-fatally), naming the unmet dependencies, and
-// still starts the issue — the advisory stance of ADR 0011.
+// The dependency check is advisory: start warns, naming the unmet dependencies,
+// but never blocks.
 func TestStartWarnsOnUnmetDependenciesButStarts(t *testing.T) {
 	h := beavertest.New(t).Init()
-	// A todo dependent waiting on one in-progress and one missing dependency.
 	seedDep(t, h, "dep001", "Prerequisite", issue.StateInProgress, nil, "")
 	seedDep(t, h, "iss001", "The dependent", issue.StateTodo, []string{"dep001", "gone99"}, "")
 
 	r := h.Run("start", "iss001", "--as", "alice")
 	if r.Code != 0 {
-		t.Fatalf("start of a not-ready issue exit = %d, want 0 — the dependency warning is advisory, never fatal (ADR 0011)", r.Code)
+		t.Fatalf("start of a not-ready issue exit = %d, want 0 — the dependency warning is advisory, never fatal", r.Code)
 	}
 	out := h.DecodeJSON(r.Stdout)
 	if out["state"] != "in-progress" || out["assignee"] != "alice" {
 		t.Errorf("not-ready issue = %v/%v, want in-progress/alice (started despite the warning)", out["state"], out["assignee"])
 	}
-	// The warning is loud on stderr and names both unmet dependencies.
 	for _, want := range []string{"warning", "not ready", "dep001", "gone99"} {
 		if !strings.Contains(r.Stderr, want) {
 			t.Errorf("dependency warning missing %q:\n%s", want, r.Stderr)
@@ -306,8 +280,6 @@ func TestStartWarnsOnUnmetDependenciesButStarts(t *testing.T) {
 	}
 }
 
-// A ready issue — todo with every dependency done — starts with no dependency
-// warning, so the advisory noise appears only when it is warranted.
 func TestStartReadyIssueDoesNotWarn(t *testing.T) {
 	h := beavertest.New(t).Init()
 	seedDep(t, h, "dep001", "Done prerequisite", issue.StateDone, nil, "")
@@ -319,8 +291,8 @@ func TestStartReadyIssueDoesNotWarn(t *testing.T) {
 	}
 }
 
-// A cancelled dependency leaves the dependent stuck, but start still begins it —
-// advisory, not a gate — while warning that it is not ready.
+// A cancelled dependency leaves the dependent stuck, but start is advisory, not a
+// gate: it still begins the work while warning.
 func TestStartStuckDependencyWarnsButStarts(t *testing.T) {
 	h := beavertest.New(t).Init()
 	seedDep(t, h, "dep001", "Abandoned prerequisite", issue.StateCancelled, nil, "")
@@ -334,7 +306,6 @@ func TestStartStuckDependencyWarnsButStarts(t *testing.T) {
 	if out["state"] != "in-progress" {
 		t.Errorf("state = %v, want in-progress (started despite the cancelled dependency)", out["state"])
 	}
-	// The machine-visible signal flags the stuck condition (a cancelled dependency).
 	if rel, _ := out["relationships"].(map[string]any); rel["stuck"] != true || rel["blocked"] != true {
 		t.Errorf("relationships = %v, want stuck=true blocked=true", out["relationships"])
 	}
@@ -343,18 +314,14 @@ func TestStartStuckDependencyWarnsButStarts(t *testing.T) {
 	}
 }
 
-// The dependency signal start warns humans about (on stderr) is also machine-visible
-// in the JSON result: the same additive "relationships" object show emits, so an
-// agent sees — in the start output itself — that the work it just began was blocked
-// and exactly what it is waiting on. This keeps start advisory (it started, exit 0)
-// while making the readiness legible to a machine that never reads the stderr line.
+// The readiness signal also lands in start's JSON, so an agent that never reads
+// stderr still sees the work it began was blocked and what it is waiting on.
 func TestStartJSONCarriesReadinessSignal(t *testing.T) {
 	h := beavertest.New(t).Init()
 	seedDep(t, h, "dep001", "Prereq", issue.StateInProgress, nil, "")
 	seedDep(t, h, "iss001", "Dependent", issue.StateTodo, []string{"dep001", "gone99"}, "")
 
 	out := h.DecodeJSON(h.MustRun("start", "iss001", "--as", "alice").Stdout)
-	// The base issue fields keep their shape alongside the additive object.
 	if out["state"] != "in-progress" || out["assignee"] != "alice" {
 		t.Fatalf("base fields = %v/%v, want in-progress/alice", out["state"], out["assignee"])
 	}
@@ -382,9 +349,8 @@ func TestStartJSONCarriesReadinessSignal(t *testing.T) {
 	}
 }
 
-// The relationships object is a uniform, always-present shape: a ready start (every
-// dependency done) reports blocked=false with an empty blocked_on, so a consumer
-// never special-cases a missing key to learn "this one was fine".
+// The relationships object is always present — a ready start reports blocked=false
+// with an empty blocked_on — so a consumer never special-cases a missing key.
 func TestStartReadyJSONShowsUnblocked(t *testing.T) {
 	h := beavertest.New(t).Init()
 	seedDep(t, h, "dep001", "Done prereq", issue.StateDone, nil, "")
@@ -403,10 +369,8 @@ func TestStartReadyJSONShowsUnblocked(t *testing.T) {
 	}
 }
 
-// The human/machine split is deliberate: a human's start output stays the concise
-// one-line confirmation (the blocked detail reaches them via the stderr warning),
-// while the structured readiness lives in JSON. Starting a blocked issue at a TTY
-// must not dump the relationship section onto stdout.
+// Blocked detail reaches humans via the stderr warning; stdout stays a single
+// confirmation line, never a relationship dump.
 func TestStartHumanStaysConciseWithWarning(t *testing.T) {
 	h := beavertest.New(t).Init()
 	h.IsTTY = true
@@ -428,7 +392,6 @@ func TestStartHumanStaysConciseWithWarning(t *testing.T) {
 	}
 }
 
-// Human output is a concise confirmation line (not JSON) for each ownership verb.
 func TestOwnershipHumanOutput(t *testing.T) {
 	h := beavertest.New(t).Init()
 	h.IsTTY = true
@@ -454,8 +417,8 @@ func TestOwnershipHumanOutput(t *testing.T) {
 	}
 }
 
-// Each ownership verb is a read-modify-write of the whole file, so it carries the
-// human-owned body and any custom frontmatter keys through untouched (ADR 0014).
+// Each ownership verb rewrites the whole file, so the body and custom frontmatter
+// keys must pass through untouched.
 func TestOwnershipPreservesBodyAndCustomFields(t *testing.T) {
 	h := beavertest.New(t).Init()
 	h.WriteFile("issues/pre111-keep-me.md", `---
@@ -483,8 +446,6 @@ Body with **markdown**.
 	}
 }
 
-// Misuse of an ownership verb is a usage error (exit 2): a missing or extra ref, a
-// missing or blank actor for assign, or an invalid format.
 func TestOwnershipUsageErrors(t *testing.T) {
 	h := beavertest.New(t).Init()
 	seed(t, h, "iss001", "x", issue.StateTodo, beavertest.DefaultNow)
@@ -509,8 +470,6 @@ func TestOwnershipUsageErrors(t *testing.T) {
 	}
 }
 
-// An ownership verb targeting a missing issue exits 3 (not-found); without a store
-// at all it exits 3 and points at init, like every other command.
 func TestOwnershipNotFoundAndNoStore(t *testing.T) {
 	for _, args := range [][]string{
 		{"claim", "zzzzzz"},
@@ -536,8 +495,8 @@ func TestOwnershipNotFoundAndNoStore(t *testing.T) {
 
 // --- helpers ---
 
-// seedOwned writes an issue file directly with an assignee, so the guard tests can
-// stage an issue owned by a specific actor without depending on claim/assign.
+// seedOwned writes an issue file with an assignee directly, so guard tests do not
+// depend on claim/assign.
 func seedOwned(t *testing.T, h *beavertest.Harness, id, title string, state issue.State, assignee string) {
 	t.Helper()
 	data, err := issue.Marshal(issue.Issue{

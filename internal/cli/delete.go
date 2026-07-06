@@ -6,12 +6,10 @@ import (
 	"beaver/internal/output"
 )
 
-// cmdDelete removes an issue's file outright — the hard delete of junk that should
-// never have existed (a typo, an accidental duplicate), as distinct from cancel,
-// which keeps the file as a deliberately-abandoned record (ADR 0004). It does not
-// prompt: resolution already demands an exact reference, so a delete names one
-// specific issue, and a VCS (when present) retains the history as the undo. After
-// it runs the issue is gone from every read path.
+// cmdDelete removes an issue's file outright — the hard delete for junk, as
+// distinct from cancel, which keeps the file as an abandoned record. It does
+// not prompt: resolution already demands an exact reference, and a VCS (when
+// present) retains the history as the undo.
 func cmdDelete(env Env, args []string) int {
 	fs, formatFlag := newFlagSet(env, "delete")
 	pos, ok := parseArgs(fs, args)

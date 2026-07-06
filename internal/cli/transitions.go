@@ -9,12 +9,9 @@ import (
 	"beaver/internal/output"
 )
 
-// A verb is a lifecycle transition: it moves an issue to target from any of a
-// fixed set of source states. done and cancel close an open issue (todo or
-// in-progress); reopen restores a closed one (done or cancelled) to todo. The
-// four states split two-open/two-closed, so each verb accepts exactly two
-// sources, treats its target as an idempotent no-op, and rejects the one
-// remaining state — see classify.
+// verb is a lifecycle transition: it moves an issue to target from any of a
+// fixed set of source states, treating already-at-target as an idempotent
+// no-op — see classify.
 type verb struct {
 	name    string        // command name, used in usage diagnostics
 	target  issue.State   // state a successful transition sets
@@ -24,10 +21,8 @@ type verb struct {
 	already string // human line when already at target; one %s (id)
 	reject  string // stderr guidance when the current state forbids it; two %s (id, current state)
 
-	// completes marks the verb that finishes an issue (done), so a successful
-	// transition may record the opt-in commit-per-issue (ADR 0007). cancel and
-	// reopen leave it false: abandoning or restoring is not a completion, and only a
-	// completion commits.
+	// completes marks the verb that finishes an issue (done), which may record
+	// the opt-in commit-per-issue.
 	completes bool
 }
 
@@ -72,13 +67,9 @@ const (
 	transReject                          // the current state forbids this verb
 )
 
-// classify decides how verb v applies to an issue currently in state cur. The
-// rule is uniform across all three verbs: already-at-target is a redundant no-op
-// (idempotent success, no rewrite); a listed source transitions; anything else is
-// a graceful rejection. Because target and sources together cover three of the
-// four states, the reject case is exactly the remaining one — the opposite
-// terminal state for done/cancel, and in-progress for reopen (reopen restores a
-// closed issue; it deliberately will not rewind active work to todo).
+// classify decides how verb v applies to an issue currently in state cur:
+// already-at-target is a redundant no-op, a listed source transitions, and
+// anything else is rejected.
 func classify(v verb, cur issue.State) transitionKind {
 	switch {
 	case cur == v.target:
@@ -90,11 +81,10 @@ func classify(v verb, cur issue.State) transitionKind {
 	}
 }
 
-// runTransition is the shared engine behind done, cancel, and reopen: resolve the
-// referenced issue, decide the transition, and either rewrite the file with the
-// new state and a bumped `updated`, report an idempotent no-op, or refuse a
-// transition the current state forbids. A refusal never touches the file, so a
-// nonsensical request cannot corrupt an issue.
+// runTransition is the shared engine behind done, cancel, and reopen: it
+// resolves the referenced issue and either rewrites it with the new state and a
+// bumped `updated`, reports an idempotent no-op, or refuses a transition the
+// current state forbids. A refusal never touches the file.
 func runTransition(env Env, args []string, v verb) int {
 	fs, formatFlag := newFlagSet(env, v.name)
 	pos, ok := parseArgs(fs, args)
@@ -124,18 +114,14 @@ func runTransition(env Env, args []string, v verb) int {
 
 	switch classify(v, iss.State) {
 	case transReject:
-		// A well-formed request that does not apply to this issue's state. It is a
-		// usage error (exit 2), not a runtime failure: nothing is written, so the
-		// file cannot be corrupted, and the message says how to proceed.
 		errf(env, v.reject, iss.ID, iss.State)
 		return exitUsage
 
 	case transRedundant:
-		// Already in the target state. Idempotent success: report the issue but do
-		// not rewrite it, so `updated` and the file bytes stay untouched. The
-		// completing verb still reports through the commit-carrying shape (with no
-		// commit — nothing was written, so nothing was committed), keeping done's
-		// JSON constant across the no-op and the real transition.
+		// Idempotent no-op: report without rewriting, so `updated` and the file
+		// bytes stay untouched. The completing verb still uses the
+		// commit-carrying shape so done's JSON is constant across no-op and
+		// real transitions.
 		line := fmt.Sprintf(v.already, iss.ID)
 		if v.completes {
 			return reportCompletion(env, format, iss, "", line)
@@ -143,9 +129,6 @@ func runTransition(env Env, args []string, v verb) int {
 		return reportIssue(env, format, iss, line)
 	}
 
-	// transApply: set the new state and bump `updated` from the injected clock,
-	// matching create's timestamp handling. The read-modify-write carries the body
-	// and any custom frontmatter keys through untouched (ADR 0014).
 	iss.State = v.target
 	iss.Updated = env.Clock.Now().UTC().Truncate(time.Second)
 	newPath, err := st.Update(path, iss)
@@ -155,13 +138,8 @@ func runTransition(env Env, args []string, v verb) int {
 	}
 
 	line := fmt.Sprintf(v.did, iss.ID)
-	// A completed issue may become its own atomic commit, when the project has opted
-	// in (ADR 0007). This runs only for done, only after the file is safely written,
-	// and never fails the command — the issue is done regardless of whether the
-	// convenience commit could be made. The confirmation line notes the revision when
-	// one was recorded; a disabled setting or a degraded VCS is silent or a warning.
-	// The revision also rides along in done's JSON (reportCompletion), so an agent
-	// sees the commit its command produced without shelling out to the VCS.
+	// The opt-in completion commit runs only after the file is safely written
+	// and never fails the command — the issue is done regardless.
 	if v.completes {
 		rev := commitCompletion(env, st, iss, commitPaths(newPath, path))
 		if rev != "" {
@@ -172,11 +150,9 @@ func runTransition(env Env, args []string, v verb) int {
 	return reportIssue(env, format, iss, line)
 }
 
-// reportCompletion is reportIssue for the completing verb: the human line is
-// unchanged, but the JSON result is the commit-carrying shape — the same issue
-// fields plus an always-present "commit" key, null when no commit was made — so
-// done's JSON is one constant shape and the revision of an opt-in commit reaches
-// the machine consumer, not just the human confirmation line.
+// reportCompletion is reportIssue for the completing verb: the JSON result adds
+// an always-present "commit" key (null when no commit was made), so done's JSON
+// has one constant shape.
 func reportCompletion(env Env, format output.Format, iss issue.Issue, revision, humanLine string) int {
 	if format == output.Human {
 		fmt.Fprintln(env.Stdout, humanLine)
@@ -190,9 +166,7 @@ func reportCompletion(env Env, format output.Format, iss issue.Issue, revision, 
 }
 
 // reportIssue renders a completed command's result: a concise confirmation line
-// for a human, or the full resulting issue as JSON for a machine — the same
-// per-issue shape create and show emit, so an agent sees the new state and
-// assignee directly. The transition verbs and the ownership verbs all end here.
+// for a human, or the full resulting issue as JSON for a machine.
 func reportIssue(env Env, format output.Format, iss issue.Issue, humanLine string) int {
 	if format == output.Human {
 		fmt.Fprintln(env.Stdout, humanLine)

@@ -38,8 +38,7 @@ func TestDiscoverNoStore(t *testing.T) {
 	}
 }
 
-// Resolve must find an issue by its authoritative frontmatter id even when the
-// filename has drifted from it (ADR 0002, ADR 0005).
+// Resolve finds an issue by its frontmatter id even when the filename has drifted.
 func TestResolveFallsBackToFrontmatterID(t *testing.T) {
 	root := newStore(t)
 	writeIssueFile(t, root, "totally-wrong-name.md", issue.Issue{
@@ -64,10 +63,8 @@ func TestResolveNotFound(t *testing.T) {
 	}
 }
 
-// A corrupt file has no readable frontmatter ID, so it carries no identity Resolve
-// can match — even when its filename hints at one. Resolve reports ErrNotFound
-// rather than trusting the filename (ADR 0002, ADR 0005); surfacing the corruption
-// itself is doctor's job (b8q3).
+// A corrupt file carries no identity Resolve can match, even when its filename
+// hints at one: ErrNotFound, never a match on the filename.
 func TestResolveSkipsCorruptFile(t *testing.T) {
 	root := newStore(t)
 	path := filepath.Join(root, ".beaver", "issues", "m3k8-broken.md")
@@ -81,8 +78,8 @@ func TestResolveSkipsCorruptFile(t *testing.T) {
 	}
 }
 
-// A slug resolves to its issue. The ID is deliberately unrelated to the slug, so a
-// hit proves slug matching and not a coincidental match on the ID.
+// The ID is deliberately unrelated to the slug, so a hit proves slug matching
+// and not a coincidental match on the ID.
 func TestResolveBySlug(t *testing.T) {
 	root := newStore(t)
 	writeIssueFile(t, root, "q1w2e3-fix-the-login-bug.md", mkIssue("q1w2e3", "Fix the login bug"))
@@ -97,8 +94,6 @@ func TestResolveBySlug(t *testing.T) {
 	}
 }
 
-// The full "<id>-<slug>" name — the canonical file name a user sees on disk —
-// resolves to its issue, since it carries the unique ID.
 func TestResolveByIDSlugName(t *testing.T) {
 	root := newStore(t)
 	writeIssueFile(t, root, "q1w2e3-fix-the-login-bug.md", mkIssue("q1w2e3", "Fix the login bug"))
@@ -113,16 +108,12 @@ func TestResolveByIDSlugName(t *testing.T) {
 	}
 }
 
-// A slug is derived from the mutable title and so is not unique. A slug two issues
-// share names no single issue: it does not resolve, counting as a not-found
-// (SharedSlugError Unwraps to ErrNotFound) while also carrying the candidates,
-// sorted by ID, so a caller can list them. Each issue stays reachable by its unique
-// ID and its full "<id>-<slug>" name.
+// A slug two issues share resolves to no single issue: a not-found that also
+// carries the candidates, sorted by ID.
 func TestResolveSharedSlugIsNotFoundWithCandidates(t *testing.T) {
 	root := newStore(t)
-	// Drifted filenames whose path order (zzz, aaa) is the reverse of the ID order
-	// (aaa111, bbb222), so a passing sort assertion proves the ordering is on the
-	// ID and not an artifact of directory iteration.
+	// Path order (zzz, aaa) is the reverse of ID order (aaa111, bbb222), so a
+	// passing sort assertion proves the ordering is on the ID.
 	writeIssueFile(t, root, "zzz-fix-bug.md", mkIssue("aaa111", "Fix bug"))
 	writeIssueFile(t, root, "aaa-fix-bug.md", mkIssue("bbb222", "Fix bug"))
 	st, _ := store.Discover(root)
@@ -142,7 +133,7 @@ func TestResolveSharedSlugIsNotFoundWithCandidates(t *testing.T) {
 	if !slices.Equal(ids, []string{"aaa111", "bbb222"}) {
 		t.Errorf("candidates = %v, want sorted [aaa111 bbb222]", ids)
 	}
-	// Each remains reachable by its unique ID and its full "<id>-<slug>" name.
+	// Each remains reachable by its ID and its full "<id>-<slug>" name.
 	for _, id := range []string{"aaa111", "bbb222"} {
 		if got, _, err := st.Resolve(id); err != nil || got.ID != id {
 			t.Errorf("Resolve(%q) = %q, %v; want it to resolve", id, got.ID, err)
@@ -153,8 +144,7 @@ func TestResolveSharedSlugIsNotFoundWithCandidates(t *testing.T) {
 	}
 }
 
-// Precedence: an exact full ID is the authoritative identity and wins over another
-// issue whose title happens to slugify to the same string.
+// An exact ID wins over another issue whose title slugifies to the same string.
 func TestResolveExactIDBeatsCoincidentSlug(t *testing.T) {
 	root := newStore(t)
 	writeIssueFile(t, root, "abc123-target.md", mkIssue("abc123", "Target"))
@@ -170,9 +160,8 @@ func TestResolveExactIDBeatsCoincidentSlug(t *testing.T) {
 	}
 }
 
-// The slug is the title's canonical slug, never the filename's — so a drifted
-// filename (ADR 0005) neither creates a phantom match on its stale slug nor hides
-// the issue behind its real one.
+// The slug is the title's canonical slug, never the filename's — a drifted
+// filename neither creates a phantom match nor hides the real one.
 func TestResolveSlugUsesTitleNotFilename(t *testing.T) {
 	root := newStore(t)
 	writeIssueFile(t, root, "abc123-old-name.md", mkIssue("abc123", "New Name"))
@@ -186,9 +175,8 @@ func TestResolveSlugUsesTitleNotFilename(t *testing.T) {
 	}
 }
 
-// An empty reference matches nothing — not even an issue whose title has no
-// alphanumerics and so has an empty canonical slug. That issue stays reachable by
-// its ID.
+// An empty reference matches nothing — not even an issue whose title slugifies
+// to the empty string. That issue stays reachable by its ID.
 func TestResolveEmptyRefMatchesNothing(t *testing.T) {
 	root := newStore(t)
 	writeIssueFile(t, root, "aaaaaa.md", mkIssue("aaaaaa", "!!!")) // empty slug
@@ -202,10 +190,8 @@ func TestResolveEmptyRefMatchesNothing(t *testing.T) {
 	}
 }
 
-// Form 4: a stale on-disk name — the id joined to a slug that no longer matches
-// the title, with or without its .md suffix — still resolves, because the id part
-// is the identity and the slug half only decoration (ADR 0002). The fallback only
-// ever adds resolutions: a made-up name around a nonexistent id stays not-found.
+// A stale on-disk name (id joined to an outdated slug, .md suffix optional)
+// resolves via its id part; a made-up name around a nonexistent id stays not-found.
 func TestResolveStaleFileName(t *testing.T) {
 	root := newStore(t)
 	writeIssueFile(t, root, "abc123-old-name.md", mkIssue("abc123", "New Name"))
@@ -221,9 +207,8 @@ func TestResolveStaleFileName(t *testing.T) {
 	}
 }
 
-// The stale-name fallback is tried strictly last, so it can never shadow a living
-// slug: a reference that is some issue's canonical slug resolves to that issue,
-// even when its leading segment happens to be another issue's id.
+// The stale-name fallback never shadows a living slug, even when the
+// reference's leading segment happens to be another issue's id.
 func TestResolveSlugBeatsStaleNameFallback(t *testing.T) {
 	root := newStore(t)
 	writeIssueFile(t, root, "fix.md", mkIssue("fix", "Unrelated"))
@@ -236,9 +221,8 @@ func TestResolveSlugBeatsStaleNameFallback(t *testing.T) {
 	}
 }
 
-// A Snapshot answers Resolve, Issues, and IDTaken from one scan with the store's
-// exact contracts, so a command that asks several questions gets consistent
-// answers without re-reading the files.
+// A Snapshot answers Resolve, Issues, and IDTaken from one scan with the
+// store's exact contracts.
 func TestSnapshotAnswersLikeTheStore(t *testing.T) {
 	root := newStore(t)
 	writeIssueFile(t, root, "aaa111-first.md", mkIssue("aaa111", "First"))
@@ -264,9 +248,8 @@ func TestSnapshotAnswersLikeTheStore(t *testing.T) {
 	}
 }
 
-// A store whose issues/ directory has been deleted (a half-merged or hand-edited
-// store) is a normal, recoverable state: List reports zero issues rather than
-// leaking a raw OS error (ADR 0005).
+// A deleted issues/ directory is a normal, recoverable state: List reports
+// zero issues rather than leaking a raw OS error.
 func TestListMissingIssuesDir(t *testing.T) {
 	root := newStore(t)
 	if err := os.RemoveAll(filepath.Join(root, ".beaver", "issues")); err != nil {
@@ -283,8 +266,8 @@ func TestListMissingIssuesDir(t *testing.T) {
 	}
 }
 
-// Update overwrites an already-canonical file in place, returning the same path
-// and leaving exactly one file for the id.
+// Update overwrites an already-canonical file in place, leaving exactly one
+// file for the id.
 func TestUpdateOverwritesCanonicalInPlace(t *testing.T) {
 	root := newStore(t)
 	canonical := issue.FileName("abc123", issue.Slug("Fix the bug"))
@@ -314,9 +297,8 @@ func TestUpdateOverwritesCanonicalInPlace(t *testing.T) {
 	}
 }
 
-// Update renames a drifted file to its canonical name — writing the canonical file
-// and removing the stale one — so a read-modify-write never leaves two files with
-// the same id (ADR 0005).
+// Update writes the canonical file and removes a drifted one, so a
+// read-modify-write never leaves two files with the same id.
 func TestUpdateRenamesDriftedFile(t *testing.T) {
 	root := newStore(t)
 	writeIssueFile(t, root, "totally-wrong-name.md", issue.Issue{
@@ -344,9 +326,8 @@ func TestUpdateRenamesDriftedFile(t *testing.T) {
 	}
 }
 
-// Rename moves a drifted file to its canonical name and nothing more — the surgical
-// repair doctor --fix applies for filename drift (n9b4a7). The old name is gone, the
-// canonical one holds the same issue, and the bytes are the file's own, unrewritten.
+// Rename moves a drifted file to its canonical name and nothing more: the
+// bytes are the file's own, unrewritten.
 func TestRenameMovesDriftedFileWithoutRewriting(t *testing.T) {
 	root := newStore(t)
 	writeIssueFile(t, root, "drifted-name.md", issue.Issue{
@@ -381,13 +362,11 @@ func TestRenameMovesDriftedFileWithoutRewriting(t *testing.T) {
 	}
 }
 
-// Rename refuses to overwrite a different file that already holds the canonical name,
-// returning ErrNameCollision rather than clobbering it — the safety net that keeps
-// doctor --fix from destroying an issue when two files disagree about an id.
+// Rename returns ErrNameCollision rather than overwrite a different file that
+// already holds the canonical name.
 func TestRenameRefusesToClobber(t *testing.T) {
 	root := newStore(t)
-	// A file whose canonical name is "abc123-real-title.md" but sits under a drifted
-	// name, and a *different* issue already occupying that canonical name.
+	// A drifted file whose canonical name a *different* issue already occupies.
 	writeIssueFile(t, root, "drifted-name.md", issue.Issue{
 		ID: "abc123", Title: "Real Title", State: issue.StateTodo,
 		Created: fixedTime, Updated: fixedTime,
@@ -399,14 +378,13 @@ func TestRenameRefusesToClobber(t *testing.T) {
 	if _, err := st.Rename(drifted, mkIssue("abc123", "Real Title")); !errors.Is(err, store.ErrNameCollision) {
 		t.Fatalf("Rename over an occupied name = %v, want ErrNameCollision", err)
 	}
-	// Both files survive untouched: nothing was clobbered.
+	// Both files survive untouched.
 	if files, _ := st.List(); len(files) != 2 {
 		t.Errorf("files = %v, want both still present", files)
 	}
 }
 
-// Renaming a file that is already at its canonical name is a no-op success — doctor
-// only calls Rename for a drifted file, but the primitive stays safe if it doesn't.
+// Renaming a file already at its canonical name is a no-op success.
 func TestRenameCanonicalIsNoOp(t *testing.T) {
 	root := newStore(t)
 	name := issue.FileName("abc123", issue.Slug("Already Canonical"))
@@ -423,16 +401,12 @@ func TestRenameCanonicalIsNoOp(t *testing.T) {
 	}
 }
 
-// A scan skips every file that is not a usable issue and reports each through the
-// warning handler — naming the file and the specific reason — while still
-// returning the valid issues (ADR 0005). Malformed frontmatter, a missing id, and
-// an illegal state are each hard validation errors; a valid issue whose filename
-// has drifted from its id is lint, not a hard error, so it loads with no warning.
+// A scan skips each unusable file and reports it through the warning handler
+// while still returning the valid issues. A drifted filename is lint, not a
+// hard error: it loads with no warning.
 func TestReadAllSkipsAndReportsInvalidFiles(t *testing.T) {
 	root := newStore(t)
 	writeIssueFile(t, root, "good111-fine.md", mkIssue("good111", "Fine"))
-	// Lint, not a hard error: a drifted filename is doctor's to tidy, never a reason
-	// to skip. It must load, and it must not warn.
 	writeIssueFile(t, root, "drifted-name.md", mkIssue("lint11", "Untidy but valid"))
 
 	const stamps = "created: 2026-06-27T18:30:00Z\nupdated: 2026-06-27T18:30:00Z\n"
@@ -457,8 +431,7 @@ func TestReadAllSkipsAndReportsInvalidFiles(t *testing.T) {
 		t.Errorf("ReadAll returned %d issues %v, want just the two valid ones (good111, lint11)", len(got), gotIDs)
 	}
 
-	// One warning per invalid file, each carrying a non-nil reason; no warning for
-	// the valid-but-untidy file.
+	// One warning per invalid file; none for the valid-but-untidy file.
 	wantReasons := map[string]string{"bad-yaml.md": "frontmatter", "no-id.md": "id", "bad-state.md": "state"}
 	if len(warned) != len(wantReasons) {
 		t.Fatalf("warnings = %v, want exactly one per invalid file %v", warned, wantReasons)
@@ -475,9 +448,7 @@ func TestReadAllSkipsAndReportsInvalidFiles(t *testing.T) {
 	}
 }
 
-// With no handler set, an invalid file is still skipped silently — the warning
-// channel is purely additive, so the store's readers behave exactly as before for
-// callers that do not opt in.
+// With no handler set, an invalid file is skipped silently.
 func TestScanSkipsSilentlyWithoutHandler(t *testing.T) {
 	root := newStore(t)
 	writeIssueFile(t, root, "good111-fine.md", mkIssue("good111", "Fine"))
@@ -493,10 +464,8 @@ func TestScanSkipsSilentlyWithoutHandler(t *testing.T) {
 	}
 }
 
-// Read applies to one named file the same usable-issue contract scan applies
-// store-wide: a good file returns its issue, and a file that fails validation
-// returns the reason (ADR 0005) — the check edit and interactive create run on
-// what a human just saved in $EDITOR.
+// Read applies the store-wide usable-issue contract to one named file: a good
+// file returns its issue, a failing one returns the reason.
 func TestReadValidatesSingleFile(t *testing.T) {
 	root := newStore(t)
 	writeIssueFile(t, root, "abc123-fine.md", mkIssue("abc123", "Fine"))
@@ -519,8 +488,8 @@ func TestReadValidatesSingleFile(t *testing.T) {
 	}
 }
 
-// Delete removes an issue's file, so it vanishes from every read path; deleting a
-// path that is no longer there is an error the caller can surface.
+// Delete removes an issue's file from every read path; deleting an absent
+// path is an error.
 func TestDeleteRemovesFile(t *testing.T) {
 	root := newStore(t)
 	writeIssueFile(t, root, "abc123-junk.md", mkIssue("abc123", "Junk"))
@@ -546,8 +515,7 @@ func TestDeleteRemovesFile(t *testing.T) {
 
 var fixedTime = time.Date(2026, 6, 27, 18, 30, 0, 0, time.UTC)
 
-// mkIssue builds a minimal todo issue at the fixed time — enough for resolution
-// tests, which care only about id and title.
+// mkIssue builds a minimal todo issue at the fixed time.
 func mkIssue(id, title string) issue.Issue {
 	return issue.Issue{ID: id, Title: title, State: issue.StateTodo, Created: fixedTime, Updated: fixedTime}
 }

@@ -9,8 +9,6 @@ import (
 	"beaver/internal/issue"
 )
 
-// AC: `beaver init` creates `.beaver/issues/` and a committed project config with
-// a format-version marker.
 func TestInitCreatesStore(t *testing.T) {
 	h := beavertest.New(t)
 	r := h.MustRun("init")
@@ -24,7 +22,6 @@ func TestInitCreatesStore(t *testing.T) {
 	}
 }
 
-// AC: re-running init is safe.
 func TestInitIsIdempotent(t *testing.T) {
 	h := beavertest.New(t)
 	h.MustRun("init")
@@ -39,9 +36,7 @@ func TestInitIsIdempotent(t *testing.T) {
 	}
 }
 
-// AC: `beaver create` writes `<id>-<slug>.md` with id, title, state, created,
-// updated, and a body; the filename mirrors the id; the frontmatter id is
-// authoritative.
+// The filename mirrors the id, but the frontmatter id is authoritative.
 func TestCreateWritesIssueFile(t *testing.T) {
 	h := beavertest.New(t).Init()
 	h.Clock.Set(time.Date(2026, 6, 27, 18, 30, 0, 0, time.UTC))
@@ -88,7 +83,6 @@ func TestCreateWritesIssueFile(t *testing.T) {
 	}
 }
 
-// AC: IDs are short and random (not sequential).
 func TestCreateIDsAreShortRandomDistinct(t *testing.T) {
 	h := beavertest.New(t).Init()
 	a := h.DecodeJSON(h.MustRun("create", "First issue").Stdout)["id"].(string)
@@ -107,8 +101,6 @@ func TestCreateIDsAreShortRandomDistinct(t *testing.T) {
 	}
 }
 
-// A generated id that collides with an existing issue must be regenerated. This
-// also exercises the injectable ID generator.
 func TestCreateRegeneratesOnIDCollision(t *testing.T) {
 	h := beavertest.New(t).Init()
 	ids := []string{"a1a1", "a1a1", "b2b2"} // 2nd create's first draw collides
@@ -127,7 +119,6 @@ func TestCreateRegeneratesOnIDCollision(t *testing.T) {
 	}
 }
 
-// AC: output is human at a TTY, JSON when piped.
 func TestShowAutoDetectsFormat(t *testing.T) {
 	h := beavertest.New(t).Init()
 	id := h.DecodeJSON(h.MustRun("create", "Some issue").Stdout)["id"].(string)
@@ -147,7 +138,6 @@ func TestShowAutoDetectsFormat(t *testing.T) {
 	}
 }
 
-// AC: `--format` overrides the auto-detection (both directions).
 func TestShowFormatOverride(t *testing.T) {
 	h := beavertest.New(t).Init()
 	id := h.DecodeJSON(h.MustRun("create", "Some issue").Stdout)["id"].(string)
@@ -162,7 +152,6 @@ func TestShowFormatOverride(t *testing.T) {
 	}
 }
 
-// AC: exit codes distinguish success from not-found.
 func TestShowNotFound(t *testing.T) {
 	h := beavertest.New(t).Init()
 	r := h.Run("show", "zzzz")
@@ -183,7 +172,6 @@ func TestShowNotFound(t *testing.T) {
 	}
 }
 
-// AC: timestamps come from the injected clock (deterministic).
 func TestClockIsInjected(t *testing.T) {
 	h := beavertest.New(t).Init()
 	h.Clock.Set(time.Date(2030, 1, 2, 3, 4, 5, 0, time.UTC))
@@ -194,8 +182,6 @@ func TestClockIsInjected(t *testing.T) {
 	}
 }
 
-// AC: a missing store exits 3 (not-found), the code the CLI documents for "the
-// store was not found".
 func TestCommandsRequireStore(t *testing.T) {
 	for _, args := range [][]string{{"create", "x"}, {"show", "x"}} {
 		h := beavertest.New(t) // no init

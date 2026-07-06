@@ -10,11 +10,8 @@ import (
 	"beaver/internal/vcs"
 )
 
-// AC: whoami resolves correctly across every branch of the precedence chain —
-// flag, env, agent-detect, saved user-config, and the generic fallback — and each
-// case is driven deterministically by injected env vars, the interactivity signal,
-// and (where relevant) a saved identity. Overlapping signals are set on purpose so
-// each case proves the *precedence*, not just that one lone signal works.
+// Overlapping signals are set on purpose so each case proves the precedence, not
+// just that one lone signal works.
 func TestWhoamiPrecedence(t *testing.T) {
 	cases := []struct {
 		name       string
@@ -87,9 +84,6 @@ func TestWhoamiPrecedence(t *testing.T) {
 	}
 }
 
-// AC: a human's Git name seeds user-config interactively, with confirmation. A bare
-// Enter accepts the offered VCS identity; it is then saved, so the next interactive
-// run resolves straight from config without prompting again.
 func TestWhoamiInteractiveSeedsFromVCSWithConfirmation(t *testing.T) {
 	h := beavertest.New(t).Init()
 	h.StdinIsTTY = true
@@ -108,8 +102,7 @@ func TestWhoamiInteractiveSeedsFromVCSWithConfirmation(t *testing.T) {
 		t.Errorf("confirmed identity was not saved: %q", got)
 	}
 
-	// A second interactive run now short-circuits to the saved config: it must not
-	// prompt, so an empty stdin is fine.
+	// The second run must not prompt, so an empty stdin is fine.
 	h.StdinText = ""
 	out2 := h.DecodeJSON(h.MustRun("whoami", "--format", "json").Stdout)
 	if out2["actor"] != "Ada Lovelace" || out2["source"] != "config" {
@@ -117,8 +110,6 @@ func TestWhoamiInteractiveSeedsFromVCSWithConfirmation(t *testing.T) {
 	}
 }
 
-// Declining the VCS seed falls through to a free-form name prompt, and what the
-// human types becomes (and is saved as) the identity.
 func TestWhoamiInteractiveDeclineVCSThenType(t *testing.T) {
 	h := beavertest.New(t).Init()
 	h.StdinIsTTY = true
@@ -134,8 +125,6 @@ func TestWhoamiInteractiveDeclineVCSThenType(t *testing.T) {
 	}
 }
 
-// With no VCS adapter there is nothing to seed from, so resolution prompts directly
-// for a name.
 func TestWhoamiInteractiveNoVCSPromptsForName(t *testing.T) {
 	h := beavertest.New(t).Init()
 	h.StdinIsTTY = true
@@ -151,9 +140,8 @@ func TestWhoamiInteractiveNoVCSPromptsForName(t *testing.T) {
 	}
 }
 
-// AC: the VCS name is never used non-interactively. An agent inheriting the human's
-// Git config must not claim under the human's name — a non-interactive run resolves
-// to the generic agent instead, and saves nothing.
+// An agent inheriting the human's Git config must not claim work under the human's
+// name, so a non-interactive run never uses the VCS name and saves nothing.
 func TestVCSNameNeverUsedNonInteractively(t *testing.T) {
 	h := beavertest.New(t).Init()
 	h.StdinIsTTY = false // the key: not an interactive session
@@ -171,8 +159,7 @@ func TestVCSNameNeverUsedNonInteractively(t *testing.T) {
 	}
 }
 
-// The saved human identity is likewise interactive-only: a non-interactive run does
-// not borrow it, even when one exists.
+// The saved human identity is likewise interactive-only: an agent must not borrow it.
 func TestSavedIdentityIgnoredNonInteractively(t *testing.T) {
 	h := beavertest.New(t).Init()
 	saveActor(t, h, "saved-human")
@@ -184,9 +171,8 @@ func TestSavedIdentityIgnoredNonInteractively(t *testing.T) {
 	}
 }
 
-// AC: an unknown non-interactive caller becomes the generic agent — loudly, so it
-// is noticed and can be named with BUSY_BEAVER_ACTOR or --as rather than silently
-// conflated with other unidentified agents.
+// The fallback is loud so an unidentified caller gets named with BUSY_BEAVER_ACTOR
+// or --as rather than silently conflated with other agents.
 func TestGenericAgentFallbackIsLoud(t *testing.T) {
 	h := beavertest.New(t).Init()
 	r := h.MustRun("whoami", "--format", "json") // nothing set, non-interactive
@@ -199,7 +185,6 @@ func TestGenericAgentFallbackIsLoud(t *testing.T) {
 	}
 }
 
-// Human output is the bare resolved name, not JSON — the demoable one-liner.
 func TestWhoamiHumanPrintsName(t *testing.T) {
 	h := beavertest.New(t).Init()
 	h.Env["BUSY_BEAVER_ACTOR"] = "stefan"
@@ -214,8 +199,8 @@ func TestWhoamiHumanPrintsName(t *testing.T) {
 	}
 }
 
-// An interactive session that cannot produce a name (nothing typed) fails cleanly
-// and saves nothing, rather than inventing an identity.
+// A session that cannot produce a name fails and saves nothing, rather than
+// inventing an identity.
 func TestWhoamiInteractiveNoInputErrors(t *testing.T) {
 	h := beavertest.New(t).Init()
 	h.StdinIsTTY = true
@@ -231,9 +216,6 @@ func TestWhoamiInteractiveNoInputErrors(t *testing.T) {
 	}
 }
 
-// AC: init seeds the runner's identity into user-level config. An interactive init
-// runs the identity setup proactively; the name is saved (never into the committed
-// project config), so later runs resolve it from config.
 func TestInitSeedsIdentityInteractively(t *testing.T) {
 	h := beavertest.New(t) // not yet initialized
 	h.StdinIsTTY = true
@@ -247,7 +229,7 @@ func TestInitSeedsIdentityInteractively(t *testing.T) {
 	if got := savedActor(t, h); got != "Ada Lovelace" {
 		t.Errorf("init did not seed the identity: saved = %q", got)
 	}
-	// Never committed: the identity must not land in the project config.
+	// The identity is personal: it must never land in the committed project config.
 	if cfg := h.ReadFile("config.yml"); strings.Contains(cfg, "Ada") {
 		t.Errorf("identity leaked into the committed project config:\n%s", cfg)
 	}
@@ -259,8 +241,6 @@ func TestInitSeedsIdentityInteractively(t *testing.T) {
 	}
 }
 
-// A non-interactive init never seeds: it must not prompt and must not silently
-// adopt the human's VCS name (the same footgun rule as resolution).
 func TestInitDoesNotSeedNonInteractively(t *testing.T) {
 	h := beavertest.New(t)
 	h.StdinIsTTY = false
@@ -275,8 +255,6 @@ func TestInitDoesNotSeedNonInteractively(t *testing.T) {
 	}
 }
 
-// init's seeding is idempotent: with an identity already saved, it neither prompts
-// nor overwrites — so a re-init after setup is safe.
 func TestInitIdentitySeedingIsIdempotent(t *testing.T) {
 	h := beavertest.New(t)
 	saveActor(t, h, "existing")
@@ -293,8 +271,6 @@ func TestInitIdentitySeedingIsIdempotent(t *testing.T) {
 	}
 }
 
-// whoami misuse is a usage error (exit 2): stray positional arguments, or an
-// invalid format.
 func TestWhoamiUsageErrors(t *testing.T) {
 	h := beavertest.New(t).Init()
 	for _, args := range [][]string{
@@ -309,8 +285,7 @@ func TestWhoamiUsageErrors(t *testing.T) {
 
 // --- helpers ---
 
-// saveActor writes a saved user-config identity, standing in for a prior
-// interactive setup so tests can exercise the config branch directly.
+// saveActor writes a user-config identity, standing in for a prior interactive setup.
 func saveActor(t *testing.T, h *beavertest.Harness, name string) {
 	t.Helper()
 	if err := userconfig.Save(h.UserConfigDir, userconfig.Config{Actor: name}); err != nil {
@@ -318,8 +293,7 @@ func saveActor(t *testing.T, h *beavertest.Harness, name string) {
 	}
 }
 
-// savedActor reads back the saved user-config identity ("" when none), to assert
-// what a run persisted.
+// savedActor reads back the saved user-config identity ("" when none).
 func savedActor(t *testing.T, h *beavertest.Harness) string {
 	t.Helper()
 	cfg, err := userconfig.Load(h.UserConfigDir)

@@ -8,17 +8,10 @@ import (
 	"beaver/internal/issue"
 )
 
-// cmdNote appends an attributed, timestamped entry to an issue's append-only notes
-// log — the coordination journal for human↔agent handoff (ADR 0012). The actor is
-// resolved through the one identity chain every attributing command uses (--as
-// overrides it), the time comes from the injected clock, and the entry is appended
-// under the "## Notes" section of the body, which is created on the first note. The
-// rest of the body is carried through untouched (ADR 0014).
-//
-// Notes are append-only: there is no edit, no reply, no no-op. Every call adds a new
-// entry, so — unlike the idempotent verbs — note always writes and always bumps
-// `updated`. A note is allowed on an issue in any state: a closed issue can still
-// receive a for-the-record observation, and the log never gates on lifecycle.
+// cmdNote appends an attributed, timestamped entry under the issue body's
+// "## Notes" section, creating the section on the first note. Notes are
+// append-only — every call writes and bumps `updated` — and are allowed on an
+// issue in any state, including closed ones.
 func cmdNote(env Env, args []string) int {
 	fs, formatFlag := newFlagSet(env, "note")
 	asFlag := fs.String("as", "", "attribute the note to this actor (overrides identity detection)")
@@ -50,9 +43,8 @@ func cmdNote(env Env, args []string) int {
 		return code
 	}
 
-	// Resolve who is writing only once the reference is known good, so a typo'd ref
-	// fails fast (exit 3) without triggering an interactive identity prompt — the same
-	// ordering claim and start use.
+	// Resolve the actor only once the reference is known good, so a typo'd ref
+	// fails fast without triggering an interactive identity prompt.
 	me, err := resolveActor(env, *asFlag)
 	if err != nil {
 		errf(env, "%v", err)

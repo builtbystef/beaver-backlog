@@ -11,9 +11,8 @@ import (
 	"beaver/internal/vcs"
 )
 
-// The Git adapter reads user.name from the repository it points at. The test is
-// hermetic: it isolates git from the machine's real global/system config so the
-// only identity in play is the one it sets locally.
+// The Git adapter reads user.name from the repository it points at; git is
+// isolated from the machine's real config so only the local identity is in play.
 func TestGitIdentityReadsUserName(t *testing.T) {
 	dir := gitRepo(t)
 	run(t, dir, "config", "user.name", "Ada Lovelace")
@@ -27,10 +26,9 @@ func TestGitIdentityReadsUserName(t *testing.T) {
 	}
 }
 
-// With no user.name set (and global/system config isolated away), git exits
-// non-zero; the adapter reports this as "no seed", not an error.
+// An unset user.name is reported as "no seed" (found=false), not an error.
 func TestGitIdentityUnsetIsNotFound(t *testing.T) {
-	dir := gitRepo(t) // a repo, but user.name deliberately left unset
+	dir := gitRepo(t) // user.name deliberately left unset
 
 	name, found, err := vcs.Git{Dir: dir}.Identity()
 	if err != nil {
@@ -41,8 +39,7 @@ func TestGitIdentityUnsetIsNotFound(t *testing.T) {
 	}
 }
 
-// A Dir that is not a git repository (and with global config isolated) yields no
-// identity rather than an error — the graceful "no VCS to seed from" path.
+// A Dir that is not a git repository yields no identity rather than an error.
 func TestGitIdentityOutsideRepoIsNotFound(t *testing.T) {
 	requireGit(t)
 	isolateGit(t)
@@ -56,10 +53,8 @@ func TestGitIdentityOutsideRepoIsNotFound(t *testing.T) {
 	}
 }
 
-// The Git adapter records exactly the paths it is given as one commit, and leaves
-// unrelated staged and working-tree changes out of that commit — the atomicity the
-// opt-in commit-per-issue relies on. It sets up a repo with one committed file, then
-// commits a modified issue file while an unrelated file is both staged and dirty.
+// Commit records exactly the paths it is given, leaving unrelated staged and
+// working-tree changes out of the commit and undisturbed.
 func TestGitCommitIsScopedAndAtomic(t *testing.T) {
 	dir := gitRepo(t)
 	identify(t, dir)
@@ -68,10 +63,10 @@ func TestGitCommitIsScopedAndAtomic(t *testing.T) {
 	run(t, dir, "add", "-A")
 	run(t, dir, "commit", "-m", "seed")
 
-	// The issue change we want committed, plus unrelated noise that must NOT ride along.
+	// The issue change to commit, plus unrelated noise that must NOT ride along.
 	writeFile(t, dir, "issue.md", "done\n")
 	writeFile(t, dir, "unrelated.txt", "changed\n")
-	run(t, dir, "add", "unrelated.txt") // an unrelated change the user pre-staged
+	run(t, dir, "add", "unrelated.txt") // pre-staged unrelated change
 
 	rev, err := vcs.Git{Dir: dir}.Commit([]string{filepath.Join(dir, "issue.md")}, "mark issue done")
 	if err != nil {
@@ -90,15 +85,14 @@ func TestGitCommitIsScopedAndAtomic(t *testing.T) {
 	if got := gitOut(t, dir, "show", "HEAD:issue.md"); got != "done" {
 		t.Errorf("committed issue content = %q, want the done version", got)
 	}
-	// The unrelated file's staged change is untouched by our commit: still staged,
-	// still uncommitted — we neither swept it in nor reset it.
+	// The unrelated staged change is untouched: still staged, still uncommitted.
 	if got := gitOut(t, dir, "diff", "--cached", "--name-only"); got != "unrelated.txt" {
 		t.Errorf("staged-but-uncommitted files = %q, want the unrelated change left intact", got)
 	}
 }
 
-// On a repository with no commits yet, Commit creates the initial commit rather
-// than failing — a fresh project can enable commit-on-done from its very first done.
+// On a repository with no commits yet, Commit creates the initial commit
+// rather than failing.
 func TestGitCommitCreatesInitialCommit(t *testing.T) {
 	dir := gitRepo(t)
 	identify(t, dir)
@@ -112,10 +106,9 @@ func TestGitCommitCreatesInitialCommit(t *testing.T) {
 	}
 }
 
-// When a completed issue's file was renamed to its canonical name, Commit records
-// the rename atomically: passing both the surviving path and the removed one stages
-// the deletion of the tracked old file, so history holds no stale duplicate. A stale
-// path that was never tracked is tolerated (it matches nothing) rather than failing.
+// Passing both the surviving path and a removed one records a rename
+// atomically (the deletion is staged too); a never-tracked, absent path is
+// tolerated rather than failing the commit.
 func TestGitCommitRecordsRenameAndToleratesUntrackedGhost(t *testing.T) {
 	dir := gitRepo(t)
 	identify(t, dir)
@@ -123,7 +116,7 @@ func TestGitCommitRecordsRenameAndToleratesUntrackedGhost(t *testing.T) {
 	run(t, dir, "add", "-A")
 	run(t, dir, "commit", "-m", "seed")
 
-	// Simulate the store canonicalizing the filename: old removed, new written.
+	// Simulate a filename canonicalization: old removed, new written.
 	if err := os.Remove(filepath.Join(dir, "old.md")); err != nil {
 		t.Fatal(err)
 	}
@@ -135,14 +128,14 @@ func TestGitCommitRecordsRenameAndToleratesUntrackedGhost(t *testing.T) {
 	if _, err := (vcs.Git{Dir: dir}).Commit([]string{newP, oldP, ghost}, "canonicalize"); err != nil {
 		t.Fatalf("Commit with a rename and a ghost path: %v", err)
 	}
-	// The tree holds the new file and not the old one — exactly one, no duplicate id.
+	// The tree holds the new file and not the old one.
 	if got := gitOut(t, dir, "ls-tree", "-r", "--name-only", "HEAD"); got != "new.md" {
 		t.Errorf("tree after rename commit = %q, want only new.md", got)
 	}
 }
 
-// The Fake records exactly what it is asked to commit and returns its configured
-// revision, and surfaces a configured error while still recording the attempt.
+// The Fake records what it is asked to commit, returns its configured
+// revision, and records the attempt even when configured to fail.
 func TestFakeCommit(t *testing.T) {
 	f := &vcs.Fake{Rev: "abc1234"}
 	rev, err := f.Commit([]string{"a.md", "b.md"}, "msg")
@@ -185,9 +178,8 @@ func gitRepo(t *testing.T) string {
 	return dir
 }
 
-// isolateGit points git's global and system config at throwaway locations for the
-// duration of the test, so the machine's real ~/.gitconfig cannot leak a
-// user.name into these assertions.
+// isolateGit points git's global and system config at throwaway locations, so
+// the machine's real ~/.gitconfig cannot leak a user.name into assertions.
 func isolateGit(t *testing.T) {
 	t.Helper()
 	t.Setenv("GIT_CONFIG_GLOBAL", filepath.Join(t.TempDir(), "gitconfig"))
@@ -210,16 +202,15 @@ func run(t *testing.T, dir string, args ...string) {
 	}
 }
 
-// identify configures a committer for a repo, which git requires to make a commit
-// (Identity's tests need only user.name; committing also needs user.email).
+// identify configures the committer identity git requires to make a commit.
 func identify(t *testing.T, dir string) {
 	t.Helper()
 	run(t, dir, "config", "user.name", "Test Committer")
 	run(t, dir, "config", "user.email", "test@example.com")
 }
 
-// gitOut runs a git command and returns its trimmed stdout, failing the test on
-// error — for reading back what a commit recorded.
+// gitOut runs a git command and returns its trimmed stdout, failing the test
+// on error.
 func gitOut(t *testing.T, dir string, args ...string) string {
 	t.Helper()
 	cmd := exec.Command("git", args...)

@@ -8,8 +8,6 @@ import (
 	"beaver/internal/issue"
 )
 
-// AC: a reference may be a full ID, a slug, or the full "<id>-<slug>" name — `show`
-// (the read command) accepts all three and resolves them to the same issue.
 func TestShowResolvesByIDSlugAndName(t *testing.T) {
 	h := beavertest.New(t).Init()
 	// A real create, so the ID is genuine; then reference it three ways.
@@ -25,7 +23,6 @@ func TestShowResolvesByIDSlugAndName(t *testing.T) {
 	}
 }
 
-// AC: an unknown reference is a plain not-found (exit 3) that names the ref.
 func TestUnknownRefIsNotFound(t *testing.T) {
 	h := beavertest.New(t).Init()
 	seed(t, h, "aaa111", "Something", issue.StateTodo, beavertest.DefaultNow)
@@ -42,10 +39,8 @@ func TestUnknownRefIsNotFound(t *testing.T) {
 	}
 }
 
-// AC: a slug several issues share names no single issue, so it does not resolve
-// (exit 3, like any not-found) — but the message lists the candidate IDs, in a
-// deterministic (ID-sorted) order, so the user can pick one. Each issue is still
-// reachable by its unique ID.
+// A slug several issues share names no single issue, so it does not resolve — but
+// the error lists the candidate IDs (id-sorted, so deterministic) to pick from.
 func TestSharedSlugListsCandidates(t *testing.T) {
 	h := beavertest.New(t).Init()
 	seed(t, h, "dup222", "Fix bug", issue.StateTodo, beavertest.DefaultNow)
@@ -73,9 +68,8 @@ func TestSharedSlugListsCandidates(t *testing.T) {
 	}
 }
 
-// AC: every command taking an issue argument routes through the shared resolver.
-// Each ref-taking verb must (a) resolve a slug and (b) report an unknown ref as
-// not-found (exit 3) — behavior that lives in the resolver, not in any one command.
+// Slug resolution and not-found reporting live in the shared resolver, not in any
+// one command, so every ref-taking verb must show both.
 func TestEveryRefCommandUsesSharedResolver(t *testing.T) {
 	for _, verb := range []string{"show", "done", "cancel", "reopen"} {
 		t.Run(verb, func(t *testing.T) {
@@ -85,14 +79,14 @@ func TestEveryRefCommandUsesSharedResolver(t *testing.T) {
 				state = issue.StateDone
 			}
 
-			// (a) A slug resolves, so the command succeeds.
+			// A slug resolves, so the command succeeds.
 			h := beavertest.New(t).Init()
 			seed(t, h, "solo11", "Lone issue", state, beavertest.DefaultNow)
 			if r := h.Run(verb, "lone-issue"); r.Code != 0 {
 				t.Errorf("%s by slug exit = %d, want 0\nstderr: %s", verb, r.Code, r.Stderr)
 			}
 
-			// (b) An unknown ref is not-found for every verb.
+			// An unknown ref is not-found for every verb.
 			if r := h.Run(verb, "zzzzzz"); r.Code != 3 {
 				t.Errorf("%s of an unknown ref exit = %d, want 3\nstderr: %s", verb, r.Code, r.Stderr)
 			}

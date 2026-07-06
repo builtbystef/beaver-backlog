@@ -10,11 +10,6 @@ import (
 	"beaver/internal/issue"
 )
 
-// AC: done, cancel, and reopen set the expected state and bump `updated` from the
-// injected clock, leaving `created` untouched. Each case seeds an issue in a valid
-// source state at the default time, advances the clock, runs the verb, and asserts
-// the new state and the bumped timestamp — both on the command's own output and,
-// re-read through `show`, on the file it wrote.
 func TestTransitionsSetStateAndBumpUpdated(t *testing.T) {
 	const created = "2026-06-27T18:30:00Z" // beavertest.DefaultNow
 	const bumped = "2026-06-29T18:30:00Z"  // DefaultNow + 48h
@@ -58,8 +53,8 @@ func TestTransitionsSetStateAndBumpUpdated(t *testing.T) {
 	}
 }
 
-// AC: cancel is distinct from done, and a cancelled issue remains fully readable —
-// it is terminal-but-not-completed (ADR 0004), kept visible rather than deleted.
+// Cancelled is terminal but not completed: the issue stays readable and listed,
+// never deleted.
 func TestCancelIsDistinctFromDoneAndReadable(t *testing.T) {
 	h := beavertest.New(t).Init()
 	seed(t, h, "cnc111", "Abandon this", issue.StateTodo, beavertest.DefaultNow)
@@ -74,21 +69,17 @@ func TestCancelIsDistinctFromDoneAndReadable(t *testing.T) {
 		t.Error("cancel and done produced the same state; they must be distinct")
 	}
 
-	// The cancelled issue is still readable, with its content intact.
 	shown := h.DecodeJSON(h.MustRun("show", "cnc111").Stdout)
 	if shown["state"] != "cancelled" || shown["title"] != "Abandon this" {
 		t.Errorf("cancelled issue is not readable as expected: %v", shown)
 	}
-	// ...and still enumerated, under its own state.
 	if got := listIDs(t, h, "--state", "cancelled"); !slices.Equal(got, []string{"cnc111"}) {
 		t.Errorf("cancelled list = %v, want [cnc111]", got)
 	}
 }
 
-// AC: nonsensical transitions are handled gracefully — a clear message, a usage
-// exit, and no corruption. The file is compared byte-for-byte before and after,
-// and the clock is advanced first so an erroneous write (which would bump
-// `updated`) could not slip past the comparison.
+// The clock is advanced before the rejected verb so an erroneous write (which
+// would bump `updated`) could not slip past the byte-for-byte comparison.
 func TestTransitionsRejectNonsensical(t *testing.T) {
 	cases := []struct {
 		verb string
@@ -123,8 +114,6 @@ func TestTransitionsRejectNonsensical(t *testing.T) {
 	}
 }
 
-// A verb applied to an issue already in its target state is an idempotent no-op:
-// it succeeds (exit 0) but does not rewrite the file, so `updated` is not churned.
 func TestTransitionsRedundantAreIdempotent(t *testing.T) {
 	cases := []struct {
 		verb  string
@@ -160,9 +149,8 @@ func TestTransitionsRedundantAreIdempotent(t *testing.T) {
 	}
 }
 
-// A transition is a read-modify-write of the whole file, so it must carry the
-// human-owned body and any custom frontmatter keys through untouched (ADR 0014),
-// changing only state and updated.
+// A transition rewrites the whole file, so the body and custom frontmatter keys
+// must pass through untouched.
 func TestTransitionPreservesBodyAndCustomFields(t *testing.T) {
 	h := beavertest.New(t).Init()
 	h.WriteFile("issues/pre111-keep-me.md", `---
@@ -188,8 +176,8 @@ The body with **markdown** and a fenced block:
 		t.Errorf("updated = %v, want bumped", out["updated"])
 	}
 
-	// Re-read from disk to prove the write persisted body + custom fields, not just
-	// that the command echoed them.
+	// Re-read from disk to prove the write persisted, not just that the command
+	// echoed the fields.
 	shown := h.DecodeJSON(h.MustRun("show", "pre111").Stdout)
 	if custom, _ := shown["custom"].(map[string]any); custom["sprint"] != float64(7) {
 		t.Errorf("custom field sprint not preserved: %v", shown["custom"])
@@ -199,10 +187,8 @@ The body with **markdown** and a fenced block:
 	}
 }
 
-// A transition on an issue whose filename has drifted from the canonical
-// <id>-<slug> (a hand-edit or merge, per ADR 0005) rewrites the canonical file
-// and removes the drifted one — keeping filenames correct on write rather than
-// leaving a second file with the same id behind.
+// Writing an issue whose filename has drifted (a hand-edit or merge) lands at the
+// canonical name and removes the drifted file, so no second file shares the id.
 func TestTransitionCanonicalizesDriftedFilename(t *testing.T) {
 	h := beavertest.New(t).Init()
 	h.WriteFile("issues/wrong-name.md", `---
@@ -220,7 +206,6 @@ body
 	if out := h.DecodeJSON(h.MustRun("done", "dft111").Stdout); out["state"] != "done" {
 		t.Fatalf("state = %v, want done", out["state"])
 	}
-	// Exactly one file, at the canonical name; the drifted file is gone (no dup id).
 	const want = "dft111-drifted-name.md"
 	if files := h.IssueFiles(); !slices.Equal(files, []string{want}) {
 		t.Errorf("issue files = %v, want exactly [%s]", files, want)
@@ -230,8 +215,6 @@ body
 	}
 }
 
-// Human output is a concise confirmation line (not JSON) for an applied or a
-// redundant transition, and a clear stderr message for a rejected one.
 func TestTransitionsHumanOutput(t *testing.T) {
 	h := beavertest.New(t).Init()
 	h.IsTTY = true
@@ -261,8 +244,6 @@ func TestTransitionsHumanOutput(t *testing.T) {
 	}
 }
 
-// Misuse of a transition verb is a usage error (exit 2): a missing ref, extra
-// arguments, or an invalid format.
 func TestTransitionsUsageErrors(t *testing.T) {
 	h := beavertest.New(t).Init()
 	seed(t, h, "iss001", "x", issue.StateTodo, beavertest.DefaultNow)
@@ -279,8 +260,6 @@ func TestTransitionsUsageErrors(t *testing.T) {
 	}
 }
 
-// A transition targeting a missing issue exits 3 (not-found), like show; without
-// a store at all it also exits 3 and points at init, like the other commands.
 func TestTransitionsNotFoundAndNoStore(t *testing.T) {
 	for _, verb := range []string{"done", "cancel", "reopen"} {
 		h := beavertest.New(t).Init()

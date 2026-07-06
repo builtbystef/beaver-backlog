@@ -45,8 +45,8 @@ func TestResolve(t *testing.T) {
 	}
 }
 
-// TestWriteIssueJSONNormalizesUnset checks the JSON contract: unset single-valued
-// fields are null, unset lists are [], timestamps are RFC3339.
+// The JSON contract: unset single-valued fields are null, unset lists are [],
+// timestamps are RFC3339.
 func TestWriteIssueJSONNormalizesUnset(t *testing.T) {
 	now := time.Date(2026, 6, 27, 18, 30, 0, 0, time.UTC)
 	iss := issue.Issue{ID: "m3k8", Title: "Title", State: issue.StateTodo, Created: now, Updated: now}
@@ -89,10 +89,8 @@ func TestWriteIssueHuman(t *testing.T) {
 	}
 }
 
-// TestWriteIssueRendersCustomFields checks that preserved user-defined fields
-// (ADR 0014) are visible in both renderings, not just carried silently on disk:
-// scalars print plainly and sequences print as compact JSON in the human view,
-// and the JSON view exposes them verbatim under "custom".
+// Preserved user-defined fields are visible in both renderings: scalars plain
+// and sequences as compact JSON in the human view, verbatim under "custom" in JSON.
 func TestWriteIssueRendersCustomFields(t *testing.T) {
 	now := time.Date(2026, 6, 27, 18, 30, 0, 0, time.UTC)
 	iss := issue.Issue{
@@ -119,10 +117,8 @@ func TestWriteIssueRendersCustomFields(t *testing.T) {
 	}
 }
 
-// YAML admits the non-finite floats (.nan, ±.inf) that encoding/json refuses, and
-// a preserved custom value is the one path they can reach a JSON write through.
-// The write must not fail on them — one odd value in one issue would take a whole
-// `list` down (the ADR 0005 failure mode, one layer up) — so they render as their
+// YAML admits non-finite floats (.nan, ±.inf) that encoding/json refuses; a
+// custom value carrying one must not fail the write, so they render as their
 // conventional names, wherever they nest.
 func TestWriteIssueJSONSurvivesNonFiniteCustomValues(t *testing.T) {
 	iss := issue.Issue{

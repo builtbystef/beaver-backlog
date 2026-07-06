@@ -7,8 +7,7 @@ import (
 	"beaver/internal/issue"
 )
 
-// rel builds a Relations index from issues described inline, so each test states
-// only the ids, states, and edges it cares about.
+// rel builds a Relations index from issues described inline.
 func rel(issues ...issue.Issue) *issue.Relations { return issue.NewRelations(issues) }
 
 // dep builds a dependent issue: id, state, and the ids it depends on.
@@ -16,8 +15,8 @@ func dep(id string, state issue.State, deps ...string) issue.Issue {
 	return issue.Issue{ID: id, Title: id, State: state, DependsOn: deps}
 }
 
-// BlockedOn returns exactly the dependencies that are not done, in stored order,
-// each classified: a present target carries its state, a missing one is flagged.
+// BlockedOn returns exactly the not-done dependencies, in stored order: a
+// present target carries its state, a missing one is flagged.
 func TestBlockedOnClassifiesEachDependency(t *testing.T) {
 	r := rel(
 		dep("done00", issue.StateDone),
@@ -44,8 +43,7 @@ func TestBlockedOnClassifiesEachDependency(t *testing.T) {
 	}
 }
 
-// A hand-edit can list the same dependency twice; it is one edge, so it appears
-// once in BlockedOn rather than rendering as a double blocker everywhere.
+// A dependency listed twice is one edge and appears once in BlockedOn.
 func TestBlockedOnCountsADuplicatedEdgeOnce(t *testing.T) {
 	waiter := dep("waiter", issue.StateTodo, "todo00", "todo00", "gone00", "gone00")
 	r := rel(dep("todo00", issue.StateTodo), waiter)
@@ -59,8 +57,8 @@ func TestBlockedOnCountsADuplicatedEdgeOnce(t *testing.T) {
 	}
 }
 
-// AC: a dependency is satisfied *only* by done — a target in any other state (or
-// missing) keeps the todo dependent out of the ready set.
+// A dependency is satisfied only by done: a target in any other state, or
+// missing, keeps the todo dependent out of the ready set.
 func TestOnlyDoneSatisfiesADependency(t *testing.T) {
 	for _, depState := range []issue.State{issue.StateTodo, issue.StateInProgress, issue.StateCancelled} {
 		r := rel(dep("target", depState), dep("waiter", issue.StateTodo, "target"))
@@ -80,9 +78,8 @@ func TestOnlyDoneSatisfiesADependency(t *testing.T) {
 	}
 }
 
-// Ready is todo-only: a dependency-free issue is ready as soon as it is todo, and
-// starting or finishing it takes it out of the ready set even though nothing
-// blocks it.
+// Ready is todo-only: starting or finishing an issue takes it out of the ready
+// set even though nothing blocks it.
 func TestReadyIsTodoWithNoBlockers(t *testing.T) {
 	r := rel()
 	cases := map[issue.State]bool{
@@ -98,8 +95,8 @@ func TestReadyIsTodoWithNoBlockers(t *testing.T) {
 	}
 }
 
-// AC: a cancelled dependency leaves the dependent stuck — blocked, not ready, and
-// not self-resolving — distinct from an ordinary not-yet-done blocker.
+// A cancelled dependency leaves the dependent stuck, distinct from an ordinary
+// not-yet-done blocker.
 func TestStuckIsACancelledDependency(t *testing.T) {
 	stuck := dep("waiter", issue.StateTodo, "target")
 
@@ -113,7 +110,7 @@ func TestStuckIsACancelledDependency(t *testing.T) {
 	if rTodo.Stuck(stuck) {
 		t.Error("a todo dependency is not stuck; only cancellation makes it un-clearable")
 	}
-	// A missing dependency blocks but is a dangling ref (doctor's lint), not stuck.
+	// A missing dependency blocks but is not stuck.
 	rMissing := rel(stuck)
 	if !rMissing.Blocked(stuck) || rMissing.Stuck(stuck) {
 		t.Errorf("missing dep: blocked=%v stuck=%v, want true/false",
@@ -121,9 +118,8 @@ func TestStuckIsACancelledDependency(t *testing.T) {
 	}
 }
 
-// The inverse edges are derived by scanning, never stored: Blocks is the reverse
-// of depends_on, Children the reverse of parent, each sorted and deduped by nature
-// of the scan.
+// Blocks is the reverse of depends_on and Children the reverse of parent, each
+// derived by scanning and sorted.
 func TestInverseEdgesAreDerived(t *testing.T) {
 	target := dep("target", issue.StateTodo)
 	a := issue.Issue{ID: "aaa111", State: issue.StateTodo, DependsOn: []string{"target"}}
@@ -147,8 +143,7 @@ func TestInverseEdgesAreDerived(t *testing.T) {
 	}
 }
 
-// For assembles the whole derived snapshot in one shot, consistent with the
-// individual predicates.
+// For assembles the whole snapshot, consistent with the individual predicates.
 func TestForAssemblesTheSnapshot(t *testing.T) {
 	waiter := dep("waiter", issue.StateTodo, "cncl00")
 	r := rel(dep("cncl00", issue.StateCancelled), waiter, issue.Issue{ID: "dep111", State: issue.StateTodo, DependsOn: []string{"waiter"}})

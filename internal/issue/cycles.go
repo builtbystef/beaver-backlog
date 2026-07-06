@@ -2,24 +2,16 @@ package issue
 
 import "sort"
 
-// Cycles returns the dependency cycles in the indexed set. Each cycle is the
-// sorted ids of a group of issues that are mutually reachable through depends_on
-// edges — a group that can never all reach done, because every member is waiting
-// on another (ADR 0011). depends_on is a directed edge ("a waits on b"), so a
-// cycle is a strongly connected component of more than one issue, or a single
-// issue that depends on itself (a cycle of one).
-//
-// Only edges among issues in the set count: an edge to an id that is not present
-// is a dangling reference — doctor's separate concern (n9b4a7) — not part of any
-// cycle. The member ids within each cycle are sorted, and the cycles are ordered
-// by their smallest id, so the result is deterministic regardless of the order the
-// issues were indexed in. Busy Beaver never breaks a cycle itself: doctor reports it
-// for a human to re-scope or drop an edge.
+// Cycles returns the dependency cycles in the indexed set: each is the sorted
+// ids of a group of issues mutually reachable through depends_on edges, or a
+// single issue that depends on itself. Only edges among issues in the set
+// count — an edge to an absent id is a dangling reference, not part of any
+// cycle — and cycles are ordered by their smallest id, so the result is
+// deterministic regardless of indexing order.
 func (r *Relations) Cycles() [][]string {
-	// Visit nodes, and each node's neighbours, in sorted order, so Tarjan's walk —
-	// and therefore the output — does not depend on map iteration order. Self-edges
-	// are tracked apart from the adjacency so a lone node that depends on itself
-	// still reads as a one-issue cycle (Tarjan alone treats it as a trivial SCC).
+	// Visit nodes and neighbours in sorted order so the output does not depend
+	// on map iteration order. Self-edges are tracked apart from the adjacency
+	// because Tarjan alone treats a lone self-dependent node as a trivial SCC.
 	ids := make([]string, 0, len(r.byID))
 	for id := range r.byID {
 		ids = append(ids, id)
@@ -48,8 +40,8 @@ func (r *Relations) Cycles() [][]string {
 		adj[id] = out
 	}
 
-	// Tarjan's strongly-connected-components. A component of more than one node is a
-	// cycle; a lone node is a cycle only when it depends on itself.
+	// Tarjan's strongly-connected-components. A component of more than one node
+	// is a cycle; a lone node is a cycle only when it depends on itself.
 	var (
 		index   = make(map[string]int, len(ids))
 		lowlink = make(map[string]int, len(ids))
@@ -100,17 +92,14 @@ func (r *Relations) Cycles() [][]string {
 }
 
 // ParentCycles returns the parent-edge cycles in the indexed set: each is the
-// sorted ids of a group of issues whose parent chain loops back on itself — a
-// hierarchy that has no root, so no tree view could ever render it — including the
-// degenerate issue that names itself as its own parent (a cycle of one, which
-// show would otherwise happily list among its own children). Like Cycles, only
-// edges to issues in the set count — a parent naming an absent id is a dangling
-// reference, doctor's separate concern — and the result is deterministic: members
-// sorted within each cycle, cycles ordered by their smallest id.
+// sorted ids of a group of issues whose parent chain loops back on itself,
+// including an issue that names itself as its own parent. Like Cycles, only
+// edges to issues in the set count, and cycles are ordered by their smallest id,
+// so the result is deterministic.
 //
-// parent is a single edge per issue, so the parent graph is a functional graph:
-// every walk up a parent chain either dead-ends or closes exactly one loop, which
-// keeps detection a plain chain-walk rather than a full SCC pass.
+// Each issue has at most one parent, so every walk up a parent chain either
+// dead-ends or closes exactly one loop; detection is a plain chain-walk rather
+// than a full SCC pass.
 func (r *Relations) ParentCycles() [][]string {
 	ids := make([]string, 0, len(r.byID))
 	for id := range r.byID {
@@ -129,9 +118,9 @@ func (r *Relations) ParentCycles() [][]string {
 		if state[start] != unvisited {
 			continue
 		}
-		// Follow the parent chain from start. Meeting the current chain again closes
-		// a new cycle (the part of the path from that point on); meeting settled
-		// ground means the chain drains into territory already accounted for.
+		// Follow the parent chain from start. Meeting the current chain again
+		// closes a new cycle; meeting settled ground means the chain drains
+		// into territory already accounted for.
 		var path []string
 		for cur := start; ; {
 			if state[cur] == walking {

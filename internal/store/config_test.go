@@ -8,9 +8,8 @@ import (
 	"beaver/internal/store"
 )
 
-// A freshly initialized store reads back the default config: the shipped format
-// version and commit-on-done off, so Busy Beaver commits nothing until a project opts
-// in (ADR 0006).
+// A freshly initialized store reads back the defaults: the shipped format
+// version and commit-on-done off.
 func TestConfigDefaultsAfterInit(t *testing.T) {
 	st, _ := store.Discover(newStore(t))
 	cfg, err := st.Config()
@@ -25,7 +24,6 @@ func TestConfigDefaultsAfterInit(t *testing.T) {
 	}
 }
 
-// commit_on_done in the committed config is what turns the opt-in on.
 func TestConfigReadsCommitOnDone(t *testing.T) {
 	root := newStore(t)
 	writeConfig(t, root, "format_version: 1\ncommit_on_done: true\n")
@@ -40,8 +38,7 @@ func TestConfigReadsCommitOnDone(t *testing.T) {
 	}
 }
 
-// A missing config file is a normal state (a store predating the config file, or
-// this project's own): Config returns defaults, not an error.
+// A missing config file yields defaults, not an error.
 func TestConfigMissingFileIsDefault(t *testing.T) {
 	root := newStore(t)
 	if err := os.Remove(filepath.Join(root, ".beaver", "config.yml")); err != nil {
@@ -57,8 +54,7 @@ func TestConfigMissingFileIsDefault(t *testing.T) {
 	}
 }
 
-// Unknown keys are tolerated (forward compatibility), but malformed YAML is a real
-// error — a hand-edit corrupted a committed file every actor relies on.
+// Unknown keys are tolerated (forward compatibility); malformed YAML is a real error.
 func TestConfigToleratesUnknownAndRejectsMalformed(t *testing.T) {
 	root := newStore(t)
 	writeConfig(t, root, "format_version: 1\ncommit_on_done: true\nfuture_setting: 42\n")

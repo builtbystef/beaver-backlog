@@ -1,6 +1,6 @@
 // Package output renders issues for two audiences: a human reading a terminal,
 // and a machine (or agent) consuming JSON. The format is auto-detected and
-// overridable (ADR 0013).
+// overridable.
 package output
 
 import (
@@ -18,16 +18,16 @@ import (
 // Format is a rendering style.
 type Format string
 
+// The two rendering styles: aligned text for a terminal, JSON for a machine.
 const (
 	Human Format = "human"
 	JSON  Format = "json"
 )
 
-// Resolve picks the output format. An explicit override ("human"/"json") always
-// wins; otherwise output is human for an interactive terminal and JSON for a
-// non-interactive pipe or a detected agent. Whether an agent is present is decided
-// by the caller — via the one agent registry that also drives identity resolution
-// (ADR 0010) — and passed in, rather than sniffed from the environment here.
+// Resolve picks the output format. An explicit override ("human"/"json")
+// always wins; otherwise output is human for an interactive terminal and JSON
+// for a non-interactive pipe or a detected agent. Agent detection is the
+// caller's, passed in rather than sniffed from the environment here.
 func Resolve(override string, stdoutIsTTY bool, agentDetected bool) (Format, error) {
 	switch override {
 	case string(Human):
@@ -53,15 +53,10 @@ func WriteIssue(w io.Writer, iss issue.Issue, f Format) error {
 }
 
 // WriteIssueWithRelationship renders one issue together with its derived
-// relationship view — what it is waiting on, whether it is ready/blocked/stuck,
-// and the inverse edges Busy Beaver never stores (what it blocks, its children).
-// show uses it to answer "can I start this, and if not, why", and start emits it
-// (JSON only) so an agent sees whether the work it just began was blocked and on
-// what. The plain WriteIssue that create, the transitions, and the reserving
-// ownership verbs emit stays a pure projection of the stored fields; only the two
-// dependency-aware commands carry the derived section, and in JSON it is an
-// additive "relationships" object beside the same issue fields, so a consumer
-// reading the base fields sees an unchanged shape.
+// relationship view: what it is waiting on, whether it is ready/blocked/stuck,
+// and the inverse edges (what it blocks, its children). In JSON the derived
+// view is an additive "relationships" object beside the same issue fields, so
+// a consumer reading the base fields sees an unchanged shape.
 func WriteIssueWithRelationship(w io.Writer, iss issue.Issue, rel issue.Relationship, f Format) error {
 	if f == JSON {
 		return WriteJSON(w, issueWithRel{jsonView: toJSONView(iss), Relationships: toRelView(rel)})
@@ -74,13 +69,10 @@ func WriteIssueWithRelationship(w io.Writer, iss issue.Issue, rel issue.Relation
 	return err
 }
 
-// WriteIssueWithCommit renders one issue together with the completion commit the
-// command may have recorded (ADR 0007) — done's shape. In JSON it is an additive
-// "commit" object beside the same issue fields, null when no commit was made (the
-// opt-in off, no adapter, a failed commit, or an idempotent no-op), so every done
-// emits one constant shape and an agent scripting around commit_on_done reads the
-// revision from the result instead of asking the VCS. Human output stays the plain
-// issue: the confirmation line already reports the revision.
+// WriteIssueWithCommit renders one issue together with the completion commit
+// the command may have recorded. In JSON the "commit" object is always present
+// beside the same issue fields — null when no commit was made — so consumers
+// see one constant shape. Human output stays the plain issue.
 func WriteIssueWithCommit(w io.Writer, iss issue.Issue, revision string, f Format) error {
 	if f == JSON {
 		return WriteJSON(w, issueWithCommit{jsonView: toJSONView(iss), Commit: toCommitView(revision)})
@@ -89,13 +81,11 @@ func WriteIssueWithCommit(w io.Writer, iss issue.Issue, revision string, f Forma
 }
 
 // WriteList renders a collection of issues in the given format, preserving the
-// order the caller supplies. JSON is an array of the same per-issue objects
-// WriteIssue emits — every field present, unset ones normalized to null/empty —
-// so an agent listing issues gets complete records. Human output is an aligned
-// ID/STATE/TITLE table.
+// caller's order. JSON is an array of the same per-issue objects WriteIssue
+// emits; human output is an aligned table.
 func WriteList(w io.Writer, issues []issue.Issue, f Format) error {
 	if f == JSON {
-		views := make([]jsonView, len(issues)) // non-nil, so an empty list is [] not null
+		views := make([]jsonView, len(issues)) // non-nil: an empty list is [] not null
 		for i, iss := range issues {
 			views[i] = toJSONView(iss)
 		}
@@ -104,11 +94,9 @@ func WriteList(w io.Writer, issues []issue.Issue, f Format) error {
 	return writeTable(w, issues)
 }
 
-// writeTable renders issues as an aligned, columnar human table. The header and
-// column set are human output, not a contract (ADR 0013): the machine shape lives
-// in JSON. It carries the triage fields — priority and assignee and labels — beside
-// the state, with an absent optional shown as "-" so every column stays legible,
-// and the free-form title last where its variable width cannot misalign the rest.
+// writeTable renders issues as an aligned human table. The column set is not a
+// contract — the machine shape lives in JSON. The free-form title goes last so
+// its variable width cannot misalign the rest.
 func writeTable(w io.Writer, issues []issue.Issue) error {
 	if len(issues) == 0 {
 		_, err := io.WriteString(w, "No issues.\n")
@@ -128,8 +116,7 @@ func writeTable(w io.Writer, issues []issue.Issue) error {
 	return tw.Flush()
 }
 
-// orDash renders an absent optional cell as "-", so a table column stays visible
-// (and its header stays meaningful) when the value is unset.
+// orDash renders an absent optional cell as "-", keeping empty table columns legible.
 func orDash(s string) string {
 	if s == "" {
 		return "-"
@@ -137,10 +124,9 @@ func orDash(s string) string {
 	return s
 }
 
-// OneLine flattens a value to a single line, so a newline or tab spliced into a
-// title by a hand-edit or merge cannot break a one-line-per-item layout — here the
-// table's column grid (a tab is what tabwriter uses to delimit columns), and in the
-// CLI's own listings (a shared-slug candidate list, a delete confirmation).
+// OneLine flattens a value to a single line, so a newline or tab spliced into
+// a title by a hand-edit cannot break a one-line-per-item layout (tabs would
+// also confuse tabwriter's column grid).
 func OneLine(s string) string {
 	return strings.NewReplacer("\r\n", " ", "\n", " ", "\r", " ", "\t", " ").Replace(s)
 }
@@ -154,9 +140,9 @@ func WriteJSON(w io.Writer, v any) error {
 	return enc.Encode(v)
 }
 
-// jsonView is the stable machine shape of an issue. Unlike the on-disk file,
-// every field is always present: unset single-valued options serialize to null
-// and unset lists to [], so consumers need not special-case missing keys.
+// jsonView is the stable machine shape of an issue: every field is always
+// present, with unset single-valued options as null and unset lists as [], so
+// consumers need not special-case missing keys.
 type jsonView struct {
 	ID        string   `json:"id"`
 	Title     string   `json:"title"`
@@ -169,20 +155,15 @@ type jsonView struct {
 	Created   *string  `json:"created"` // null when the file carries no timestamp
 	Updated   *string  `json:"updated"`
 	Body      string   `json:"body"`
-	// Notes is the append-only log parsed out of the body's Notes section (ADR 0012)
-	// into structured entries, so an agent reads attributed, timestamped handoffs
-	// without re-parsing the Markdown. The raw entries also remain in Body verbatim.
-	// Always present as an array, empty when the issue has no notes, per the
-	// no-missing-keys contract (ADR 0013).
+	// Notes is the body's Notes section parsed into structured entries; the raw
+	// entries also remain in Body verbatim. Always an array, empty when none.
 	Notes []noteView `json:"notes"`
-	// Custom carries user-defined frontmatter keys Busy Beaver preserves but does not
-	// interpret (ADR 0014). Always present as an object, empty when the issue has
-	// none, so consumers never special-case a missing key.
+	// Custom carries user-defined frontmatter keys, preserved but uninterpreted.
+	// Always an object, empty when none.
 	Custom map[string]any `json:"custom"`
 }
 
-// noteView is one note in JSON: who wrote it, when (RFC3339 UTC, like the issue's own
-// timestamps), and its text.
+// noteView is one note in JSON: who wrote it, when (RFC3339 UTC), and its text.
 type noteView struct {
 	Author string `json:"author"`
 	Time   string `json:"time"`
@@ -207,14 +188,11 @@ func toJSONView(iss issue.Issue) jsonView {
 	}
 }
 
-// sanitizeCustom projects a preserved custom map into a JSON-encodable copy. YAML
-// admits values encoding/json refuses — the non-finite floats `.nan` and `±.inf` —
-// and one such value in one issue would otherwise fail the whole JSON write,
-// taking an entire `list` down with it and making a mutating verb report failure
-// after its write succeeded (the ADR 0005 failure mode, one layer up). Non-finite
-// floats render as their conventional names ("NaN", "Infinity", "-Infinity");
-// everything else passes through untouched, recursing into sequences and maps.
-// The result is always non-nil, per the no-missing-keys contract (ADR 0013).
+// sanitizeCustom projects a preserved custom map into a JSON-encodable copy.
+// YAML admits non-finite floats (.nan, ±.inf) that encoding/json refuses, and
+// one such value would otherwise fail the whole JSON write; they render as
+// "NaN"/"Infinity"/"-Infinity", recursing into sequences and maps. The result
+// is always non-nil.
 func sanitizeCustom(m map[string]any) map[string]any {
 	out := make(map[string]any, len(m))
 	for k, v := range m {
@@ -246,8 +224,8 @@ func jsonSafe(v any) any {
 	}
 }
 
-// finiteOrName passes a finite float through and names a non-finite one the way
-// JavaScript and Python spell them, so the value stays recognizably itself.
+// finiteOrName passes a finite float through and names a non-finite one the
+// way JavaScript and Python spell them.
 func finiteOrName(f float64) any {
 	switch {
 	case math.IsNaN(f):
@@ -261,9 +239,8 @@ func finiteOrName(f float64) any {
 	}
 }
 
-// toNoteViews projects parsed notes into their JSON shape. The result is always
-// non-nil (an empty [] rather than null) so an issue with no notes still carries the
-// key, matching the no-missing-keys contract (ADR 0013).
+// toNoteViews projects parsed notes into their JSON shape; the result is
+// always non-nil so an issue with no notes still carries the key.
 func toNoteViews(notes []issue.Note) []noteView {
 	views := make([]noteView, len(notes))
 	for i, n := range notes {
@@ -272,17 +249,15 @@ func toNoteViews(notes []issue.Note) []noteView {
 	return views
 }
 
-// issueWithCommit is done's JSON shape: every field of the base jsonView, plus an
-// additive "commit" key that is the completion commit when one was recorded and
-// null otherwise — always present, so a consumer never special-cases a missing key
-// (ADR 0013).
+// issueWithCommit is the base jsonView plus an always-present "commit" key:
+// the completion commit when one was recorded, null otherwise.
 type issueWithCommit struct {
 	jsonView
 	Commit *commitView `json:"commit"`
 }
 
-// commitView is the completion commit in JSON: today just the short revision the
-// VCS adapter reported (ADR 0007).
+// commitView is the completion commit in JSON: the short revision the VCS
+// adapter reported.
 type commitView struct {
 	Revision string `json:"revision"`
 }
@@ -294,19 +269,16 @@ func toCommitView(revision string) *commitView {
 	return &commitView{Revision: revision}
 }
 
-// issueWithRel is show's JSON shape: every field of the base jsonView, plus an
-// additive "relationships" object carrying the derived view. Embedding jsonView
-// inlines its fields, so a consumer reading the base fields sees the same shape
-// create and list emit, with the derived object beside them.
+// issueWithRel is the base jsonView plus an additive "relationships" object
+// carrying the derived view.
 type issueWithRel struct {
 	jsonView
 	Relationships relView `json:"relationships"`
 }
 
-// relView is the machine shape of a Relationship: the three readiness booleans,
-// the unmet dependencies (each with its target's state, or null when the target is
-// missing), and the derived inverse edges. Lists are always present — empty, never
-// null — so consumers never special-case a missing key.
+// relView is the machine shape of a Relationship: the readiness booleans, the
+// unmet dependencies, and the derived inverse edges. Lists are always present,
+// empty rather than null.
 type relView struct {
 	Ready     bool          `json:"ready"`
 	Blocked   bool          `json:"blocked"`
@@ -316,9 +288,9 @@ type relView struct {
 	Children  []string      `json:"children"`
 }
 
-// blockerView is one unmet dependency in JSON: the target id, its state (null when
-// the target is a dangling reference), and a missing flag that says which case it
-// is without the consumer inferring it from a null state.
+// blockerView is one unmet dependency in JSON: the target id, its state (null
+// for a dangling reference), and an explicit missing flag so consumers need
+// not infer the case from a null state.
 type blockerView struct {
 	ID      string  `json:"id"`
 	State   *string `json:"state"`
@@ -353,9 +325,8 @@ func writeHuman(w io.Writer, iss issue.Issue) error {
 	return err
 }
 
-// writeHumanHead renders the title line and the aligned "key  value" block of an
-// issue's own fields — everything that precedes the body. show layers the derived
-// relationship section between this and the body (writeHumanRelationship).
+// writeHumanHead renders the title line and the aligned "key  value" block of
+// an issue's own fields — everything that precedes the body.
 func writeHumanHead(b *strings.Builder, iss issue.Issue) {
 	fmt.Fprintf(b, "%s  %s\n\n", iss.ID, iss.Title)
 
@@ -375,8 +346,8 @@ func writeHumanHead(b *strings.Builder, iss issue.Issue) {
 	if iss.Parent != "" {
 		field(b, "parent", iss.Parent)
 	}
-	// A zero timestamp means the file carries none (a hand-authored issue); skip
-	// the line rather than render a blank value.
+	// A zero timestamp means the file carries none; skip the line rather than
+	// render a blank value.
 	if !iss.Created.IsZero() {
 		field(b, "created", formatTime(iss.Created))
 	}
@@ -397,10 +368,8 @@ func writeHumanBody(b *strings.Builder, iss issue.Issue) {
 }
 
 // writeHumanRelationship appends the derived relationship section: a readiness
-// word, the dependencies the issue is waiting on (each with the state that keeps
-// it unmet), and the inverse edges. It writes nothing when there is nothing to say
-// — an unblocked issue with no dependents or children — so a simple issue reads
-// exactly as it did before this section existed.
+// word, the unmet dependencies, and the inverse edges. It writes nothing when
+// there is nothing to say, so a simple issue reads as a plain one.
 func writeHumanRelationship(b *strings.Builder, rel issue.Relationship) {
 	status := statusWord(rel)
 	if status == "" && len(rel.BlockedOn) == 0 && len(rel.Blocks) == 0 && len(rel.Children) == 0 {
@@ -425,9 +394,8 @@ func writeHumanRelationship(b *strings.Builder, rel issue.Relationship) {
 	}
 }
 
-// statusWord names iss's readiness for the human view, or "" when neither ready
-// nor blocked applies — an in-progress issue whose dependencies are all done, or a
-// closed one — and the state line already tells the whole story.
+// statusWord names the readiness for the human view, or "" when neither ready
+// nor blocked applies and the state line already tells the whole story.
 func statusWord(rel issue.Relationship) string {
 	switch {
 	case rel.Stuck:
@@ -441,8 +409,8 @@ func statusWord(rel issue.Relationship) string {
 	}
 }
 
-// blockerLine renders one unmet dependency as "<id>  <state>", or "<id>  (missing)"
-// when the target is a dangling reference.
+// blockerLine renders one unmet dependency as "<id>  <state>", or
+// "<id>  (missing)" for a dangling reference.
 func blockerLine(b issue.Blocker) string {
 	if b.Missing {
 		return b.ID + "  (missing)"
@@ -469,9 +437,8 @@ func orEmpty(xs []string) []string {
 	return xs
 }
 
-// formatCustomValue renders a preserved custom value for the human view: scalars
-// print plainly; sequences and maps, which have no single-line "key  value" form,
-// print as compact JSON so the glance stays one line per field.
+// formatCustomValue renders a custom value for the human view: scalars print
+// plainly; sequences and maps print as compact JSON to stay one line per field.
 func formatCustomValue(v any) string {
 	switch v.(type) {
 	case nil:

@@ -5,13 +5,10 @@ import (
 )
 
 // cmdEdit opens an issue's raw file in $EDITOR for freeform hand-editing, then
-// re-validates the result. It edits the file in place — the file is the single
-// source of truth (ADR 0001), so what the human saves is what the issue becomes —
-// and deliberately does not re-serialize it: a hand-edit is honored verbatim, and
-// the untidiness it may leave (a filename that no longer matches a changed title)
-// is lint for doctor, not a failure (ADR 0005). A non-interactive invocation
-// refuses instead of hanging; an edit that leaves the file unparseable or invalid
-// is reported, and the file is left as saved for the human to fix or re-edit.
+// re-validates the result. It deliberately does not re-serialize: a hand-edit
+// is honored verbatim, and any filename drift it leaves is lint for doctor, not
+// a failure. A non-interactive invocation refuses instead of hanging; an edit
+// that leaves the file invalid is reported and the file left as saved.
 func cmdEdit(env Env, args []string) int {
 	fs, formatFlag := newFlagSet(env, "edit")
 	pos, ok := parseArgs(fs, args)
@@ -38,8 +35,8 @@ func cmdEdit(env Env, args []string) int {
 		return code
 	}
 
-	// Refuse before touching the editor when the session cannot host one, so a
-	// piped or agent run gets a clear error instead of a blocked process.
+	// Refuse when the session cannot host an editor, so a piped or agent run
+	// gets a clear error instead of a blocked process.
 	if err := editorGate(env); err != nil {
 		errf(env, "cannot edit %s: %v", iss.ID, err)
 		return exitError
@@ -49,9 +46,8 @@ func cmdEdit(env Env, args []string) int {
 		return exitError
 	}
 
-	// Re-read the file the human just saved through the store's usable-issue
-	// contract. On a valid result, report the re-read issue (which reflects any
-	// edited fields); on an invalid one, say what is wrong and leave the file alone.
+	// On an invalid result, say what is wrong and leave the file alone for the
+	// human to fix or re-edit.
 	edited, err := st.Read(path)
 	if err != nil {
 		errf(env, "%s is no longer a valid issue after editing: %v", iss.ID, err)
