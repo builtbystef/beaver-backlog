@@ -124,6 +124,8 @@ common flags (after the command):
   --                          end flag parsing, for a ref or title that begins with "-"
 
 create flags:
+  --body <markdown>           set the issue body (the free-form description)
+  --body-file <path>          read the body from a file, or - for stdin
   --label <label>             tag with a label (free-form; repeatable, comma-separated)
   --priority <level>          set priority: urgent|high|medium|low
   --depends-on <ref>          depend on an issue (repeatable, comma-separated)

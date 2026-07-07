@@ -74,7 +74,7 @@ Marked ix2guj done
 ```
 
 Running `beaver create` with no title in a terminal opens your `$EDITOR` to
-author the issue interactively.
+author the issue interactively (a `--body` passed alongside seeds the draft).
 
 ## The issue file
 
@@ -116,7 +116,7 @@ abandoned, kept visible so nobody re-files it.
 | Command                           | What it does                                                                           |
 | --------------------------------- | -------------------------------------------------------------------------------------- |
 | `beaver init`                     | Initialize a store in the current project                                              |
-| `beaver create "<title>"`         | Create an issue (`--label`, `--priority`, `--depends-on`, `--parent`)                  |
+| `beaver create "<title>"`         | Create an issue (`--body`, `--body-file`, `--label`, `--priority`, `--depends-on`, `--parent`) |
 | `beaver list`                     | List issues (`--state`, `--ready`, `--blocked`, `--label`, `--priority`, `--assignee`) |
 | `beaver show <ref>`               | Show an issue, including what it waits on and whether it is ready                      |
 | `beaver start <ref>`              | Move to in-progress, auto-claiming if unowned                                          |
@@ -146,6 +146,39 @@ agents are treated identically. Identity resolves from `--as`, then the
 `BUSY_BEAVER_ACTOR` environment variable, then per-machine user config (a
 human is prompted once, in a terminal). Set `BUSY_BEAVER_ACTOR` in an agent's
 environment and every claim and note it makes is attributed correctly.
+
+A complete issue — title, description, and metadata — is one command: pass a
+short description inline with `--body`, or pipe multi-line Markdown through
+`--body-file -` (a path works too) and skip the shell quoting:
+
+```console
+$ beaver create "Login form rejects valid passwords" --label bug --priority high --body-file - <<'EOF'
+When a user submits a correct password containing a `!`, the form clears and
+shows "invalid credentials". Expected: the login succeeds.
+EOF
+Created t4y1gv  Login form rejects valid passwords
+  .beaver/issues/t4y1gv-login-form-rejects-valid-passwords.md
+```
+
+### Editing an issue's description
+
+`beaver edit` needs a terminal and `$EDITOR`, but agents don't need it: to
+revise a description later, **edit the issue file directly** — the files are
+the source of truth and hand-editing is first-class. Three rules keep a hand
+edit safe:
+
+- **Leave the `## Notes` section alone.** It is the append-only coordination
+  journal; rewriting or dropping another actor's entries breaks the contract.
+  Edit the description above it, and add your own entries only through
+  `beaver note`.
+- **Never change the `id` field** — it is the issue's identity, and the
+  filename merely mirrors it.
+- **Follow up with `beaver note <ref> "<what you changed>"**. A hand edit
+  alone does not bump the `updated` timestamp; a note both journals the change
+  for other actors and bumps it.
+
+Anything that drifts anyway — say a filename gone stale after a hand-retitle —
+is lint, not corruption: `beaver doctor --fix` repairs it.
 
 ## Coordinating parallel work
 
