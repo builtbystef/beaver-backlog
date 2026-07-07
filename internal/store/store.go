@@ -213,8 +213,11 @@ func (s *Store) Update(oldPath string, iss issue.Issue) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	if oldPath != "" && oldPath != newPath {
-		if err := os.Remove(oldPath); err != nil && !errors.Is(err, os.ErrNotExist) {
+	// A case-only difference from canonical (on a case-insensitive filesystem)
+	// leaves oldPath naming the file Write just produced; removing it would
+	// destroy the issue.
+	if oldPath != "" && !sameFile(oldPath, newPath) {
+		if err := retryFS(func() error { return os.Remove(oldPath) }); err != nil && !errors.Is(err, os.ErrNotExist) {
 			return "", err
 		}
 	}
@@ -237,7 +240,9 @@ func (s *Store) Rename(oldPath string, iss issue.Issue) (string, error) {
 	if newPath == oldPath {
 		return newPath, nil
 	}
-	if fileExists(newPath) {
+	// The same file under a case-only-different name is not a collision with
+	// itself; only a genuinely different file at the canonical name is.
+	if fileExists(newPath) && !sameFile(newPath, oldPath) {
 		return "", ErrNameCollision
 	}
 	if err := os.Rename(oldPath, newPath); err != nil {
@@ -453,7 +458,7 @@ func atomicWrite(path string, data []byte, perm os.FileMode) error {
 	if err := tmp.Close(); err != nil {
 		return err
 	}
-	return os.Rename(tmpName, path)
+	return retryFS(func() error { return os.Rename(tmpName, path) })
 }
 
 func dirExists(p string) bool {
@@ -464,4 +469,19 @@ func dirExists(p string) bool {
 func fileExists(p string) bool {
 	fi, err := os.Stat(p)
 	return err == nil && !fi.IsDir()
+}
+
+// sameFile reports whether a and b are the same file on disk — true for two
+// case-only-different names on a case-insensitive filesystem, where comparing
+// the path strings would say false. It returns false if either cannot be stat'd.
+func sameFile(a, b string) bool {
+	fa, err := os.Stat(a)
+	if err != nil {
+		return false
+	}
+	fb, err := os.Stat(b)
+	if err != nil {
+		return false
+	}
+	return os.SameFile(fa, fb)
 }

@@ -21,7 +21,7 @@ func editorGate(env Env) error {
 	case !env.StdinIsTTY || !env.StdoutIsTTY:
 		return errors.New("an interactive terminal is required")
 	case env.Edit == nil:
-		return errors.New("no editor is available; set $EDITOR or $VISUAL")
+		return errors.New("no editor is available; set the EDITOR or VISUAL environment variable")
 	default:
 		return nil
 	}

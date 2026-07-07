@@ -326,6 +326,74 @@ func TestUpdateRenamesDriftedFile(t *testing.T) {
 	}
 }
 
+// A name differing from canonical only in case must survive a read-modify-write.
+// On a case-insensitive filesystem it resolves to the file Update just wrote, so
+// Update must not delete it as a stale duplicate; either way one file remains
+// with the edit.
+func TestUpdateCaseOnlyDriftKeepsIssue(t *testing.T) {
+	root := newStore(t)
+	// Canonical is "abc123-fix-parser.md"; this differs only in case.
+	writeIssueFile(t, root, "abc123-Fix-Parser.md", issue.Issue{
+		ID: "abc123", Title: "Fix parser", State: issue.StateTodo,
+		Created: fixedTime, Updated: fixedTime,
+	})
+	st, _ := store.Discover(root)
+	iss, path, err := st.Resolve("abc123")
+	if err != nil {
+		t.Fatalf("Resolve: %v", err)
+	}
+
+	iss.State = issue.StateDone
+	if _, err := st.Update(path, iss); err != nil {
+		t.Fatalf("Update: %v", err)
+	}
+
+	want := issue.FileName("abc123", issue.Slug("Fix parser"))
+	files, _ := st.List()
+	if len(files) != 1 || !strings.EqualFold(filepath.Base(files[0]), want) {
+		t.Fatalf("files = %v, want exactly one canonical %q (the edit must not be deleted)", files, want)
+	}
+	got, _, err := st.Resolve("abc123")
+	if err != nil {
+		t.Fatalf("Resolve after Update: %v", err)
+	}
+	if got.State != issue.StateDone {
+		t.Errorf("state = %q, want done (the edit survived)", got.State)
+	}
+}
+
+// A name differing from canonical only in case is not a collision with itself:
+// on a case-insensitive filesystem the canonical name resolves to the file being
+// renamed, so Rename canonicalizes it instead of reporting ErrNameCollision.
+// This is the drift doctor --fix must repair on Windows and macOS.
+func TestRenameCaseOnlyDriftIsNotCollision(t *testing.T) {
+	root := newStore(t)
+	writeIssueFile(t, root, "abc123-Fix-Parser.md", issue.Issue{
+		ID: "abc123", Title: "Fix parser", State: issue.StateTodo,
+		Created: fixedTime, Updated: fixedTime,
+	})
+	st, _ := store.Discover(root)
+	iss, path, err := st.Resolve("abc123")
+	if err != nil {
+		t.Fatalf("Resolve: %v", err)
+	}
+
+	newPath, err := st.Rename(path, iss)
+	if err != nil {
+		t.Fatalf("Rename of a case-only drift = %v, want it to canonicalize", err)
+	}
+	want := issue.FileName("abc123", issue.Slug("Fix parser"))
+	if !strings.EqualFold(filepath.Base(newPath), want) {
+		t.Errorf("renamed to %q, want %q (case-insensitively)", filepath.Base(newPath), want)
+	}
+	if files, _ := st.List(); len(files) != 1 {
+		t.Errorf("files = %v, want exactly one", files)
+	}
+	if got, _, err := st.Resolve("abc123"); err != nil || got.ID != "abc123" {
+		t.Errorf("Resolve after Rename = %q, %v; want abc123", got.ID, err)
+	}
+}
+
 // Rename moves a drifted file to its canonical name and nothing more: the
 // bytes are the file's own, unrewritten.
 func TestRenameMovesDriftedFileWithoutRewriting(t *testing.T) {
