@@ -1,4 +1,4 @@
-// Package beavertest is the in-process test harness for the Busy Beaver CLI. It runs
+// Package beavertest is the in-process test harness for the Beaver Backlog CLI. It runs
 // real commands against a temporary store with an injected clock, environment,
 // and TTY signal, then exposes the exit code, captured stdio, and the resulting
 // files for assertions.
@@ -14,9 +14,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/builtbystef/busy-beaver/internal/cli"
-	"github.com/builtbystef/busy-beaver/internal/issue"
-	"github.com/builtbystef/busy-beaver/internal/vcs"
+	"github.com/builtbystef/beaver-backlog/internal/cli"
+	"github.com/builtbystef/beaver-backlog/internal/issue"
+	"github.com/builtbystef/beaver-backlog/internal/vcs"
 )
 
 // DefaultNow is the instant the harness clock starts at, unless a test changes

@@ -1,4 +1,4 @@
-module github.com/builtbystef/busy-beaver
+module github.com/builtbystef/beaver-backlog
 
 go 1.26
 

@@ -7,7 +7,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/builtbystef/busy-beaver/internal/issue"
+	"github.com/builtbystef/beaver-backlog/internal/issue"
 )
 
 func TestSlug(t *testing.T) {

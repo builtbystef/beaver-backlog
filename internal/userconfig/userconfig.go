@@ -1,4 +1,4 @@
-// Package userconfig owns Busy Beaver's per-machine user configuration — the
+// Package userconfig owns Beaver Backlog's per-machine user configuration — the
 // personal settings that live outside the project and are never committed,
 // most importantly the saved actor identity. It is separate from the committed
 // project config so that cloning a repository never makes a contributor
@@ -20,14 +20,14 @@ import (
 const fileName = "config.yml"
 
 // header prefaces the saved file so a human who finds it understands what it is.
-const header = "# Busy Beaver per-machine user configuration.\n" +
+const header = "# Beaver Backlog per-machine user configuration.\n" +
 	"# Personal and never committed; safe to read and edit by hand.\n"
 
 // Config is the per-machine user configuration.
 type Config struct {
 	// Actor is the human's saved identity, established interactively and reused
 	// on later interactive runs. It is never written to a committed file or to
-	// BUSY_BEAVER_ACTOR, either of which a child agent process would inherit and
+	// BEAVER_BACKLOG_ACTOR, either of which a child agent process would inherit and
 	// act under.
 	Actor string `yaml:"actor,omitempty"`
 }

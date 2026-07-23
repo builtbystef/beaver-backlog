@@ -9,8 +9,8 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/builtbystef/busy-beaver/internal/output"
-	"github.com/builtbystef/busy-beaver/internal/store"
+	"github.com/builtbystef/beaver-backlog/internal/output"
+	"github.com/builtbystef/beaver-backlog/internal/store"
 )
 
 // csvList collects a repeatable, comma-separated string flag into an ordered
@@ -50,7 +50,7 @@ func dedupe(in []string) []string {
 
 func storeError(env Env, err error) int {
 	if errors.Is(err, store.ErrNoStore) {
-		errf(env, "not a Busy Beaver store; run `beaver init`")
+		errf(env, "not a Beaver Backlog store; run `beaver init`")
 		return exitNotFound
 	}
 	errf(env, "%v", err)

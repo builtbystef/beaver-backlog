@@ -3,7 +3,7 @@ package cli
 import (
 	"fmt"
 
-	"github.com/builtbystef/busy-beaver/internal/output"
+	"github.com/builtbystef/beaver-backlog/internal/output"
 )
 
 // cmdDelete removes an issue's file outright — the hard delete for junk, as

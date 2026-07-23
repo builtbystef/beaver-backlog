@@ -1,4 +1,4 @@
-// Package issue defines Busy Beaver's core domain type — the Issue — together with
+// Package issue defines Beaver Backlog's core domain type — the Issue — together with
 // its on-disk Markdown representation (YAML frontmatter + body), its identity
 // (a short random ID), and the slug derived from its title.
 //
@@ -72,7 +72,7 @@ func (p Priority) Rank() int {
 	}
 }
 
-// Issue is the unit of work Busy Beaver tracks. The fields mirror the frontmatter
+// Issue is the unit of work Beaver Backlog tracks. The fields mirror the frontmatter
 // schema; Body is the Markdown content that follows the frontmatter.
 type Issue struct {
 	ID        string
@@ -87,7 +87,7 @@ type Issue struct {
 	Updated   time.Time
 	Body      string
 
-	// Custom holds frontmatter keys Busy Beaver does not define. User-added
+	// Custom holds frontmatter keys Beaver Backlog does not define. User-added
 	// fields are carried through a read-modify-write untouched, preserved but
 	// never interpreted. Nil when the file has no custom keys.
 	Custom map[string]any

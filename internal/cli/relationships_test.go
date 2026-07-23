@@ -5,8 +5,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/builtbystef/busy-beaver/internal/beavertest"
-	"github.com/builtbystef/busy-beaver/internal/issue"
+	"github.com/builtbystef/beaver-backlog/internal/beavertest"
+	"github.com/builtbystef/beaver-backlog/internal/issue"
 )
 
 // Edges live on the dependent alone; the inverse (blocks/children) is derived on

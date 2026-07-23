@@ -5,8 +5,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/builtbystef/busy-beaver/internal/beavertest"
-	"github.com/builtbystef/busy-beaver/internal/issue"
+	"github.com/builtbystef/beaver-backlog/internal/beavertest"
+	"github.com/builtbystef/beaver-backlog/internal/issue"
 )
 
 // Claim reserves an issue; it never starts it.
@@ -79,15 +79,15 @@ func TestReclaimingOwnIsIdempotentNoop(t *testing.T) {
 	}
 }
 
-// With no --as, the shared identity chain honors BUSY_BEAVER_ACTOR (the agent/CI override).
+// With no --as, the shared identity chain honors BEAVER_BACKLOG_ACTOR (the agent/CI override).
 func TestClaimResolvesActorFromEnv(t *testing.T) {
 	h := beavertest.New(t).Init()
-	h.Env["BUSY_BEAVER_ACTOR"] = "ci-bot"
+	h.Env["BEAVER_BACKLOG_ACTOR"] = "ci-bot"
 	seed(t, h, "iss001", "Work", issue.StateTodo, beavertest.DefaultNow)
 
 	out := h.DecodeJSON(h.MustRun("claim", "iss001").Stdout)
 	if out["assignee"] != "ci-bot" {
-		t.Errorf("assignee = %v, want ci-bot resolved from BUSY_BEAVER_ACTOR", out["assignee"])
+		t.Errorf("assignee = %v, want ci-bot resolved from BEAVER_BACKLOG_ACTOR", out["assignee"])
 	}
 }
 

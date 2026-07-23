@@ -5,15 +5,15 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/builtbystef/busy-beaver/internal/output"
-	"github.com/builtbystef/busy-beaver/internal/userconfig"
+	"github.com/builtbystef/beaver-backlog/internal/output"
+	"github.com/builtbystef/beaver-backlog/internal/userconfig"
 )
 
 // Identity resolution answers "who is doing this?" for every command that
 // attributes work, through one precedence chain:
 //
 //  1. --as <actor>         explicit, always wins
-//  2. BUSY_BEAVER_ACTOR    explicit override (agents, CI)
+//  2. BEAVER_BACKLOG_ACTOR    explicit override (agents, CI)
 //  3. agent detection      AGENT, else a known marker (CLAUDECODE → claude, …)
 //  4. interactive human    the saved user-config identity; if unset, seed from the
 //                          VCS and confirm, or prompt, then save
@@ -21,7 +21,7 @@ import (
 //
 // The human's stored/VCS identity (step 4) is consulted only in an interactive
 // session — a non-interactive run never borrows it — and a human's identity is
-// never placed in BUSY_BEAVER_ACTOR, which a child agent would inherit and act
+// never placed in BEAVER_BACKLOG_ACTOR, which a child agent would inherit and act
 // under.
 
 // genericAgent is the fallback name when no signal identifies the actor and the
@@ -33,7 +33,7 @@ type actorSource string
 
 const (
 	sourceFlag     actorSource = "flag"     // --as
-	sourceEnv      actorSource = "env"      // BUSY_BEAVER_ACTOR
+	sourceEnv      actorSource = "env"      // BEAVER_BACKLOG_ACTOR
 	sourceAgent    actorSource = "agent"    // a detected agent harness
 	sourceConfig   actorSource = "config"   // the saved user-level identity
 	sourcePrompt   actorSource = "prompt"   // just established interactively and saved
@@ -55,8 +55,8 @@ func resolveActor(env Env, asFlag string) (actor, error) {
 	if name := strings.TrimSpace(asFlag); name != "" {
 		return actor{name, sourceFlag}, nil
 	}
-	// 2. BUSY_BEAVER_ACTOR — the programmatic override agents and CI set for themselves.
-	if name := strings.TrimSpace(env.Getenv("BUSY_BEAVER_ACTOR")); name != "" {
+	// 2. BEAVER_BACKLOG_ACTOR — the programmatic override agents and CI set for themselves.
+	if name := strings.TrimSpace(env.Getenv("BEAVER_BACKLOG_ACTOR")); name != "" {
 		return actor{name, sourceEnv}, nil
 	}
 	// 3. Agent detection — set by the harness, not the human, so it carries no
@@ -111,7 +111,7 @@ func establishHumanIdentity(env Env) (string, error) {
 	}
 	name = strings.TrimSpace(name)
 	if name == "" {
-		return "", fmt.Errorf("no identity provided; set one with --as or BUSY_BEAVER_ACTOR")
+		return "", fmt.Errorf("no identity provided; set one with --as or BEAVER_BACKLOG_ACTOR")
 	}
 	if err := userconfig.Save(env.UserConfigDir, userconfig.Config{Actor: name}); err != nil {
 		return "", fmt.Errorf("saving identity: %w", err)
@@ -126,7 +126,7 @@ func establishHumanIdentity(env Env) (string, error) {
 func promptForIdentity(env Env) (string, error) {
 	r := bufio.NewReader(env.Stdin)
 	if seed, ok := vcsIdentity(env); ok {
-		fmt.Fprintf(env.Stderr, "Use %q as your Busy Beaver identity? [Y/n] ", seed)
+		fmt.Fprintf(env.Stderr, "Use %q as your Beaver Backlog identity? [Y/n] ", seed)
 		line, err := readReply(r)
 		if err != nil {
 			return "", err
@@ -135,7 +135,7 @@ func promptForIdentity(env Env) (string, error) {
 			return seed, nil
 		}
 	}
-	fmt.Fprint(env.Stderr, "Enter your Busy Beaver identity (a name): ")
+	fmt.Fprint(env.Stderr, "Enter your Beaver Backlog identity (a name): ")
 	return readReply(r)
 }
 
@@ -159,7 +159,7 @@ func vcsIdentity(env Env) (string, bool) {
 // conflated.
 func warnGenericAgent(env Env) {
 	errf(env, "no actor identity resolved; proceeding as the generic %q. "+
-		"Set BUSY_BEAVER_ACTOR or pass --as to name this actor.", genericAgent)
+		"Set BEAVER_BACKLOG_ACTOR or pass --as to name this actor.", genericAgent)
 }
 
 // readReply reads one line of interactive input, trimming the trailing newline.
@@ -184,7 +184,7 @@ func isYes(reply string) bool {
 	}
 }
 
-// cmdWhoami prints the actor Busy Beaver resolves for the current environment. It
+// cmdWhoami prints the actor Beaver Backlog resolves for the current environment. It
 // performs the same resolution every attributing command does, including the
 // interactive setup and the generic fallback.
 func cmdWhoami(env Env, args []string) int {

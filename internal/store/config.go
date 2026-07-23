@@ -47,14 +47,14 @@ func (s *Store) Config() (Config, error) {
 // discovers the feature by reading the file.
 func defaultConfig() []byte {
 	return fmt.Appendf(nil,
-		`# Busy Beaver project configuration.
+		`# Beaver Backlog project configuration.
 # Committed and shared through version control, like the issues themselves.
 # Safe to read and edit by hand.
 format_version: %d
 
-# Optionally let Busy Beaver drive your VCS. With commit_on_done enabled, "beaver done"
+# Optionally let Beaver Backlog drive your VCS. With commit_on_done enabled, "beaver done"
 # records each completed issue as its own atomic commit through the Git adapter.
-# Off by default: Busy Beaver otherwise commits nothing and never requires a VCS.
+# Off by default: Beaver Backlog otherwise commits nothing and never requires a VCS.
 # commit_on_done: true
 `, FormatVersion)
 }

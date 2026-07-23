@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"sort"
 
-	"github.com/builtbystef/busy-beaver/internal/issue"
-	"github.com/builtbystef/busy-beaver/internal/output"
+	"github.com/builtbystef/beaver-backlog/internal/issue"
+	"github.com/builtbystef/beaver-backlog/internal/output"
 )
 
 // cmdList enumerates issues. By default (or with --state) it filters by state;

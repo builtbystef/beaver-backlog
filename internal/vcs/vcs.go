@@ -1,6 +1,6 @@
-// Package vcs is Busy Beaver's version-control integration. All VCS access
+// Package vcs is Beaver Backlog's version-control integration. All VCS access
 // goes through the System interface; Git is the reference adapter. A nil
-// System is a valid, fully supported "no adapter" state in which Busy Beaver
+// System is a valid, fully supported "no adapter" state in which Beaver Backlog
 // operates on files alone — no VCS is ever required.
 package vcs
 
@@ -13,7 +13,7 @@ import (
 	"strings"
 )
 
-// System is the set of operations Busy Beaver may ask of a version-control
+// System is the set of operations Beaver Backlog may ask of a version-control
 // system — the single seam where a concrete adapter plugs in.
 type System interface {
 	// Identity reports the actor name the VCS is configured with (for Git, the

@@ -5,8 +5,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/builtbystef/busy-beaver/internal/beavertest"
-	"github.com/builtbystef/busy-beaver/internal/issue"
+	"github.com/builtbystef/beaver-backlog/internal/beavertest"
+	"github.com/builtbystef/beaver-backlog/internal/issue"
 )
 
 // The entry is exposed as a structured note, not just spliced into the body text.
@@ -114,15 +114,15 @@ func TestNoteRendersInHumanShow(t *testing.T) {
 	}
 }
 
-// With no --as, the shared identity chain honors BUSY_BEAVER_ACTOR (the agent/CI override).
+// With no --as, the shared identity chain honors BEAVER_BACKLOG_ACTOR (the agent/CI override).
 func TestNoteAttributesThroughIdentityChain(t *testing.T) {
 	h := beavertest.New(t).Init()
-	h.Env["BUSY_BEAVER_ACTOR"] = "ci-bot"
+	h.Env["BEAVER_BACKLOG_ACTOR"] = "ci-bot"
 	seed(t, h, "iss001", "Work", issue.StateTodo, beavertest.DefaultNow)
 
 	out := h.DecodeJSON(h.MustRun("note", "iss001", "from CI").Stdout)
 	if notes := notesOf(t, out); len(notes) != 1 || notes[0]["author"] != "ci-bot" {
-		t.Errorf("note author = %v, want ci-bot resolved from BUSY_BEAVER_ACTOR", out["notes"])
+		t.Errorf("note author = %v, want ci-bot resolved from BEAVER_BACKLOG_ACTOR", out["notes"])
 	}
 }
 

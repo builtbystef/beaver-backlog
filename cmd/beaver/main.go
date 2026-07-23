@@ -9,10 +9,10 @@ import (
 
 	"golang.org/x/term"
 
-	"github.com/builtbystef/busy-beaver/internal/cli"
-	"github.com/builtbystef/busy-beaver/internal/clock"
-	"github.com/builtbystef/busy-beaver/internal/issue"
-	"github.com/builtbystef/busy-beaver/internal/vcs"
+	"github.com/builtbystef/beaver-backlog/internal/cli"
+	"github.com/builtbystef/beaver-backlog/internal/clock"
+	"github.com/builtbystef/beaver-backlog/internal/issue"
+	"github.com/builtbystef/beaver-backlog/internal/vcs"
 )
 
 func main() {
@@ -118,7 +118,7 @@ func workDir() string {
 	return "."
 }
 
-// userConfigDir is where the per-machine identity lives — Busy Beaver's own
+// userConfigDir is where the per-machine identity lives — Beaver Backlog's own
 // subdirectory of the OS user-config directory (e.g. ~/.config/beaver), never
 // the project. It returns "" when the OS location cannot be determined.
 func userConfigDir() string {

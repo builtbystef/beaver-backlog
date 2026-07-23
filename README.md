@@ -1,10 +1,10 @@
-# 🦫 Busy Beaver
+# 🦫 Beaver Backlog
 
-[![CI](https://github.com/builtbystef/busy-beaver/actions/workflows/ci.yml/badge.svg)](https://github.com/builtbystef/busy-beaver/actions/workflows/ci.yml)
+[![CI](https://github.com/builtbystef/beaver-backlog/actions/workflows/ci.yml/badge.svg)](https://github.com/builtbystef/beaver-backlog/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
-[![Go Reference](https://pkg.go.dev/badge/github.com/builtbystef/busy-beaver.svg)](https://pkg.go.dev/github.com/builtbystef/busy-beaver)
+[![Go Reference](https://pkg.go.dev/badge/github.com/builtbystef/beaver-backlog.svg)](https://pkg.go.dev/github.com/builtbystef/beaver-backlog)
 
-**Busy Beaver is a local-first issue tracker that stores issues as Markdown
+**Beaver Backlog is a local-first issue tracker that stores issues as Markdown
 files inside your project.** Humans and coding agents coordinate work through
 the files themselves. No external service, account, or database needed.
 
@@ -14,10 +14,10 @@ Created ix2guj  Login form rejects valid passwords
   .beaver/issues/ix2guj-login-form-rejects-valid-passwords.md
 ```
 
-## Why Busy Beaver?
+## Why Beaver Backlog?
 
 Most issue trackers live outside the codebase, behind a web app and an API.
-Busy Beaver keeps project work _in_ the repository, as plain files that travel
+Beaver Backlog keeps project work _in_ the repository, as plain files that travel
 with your code:
 
 - **Markdown-first** — every issue is a human-readable `.md` file with a small
@@ -25,7 +25,7 @@ with your code:
 - **Local by default** — issues live on your disk, in your project. Nothing to
   sign up for, nothing to sync, works offline.
 - **Version-control-friendly** — plain text that Git (or any VCS) diffs and
-  merges cleanly. But Busy Beaver never _requires_ a VCS: it works with Git,
+  merges cleanly. But Beaver Backlog never _requires_ a VCS: it works with Git,
   with another system, or with none at all.
 - **Agent-friendly** — coding agents read, create, and update issues through
   the same CLI and files you use. Output auto-switches to JSON when piped, and
@@ -38,14 +38,14 @@ with your code:
 With Go 1.26 or later:
 
 ```sh
-go install github.com/builtbystef/busy-beaver/cmd/beaver@latest
+go install github.com/builtbystef/beaver-backlog/cmd/beaver@latest
 ```
 
 Or build from a clone:
 
 ```sh
-git clone https://github.com/builtbystef/busy-beaver.git
-cd busy-beaver
+git clone https://github.com/builtbystef/beaver-backlog.git
+cd beaver-backlog
 go build ./cmd/beaver
 ```
 
@@ -53,7 +53,7 @@ go build ./cmd/beaver
 
 ```console
 $ beaver init
-Initialized empty Busy Beaver store in /home/you/project/.beaver
+Initialized empty Beaver Backlog store in /home/you/project/.beaver
 
 $ beaver create "Login form rejects valid passwords" --label bug --priority high
 Created ix2guj  Login form rejects valid passwords
@@ -105,9 +105,9 @@ shows "invalid credentials". Expected: the login succeeds.
 root cause: form strips ! before hashing
 ```
 
-The frontmatter is machine-owned (Busy Beaver keeps it canonically formatted,
+The frontmatter is machine-owned (Beaver Backlog keeps it canonically formatted,
 and unknown keys you add by hand are preserved verbatim, never interpreted);
-the body is yours (Busy Beaver only ever appends notes to it). State is one of
+the body is yours (Beaver Backlog only ever appends notes to it). State is one of
 `todo`, `in-progress`, `done`, or `cancelled` — cancelled meaning deliberately
 abandoned, kept visible so nobody re-files it.
 
@@ -143,8 +143,8 @@ success, `1` runtime failure, `2` usage error, `3` issue or store not found.
 
 Every mutation is attributed to an **actor** — a free-form name; humans and
 agents are treated identically. Identity resolves from `--as`, then the
-`BUSY_BEAVER_ACTOR` environment variable, then per-machine user config (a
-human is prompted once, in a terminal). Set `BUSY_BEAVER_ACTOR` in an agent's
+`BEAVER_BACKLOG_ACTOR` environment variable, then per-machine user config (a
+human is prompted once, in a terminal). Set `BEAVER_BACKLOG_ACTOR` in an agent's
 environment and every claim and note it makes is attributed correctly.
 
 A complete issue — title, description, and metadata — is one command: pass a
@@ -182,7 +182,7 @@ is lint, not corruption: `beaver doctor --fix` repairs it.
 
 ## Coordinating parallel work
 
-Busy Beaver is local-first and has no sync layer, so it cannot _lock_ an
+Beaver Backlog is local-first and has no sync layer, so it cannot _lock_ an
 issue. Instead an actor **claims** one by setting its `assignee` field, and
 that claim travels through the VCS like any other change. It is a signal, not
 a rule: two actors on different branches can claim the same issue, and the
@@ -201,7 +201,7 @@ every dependency done); `--blocked` shows what is waiting.
 `beaver init` writes `.beaver/config.yml`, which is committed and shared like
 the issues. One optional behavior today: with `commit_on_done: true`, `beaver
 done` records each completed issue as its own atomic commit through the Git
-adapter. Off by default — Busy Beaver otherwise commits nothing and never
+adapter. Off by default — Beaver Backlog otherwise commits nothing and never
 requires a VCS.
 
 Your identity lives in per-machine user config, never in the repository. If an
@@ -226,7 +226,7 @@ never removes data.
 
 ## Status
 
-Busy Beaver is pre-1.0. The CLI works and is well tested, but the file format
+Beaver Backlog is pre-1.0. The CLI works and is well tested, but the file format
 and command surface may still change without a deprecation cycle. A web UI
 over the same files is planned.
 

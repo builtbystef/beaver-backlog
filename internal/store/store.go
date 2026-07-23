@@ -11,7 +11,7 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/builtbystef/busy-beaver/internal/issue"
+	"github.com/builtbystef/beaver-backlog/internal/issue"
 )
 
 // dirName is the store directory created at a project's root.
@@ -24,7 +24,7 @@ const FormatVersion = 1
 // Sentinel errors callers branch on.
 var (
 	// ErrNoStore means no .beaver directory was found at or above a working dir.
-	ErrNoStore = errors.New("not a Busy Beaver store; run `beaver init`")
+	ErrNoStore = errors.New("not a Beaver Backlog store; run `beaver init`")
 	// ErrNotFound means a reference matched no issue in the store.
 	ErrNotFound = errors.New("issue not found")
 	// ErrNameCollision means a rename would land on a name another file already

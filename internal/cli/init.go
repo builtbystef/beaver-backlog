@@ -3,9 +3,9 @@ package cli
 import (
 	"fmt"
 
-	"github.com/builtbystef/busy-beaver/internal/output"
-	"github.com/builtbystef/busy-beaver/internal/store"
-	"github.com/builtbystef/busy-beaver/internal/userconfig"
+	"github.com/builtbystef/beaver-backlog/internal/output"
+	"github.com/builtbystef/beaver-backlog/internal/store"
+	"github.com/builtbystef/beaver-backlog/internal/userconfig"
 )
 
 // cmdInit initializes the store in the working directory. It is idempotent.
@@ -49,9 +49,9 @@ func cmdInit(env Env, args []string) int {
 		return exitOK
 	}
 	if created {
-		fmt.Fprintf(env.Stdout, "Initialized empty Busy Beaver store in %s\n", root)
+		fmt.Fprintf(env.Stdout, "Initialized empty Beaver Backlog store in %s\n", root)
 	} else {
-		fmt.Fprintf(env.Stdout, "Reinitialized existing Busy Beaver store in %s\n", root)
+		fmt.Fprintf(env.Stdout, "Reinitialized existing Beaver Backlog store in %s\n", root)
 	}
 	if seeded != "" {
 		fmt.Fprintf(env.Stdout, "Identity set to %q (saved to %s, never committed).\n", seeded, userconfig.Path(env.UserConfigDir))

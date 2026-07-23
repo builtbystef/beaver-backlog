@@ -5,9 +5,9 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/builtbystef/busy-beaver/internal/beavertest"
-	"github.com/builtbystef/busy-beaver/internal/userconfig"
-	"github.com/builtbystef/busy-beaver/internal/vcs"
+	"github.com/builtbystef/beaver-backlog/internal/beavertest"
+	"github.com/builtbystef/beaver-backlog/internal/userconfig"
+	"github.com/builtbystef/beaver-backlog/internal/vcs"
 )
 
 // Overlapping signals are set on purpose so each case proves the precedence, not
@@ -24,14 +24,14 @@ func TestWhoamiPrecedence(t *testing.T) {
 	}{
 		{
 			name:       "flag beats env and agent",
-			env:        map[string]string{"BUSY_BEAVER_ACTOR": "envguy", "CLAUDECODE": "1"},
+			env:        map[string]string{"BEAVER_BACKLOG_ACTOR": "envguy", "CLAUDECODE": "1"},
 			asFlag:     "flaguy",
 			wantActor:  "flaguy",
 			wantSource: "flag",
 		},
 		{
 			name:       "env beats agent detection",
-			env:        map[string]string{"BUSY_BEAVER_ACTOR": "ci-bot", "CLAUDECODE": "1"},
+			env:        map[string]string{"BEAVER_BACKLOG_ACTOR": "ci-bot", "CLAUDECODE": "1"},
 			wantActor:  "ci-bot",
 			wantSource: "env",
 		},
@@ -171,7 +171,7 @@ func TestSavedIdentityIgnoredNonInteractively(t *testing.T) {
 	}
 }
 
-// The fallback is loud so an unidentified caller gets named with BUSY_BEAVER_ACTOR
+// The fallback is loud so an unidentified caller gets named with BEAVER_BACKLOG_ACTOR
 // or --as rather than silently conflated with other agents.
 func TestGenericAgentFallbackIsLoud(t *testing.T) {
 	h := beavertest.New(t).Init()
@@ -180,14 +180,14 @@ func TestGenericAgentFallbackIsLoud(t *testing.T) {
 	if out := h.DecodeJSON(r.Stdout); out["actor"] != "agent" {
 		t.Errorf("actor = %v, want the generic agent", out["actor"])
 	}
-	if !strings.Contains(r.Stderr, "BUSY_BEAVER_ACTOR") || !strings.Contains(r.Stderr, "--as") {
+	if !strings.Contains(r.Stderr, "BEAVER_BACKLOG_ACTOR") || !strings.Contains(r.Stderr, "--as") {
 		t.Errorf("the fallback should loudly explain how to name the actor:\n%s", r.Stderr)
 	}
 }
 
 func TestWhoamiHumanPrintsName(t *testing.T) {
 	h := beavertest.New(t).Init()
-	h.Env["BUSY_BEAVER_ACTOR"] = "stefan"
+	h.Env["BEAVER_BACKLOG_ACTOR"] = "stefan"
 	h.IsTTY = true // interactive stdout → human format
 
 	out := h.MustRun("whoami").Stdout

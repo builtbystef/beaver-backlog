@@ -6,8 +6,8 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/builtbystef/busy-beaver/internal/issue"
-	"github.com/builtbystef/busy-beaver/internal/store"
+	"github.com/builtbystef/beaver-backlog/internal/issue"
+	"github.com/builtbystef/beaver-backlog/internal/store"
 )
 
 // cmdDoctor scans every file in the store, reports problems, and exits non-zero
@@ -295,7 +295,7 @@ func duplicatedIDs(valid []located) map[string]bool {
 
 // --- typo detection ---
 
-// knownFields are the frontmatter keys Busy Beaver defines, in their on-disk
+// knownFields are the frontmatter keys Beaver Backlog defines, in their on-disk
 // spelling.
 var knownFields = []string{"id", "title", "state", "assignee", "priority", "labels", "depends_on", "parent", "created", "updated"}
 

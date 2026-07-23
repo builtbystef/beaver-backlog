@@ -5,8 +5,8 @@ import (
 	"slices"
 	"time"
 
-	"github.com/builtbystef/busy-beaver/internal/issue"
-	"github.com/builtbystef/busy-beaver/internal/output"
+	"github.com/builtbystef/beaver-backlog/internal/issue"
+	"github.com/builtbystef/beaver-backlog/internal/output"
 )
 
 // verb is a lifecycle transition: it moves an issue to target from any of a

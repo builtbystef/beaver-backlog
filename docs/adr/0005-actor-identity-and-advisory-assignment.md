@@ -1,6 +1,6 @@
 # Actor identity adapts to humans and agents; assignment is advisory
 
-Busy Beaver serves solo devs, teams, open-source contributors, and coding
+Beaver Backlog serves solo devs, teams, open-source contributors, and coding
 agents with no per-contributor registration. Two separations make that work:
 
 **The project is shared; identity is personal.** `beaver init` sets up the
@@ -17,7 +17,7 @@ tool markers like `CLAUDECODE=1`), a signal set by the agent with no
 inheritance footgun. Resolution order:
 
 1. `--as <actor>` — explicit, always wins.
-2. `BUSY_BEAVER_ACTOR` — programmatic override; never a human's stored
+2. `BEAVER_BACKLOG_ACTOR` — programmatic override; never a human's stored
    identity, because child agent processes inherit the environment.
 3. Agent environment signal, resolving to the agent's name.
 4. Interactive human: user-config identity; if unset, seed from the VCS

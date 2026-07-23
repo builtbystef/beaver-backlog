@@ -9,8 +9,8 @@ import (
 	"fmt"
 	"io"
 
-	"github.com/builtbystef/busy-beaver/internal/clock"
-	"github.com/builtbystef/busy-beaver/internal/vcs"
+	"github.com/builtbystef/beaver-backlog/internal/clock"
+	"github.com/builtbystef/beaver-backlog/internal/vcs"
 )
 
 // Exit codes. 0 is success; the rest are stable so scripts and agents can branch
@@ -117,7 +117,7 @@ usage:
   beaver delete <ref>         delete an issue's file (for junk; the VCS keeps history)
   beaver note <ref> "<text>"  append a note to an issue's coordination log
   beaver doctor               check store health (repair lint with --fix)
-  beaver whoami               print the actor Busy Beaver resolves you as
+  beaver whoami               print the actor Beaver Backlog resolves you as
 
 common flags (after the command):
   --format human|json         override output format (default: auto-detect)

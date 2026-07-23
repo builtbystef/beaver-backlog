@@ -1,4 +1,4 @@
-# Contributing to Busy Beaver
+# Contributing to Beaver Backlog
 
 Thanks for your interest in contributing! This document covers how to build,
 test, and submit changes.

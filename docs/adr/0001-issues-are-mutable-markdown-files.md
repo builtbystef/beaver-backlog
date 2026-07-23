@@ -24,7 +24,7 @@ The file has two ownership zones:
   first-class, but YAML comments and idiosyncratic styling are presentation, not
   data, and may be dropped by any rewrite.
 - **The body is human-owned.** Free-form Markdown, preserved byte-for-byte;
-  Busy Beaver only ever appends to it (notes).
+  Beaver Backlog only ever appends to it (notes).
 
 The frontmatter schema is **open**: unknown keys are preserved verbatim through
 every read-modify-write (a hand-added `sprint: 7` survives `done`, `claim`,

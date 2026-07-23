@@ -5,7 +5,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/builtbystef/busy-beaver/internal/store"
+	"github.com/builtbystef/beaver-backlog/internal/store"
 )
 
 // A freshly initialized store reads back the defaults: the shipped format
@@ -20,7 +20,7 @@ func TestConfigDefaultsAfterInit(t *testing.T) {
 		t.Errorf("FormatVersion = %d, want %d", cfg.FormatVersion, store.FormatVersion)
 	}
 	if cfg.CommitOnDone {
-		t.Error("CommitOnDone = true by default, want false (Busy Beaver commits nothing by default)")
+		t.Error("CommitOnDone = true by default, want false (Beaver Backlog commits nothing by default)")
 	}
 }
 
