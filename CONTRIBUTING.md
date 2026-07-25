@@ -38,7 +38,7 @@ internal/beavertest/ the end-to-end test harness commands are tested through
 
 ## Before you write code
 
-- Read [`CONTEXT.md`](CONTEXT.md) and use its vocabulary in code, comments,
+- Read [`docs/GLOSSARY.md`](docs/GLOSSARY.md) and use its vocabulary in code, comments,
   and docs: _issue_ (not task or ticket), _state_ (not status), _actor_ (not
   user), _label_ (not tag), _note_ (not comment).
 - Skim [`docs/adr/`](docs/adr/) — six short records covering the decisions

@@ -12,6 +12,10 @@
 .claude/skills/
 .agents/skills/
 
+# Environment and secrets (never committed)
+.env
+.env.*
+
 # Editor and OS cruft
 .idea/
 .vscode/

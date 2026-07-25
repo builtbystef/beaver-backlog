@@ -20,17 +20,14 @@ Most issue trackers live outside the codebase, behind a web app and an API.
 Beaver Backlog keeps project work _in_ the repository, as plain files that travel
 with your code:
 
-- **Markdown-first** — every issue is a human-readable `.md` file with a small
+- **Markdown-first**: every issue is a human-readable `.md` file with a small
   YAML header. Read it, edit it, diff it, and review it like any other file.
-- **Local by default** — issues live on your disk, in your project. Nothing to
-  sign up for, nothing to sync, works offline.
-- **Version-control-friendly** — plain text that Git (or any VCS) diffs and
-  merges cleanly. But Beaver Backlog never _requires_ a VCS: it works with Git,
-  with another system, or with none at all.
-- **Agent-friendly** — coding agents read, create, and update issues through
-  the same CLI and files you use. Output auto-switches to JSON when piped, and
-  exit codes are stable, so scripts never parse prose.
-- **Nothing hidden** — the files are the only source of truth. The CLI is a
+- **Local by default**: issues live on your disk, in your project.
+- **Version-control-friendly**: plain text that Git diffs and
+  merges cleanly.
+- **Agent-friendly**: coding agents read, create, and update issues through
+  the same files as you.
+- **Nothing hidden**: the files are the only source of truth. The CLI is a
   thin client over them; hand-editing an issue file is a first-class operation.
 
 ## Installation
@@ -105,32 +102,32 @@ shows "invalid credentials". Expected: the login succeeds.
 root cause: form strips ! before hashing
 ```
 
-The frontmatter is machine-owned (Beaver Backlog keeps it canonically formatted,
+The frontmatter is machine-owned (Beaver Backlog keeps it formatted,
 and unknown keys you add by hand are preserved verbatim, never interpreted);
-the body is yours (Beaver Backlog only ever appends notes to it). State is one of
+the issue body is yours (Beaver Backlog only ever appends notes to it). State is one of
 `todo`, `in-progress`, `done`, or `cancelled` — cancelled meaning deliberately
 abandoned, kept visible so nobody re-files it.
 
 ## Commands
 
-| Command                           | What it does                                                                           |
-| --------------------------------- | -------------------------------------------------------------------------------------- |
-| `beaver init`                     | Initialize a store in the current project                                              |
+| Command                           | What it does                                                                                   |
+| --------------------------------- | ---------------------------------------------------------------------------------------------- |
+| `beaver init`                     | Initialize a store in the current project                                                      |
 | `beaver create "<title>"`         | Create an issue (`--body`, `--body-file`, `--label`, `--priority`, `--depends-on`, `--parent`) |
-| `beaver list`                     | List issues (`--state`, `--ready`, `--blocked`, `--label`, `--priority`, `--assignee`) |
-| `beaver show <ref>`               | Show an issue, including what it waits on and whether it is ready                      |
-| `beaver start <ref>`              | Move to in-progress, auto-claiming if unowned                                          |
-| `beaver done <ref>`               | Mark done                                                                              |
-| `beaver cancel <ref>`             | Deliberately abandon (terminal, but not completed)                                     |
-| `beaver reopen <ref>`             | Return a done or cancelled issue to todo                                               |
-| `beaver claim / assign / release` | Set or clear the assignee                                                              |
-| `beaver priority <ref> <level>`   | Set or clear priority (`urgent`–`low`, `none`)                                         |
-| `beaver label <ref> <label>`      | Add labels (`--remove` to take them off)                                               |
-| `beaver note <ref> "<text>"`      | Append an attributed, timestamped note                                                 |
-| `beaver edit <ref>`               | Open the issue file in `$EDITOR`                                                       |
-| `beaver delete <ref>`             | Delete the file (for junk; the VCS keeps history)                                      |
-| `beaver doctor`                   | Check store health; `--fix` repairs what is safe to repair                             |
-| `beaver whoami`                   | Print the actor you resolve as                                                         |
+| `beaver list`                     | List issues (`--state`, `--ready`, `--blocked`, `--label`, `--priority`, `--assignee`)         |
+| `beaver show <ref>`               | Show an issue, including what it waits on and whether it is ready                              |
+| `beaver start <ref>`              | Move to in-progress, auto-claiming if unowned                                                  |
+| `beaver done <ref>`               | Mark done                                                                                      |
+| `beaver cancel <ref>`             | Deliberately abandon (terminal, but not completed)                                             |
+| `beaver reopen <ref>`             | Return a done or cancelled issue to todo                                                       |
+| `beaver claim / assign / release` | Set or clear the assignee                                                                      |
+| `beaver priority <ref> <level>`   | Set or clear priority (`urgent`–`low`, `none`)                                                 |
+| `beaver label <ref> <label>`      | Add labels (`--remove` to take them off)                                                       |
+| `beaver note <ref> "<text>"`      | Append an attributed, timestamped note                                                         |
+| `beaver edit <ref>`               | Open the issue file in `$EDITOR`                                                               |
+| `beaver delete <ref>`             | Delete the file (for junk; the VCS keeps history)                                              |
+| `beaver doctor`                   | Check store health; `--fix` repairs what is safe to repair                                     |
+| `beaver whoami`                   | Print the actor you resolve as                                                                 |
 
 A `<ref>` is an issue's ID, its slug, or its file name — resolved by exact
 match only, never by prefix or fuzzy match. Run `beaver help` for full usage.
@@ -219,8 +216,10 @@ never removes data.
 
 ## Documentation
 
-- [`CONTEXT.md`](CONTEXT.md) — the project's language: what an issue, actor,
-  claim, and note precisely mean.
+- [`docs/GLOSSARY.md`](docs/GLOSSARY.md) — the project's language: what an
+  issue, actor, claim, and note precisely mean.
+- [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) — the modules and the seams
+  between them.
 - [`docs/adr/`](docs/adr/) — the architecture decisions behind the design and
   their tradeoffs.
 

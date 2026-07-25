@@ -1,3 +1,7 @@
+# Glossary
+
+The project's ubiquitous language. Rules: one term per concept — rejected synonyms go under _Avoid_; a definition is one or two sentences saying what the term IS, not what it does; only terms specific to this project belong (general programming concepts don't); no implementation details; group under subheadings when clusters emerge.
+
 ## Language
 
 **Issue**:
