@@ -10,21 +10,20 @@ never committed — a committed identity would make every cloner inherit the
 initializer's name.
 
 **Humans and agents are identified differently.** A coding agent inherits the
-human's environment and Git config, so `git config user.name` identifies the
-*human* even while an agent runs — using it for the agent would misattribute
-the work. Agent harnesses announce themselves in the environment (`AGENT=...`,
-tool markers like `CLAUDECODE=1`), a signal set by the agent with no
-inheritance footgun. Resolution order:
+human's environment, so any ambient identity there names the *human* even while
+an agent runs — using it for the agent would misattribute the work. Agent
+harnesses announce themselves in the environment (`AGENT=...`, tool markers like
+`CLAUDECODE=1`), a signal set by the agent with no inheritance footgun.
+Resolution order:
 
 1. `--as <actor>` — explicit, always wins.
 2. `BEAVER_BACKLOG_ACTOR` — programmatic override; never a human's stored
    identity, because child agent processes inherit the environment.
 3. Agent environment signal, resolving to the agent's name.
-4. Interactive human: user-config identity; if unset, seed from the VCS
-   identity and confirm, or prompt, then save. This step never runs
-   non-interactively — a VCS identity is only ever adopted through explicit
-   confirmation, so an agent that forgets to identify itself cannot silently
-   act as the human.
+4. Interactive human: user-config identity; if unset, prompt, then save. This
+   step never runs non-interactively — the human's stored identity is only ever
+   read when there is a human at the terminal, so an agent that forgets to
+   identify itself cannot silently act as the human.
 5. Otherwise (non-interactive, no signal): proceed as a loud generic `agent`.
 
 Agent detection is heuristic and best-effort; an unknown harness degrades to
@@ -51,8 +50,8 @@ error) are.
 
 ## Consequences
 
-- Reading the VCS identity is only ever a seed for interactive confirmation,
-  never an agent identity.
+- A human's name enters the tool only by their own typing it at the prompt or
+  passing it explicitly; nothing ambient in the environment supplies it.
 - "Claimed" never means "guaranteed exclusive"; interfaces and agents must
   tolerate the occasional double-claim surfaced at merge time.
 - Human output can change freely; machine consumers use JSON and exit codes.

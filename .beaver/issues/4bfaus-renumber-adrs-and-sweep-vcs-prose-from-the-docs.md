@@ -1,13 +1,14 @@
 ---
 id: 4bfaus
 title: Renumber ADRs and sweep VCS prose from the docs
-state: todo
+state: done
+assignee: claude
 priority: medium
 depends_on:
     - 8sr966
 parent: tlz52g
 created: 2026-07-25T08:47:52Z
-updated: 2026-07-25T08:47:52Z
+updated: 2026-07-25T09:20:47Z
 ---
 
 ## What to build

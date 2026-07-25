@@ -24,13 +24,12 @@ mergeable only when all of them pass.
 ```
 cmd/beaver/          the binary: wires the real process to the CLI engine
 internal/cli/        one file per command, plus shared plumbing; the engine
-                     takes everything (args, stdio, clock, VCS, editor)
+                     takes everything (args, stdio, clock, editor)
                      through an Env struct so tests can substitute all of it
 internal/issue/      the issue model: parsing, serializing, validation,
                      relationships
 internal/store/      the .beaver store: discovery, scanning, writing, config
 internal/output/     human vs JSON rendering and format auto-detection
-internal/vcs/        the VCS port and its Git adapter
 internal/userconfig/ per-machine user config (actor identity)
 internal/clock/      injectable time source
 internal/beavertest/ the end-to-end test harness commands are tested through
@@ -41,7 +40,7 @@ internal/beavertest/ the end-to-end test harness commands are tested through
 - Read [`docs/GLOSSARY.md`](docs/GLOSSARY.md) and use its vocabulary in code, comments,
   and docs: _issue_ (not task or ticket), _state_ (not status), _actor_ (not
   user), _label_ (not tag), _note_ (not comment).
-- Skim [`docs/adr/`](docs/adr/) — six short records covering the decisions
+- Skim [`docs/adr/`](docs/adr/) — five short records covering the decisions
   that aren't obvious from the code. The load-bearing ones: the Markdown files
   are the only source of truth; frontmatter is machine-owned while the body is
   human-owned and unknown frontmatter keys are preserved verbatim; everyday

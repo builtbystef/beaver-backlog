@@ -13,7 +13,7 @@ Conventions this project holds beyond what linters and formatters enforce. Revie
 - Command-level behavior is tested end-to-end through `internal/beavertest`;
   follow the pattern in any existing `_test.go` in `internal/cli`.
 - Tests substitute the world through the `Env` struct (args, stdio, clock,
-  VCS, editor) — never with global state or real user config.
+  editor) — never with global state or real user config.
 
 ## Error handling
 

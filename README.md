@@ -196,10 +196,10 @@ every dependency done); `--blocked` shows what is waiting.
 ## Configuration
 
 `beaver init` writes `.beaver/config.yml`, which is committed and shared like
-the issues. One optional behavior today: with `commit_on_done: true`, `beaver
-done` records each completed issue as its own atomic commit through the Git
-adapter. Off by default — Beaver Backlog otherwise commits nothing and never
-requires a VCS.
+the issues. It records the store's format version and nothing else today.
+Beaver Backlog only ever reads and writes files — it never runs a
+version-control system, so committing your issue files stays entirely yours to
+do (and stays free to bundle with the code the issue produced).
 
 Your identity lives in per-machine user config, never in the repository. If an
 interactive `create` ends with a file that isn't a usable issue, your words
