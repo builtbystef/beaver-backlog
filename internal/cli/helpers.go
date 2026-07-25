@@ -1,14 +1,16 @@
 package cli
 
-// This file holds the plumbing every command shares: list-flag helpers, store
-// discovery, error-to-exit-code mapping, path prettifying, and output-format
-// resolution.
+// This file holds the plumbing every command shares: list-flag helpers, opening
+// the core (and the legacy direct store discovery), error-to-exit-code mapping,
+// warning rendering, path prettifying, and output-format resolution.
 
 import (
 	"errors"
+	"fmt"
 	"path/filepath"
 	"strings"
 
+	"github.com/builtbystef/beaver-backlog/internal/core"
 	"github.com/builtbystef/beaver-backlog/internal/output"
 	"github.com/builtbystef/beaver-backlog/internal/store"
 )
@@ -46,6 +48,56 @@ func dedupe(in []string) []string {
 		}
 	}
 	return out
+}
+
+// open builds the core service the handlers work through, resolving the store
+// from the working directory. The clock and ID source travel with it, so the
+// harness's fakes reach the core the same way they reach the CLI. Callers map
+// the error with coreError.
+func open(env Env) (*core.Service, error) {
+	return core.Open(env.WorkDir, core.WithClock(env.Clock), core.WithIDSource(env.NewID))
+}
+
+// coreError maps a failure from the core onto this CLI's diagnostic and exit
+// code. ref is the reference the command was given — it names the issue in a
+// not-found message, and is empty for a command that resolved none.
+func coreError(env Env, ref string, err error) int {
+	// AmbiguousRefError unwraps to ErrNotFound, so it must be matched before the
+	// generic not-found branch swallows it.
+	var ambiguous *core.AmbiguousRefError
+	switch {
+	case errors.Is(err, core.ErrNoStore):
+		errf(env, "not a Beaver Backlog store; run `beaver init`")
+		return exitNotFound
+	case errors.As(err, &ambiguous):
+		reportAmbiguous(env, ambiguous)
+		return exitNotFound
+	case errors.Is(err, core.ErrNotFound):
+		errf(env, "no issue found matching %q", ref)
+		return exitNotFound
+	default:
+		errf(env, "%v", err)
+		return exitError
+	}
+}
+
+// reportAmbiguous explains that a reference names several issues and lists them
+// so the user can pick one by its unique ID.
+func reportAmbiguous(env Env, e *core.AmbiguousRefError) {
+	errf(env, "%q is the slug of %d issues; use a full ID:", e.Ref, len(e.Matches))
+	for _, iss := range e.Matches {
+		// OneLine keeps a hand-edited multi-line title from breaking the
+		// one-line-per-candidate listing.
+		fmt.Fprintf(env.Stderr, "  %s  %s\n", iss.ID, output.OneLine(iss.Title))
+	}
+}
+
+// warnSkipped reports the files a core read skipped as invalid. They go to
+// stderr, never stdout, so a warning cannot corrupt the JSON an agent parses.
+func warnSkipped(env Env, warnings []core.Warning) {
+	for _, w := range warnings {
+		errf(env, "skipping invalid issue %s: %v", relPath(env.WorkDir, w.Path), w.Err)
+	}
 }
 
 func storeError(env Env, err error) int {

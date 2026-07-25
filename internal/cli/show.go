@@ -1,11 +1,13 @@
 package cli
 
 import (
-	"github.com/builtbystef/beaver-backlog/internal/issue"
 	"github.com/builtbystef/beaver-backlog/internal/output"
 )
 
-// cmdShow renders one issue resolved from a reference.
+// cmdShow renders one issue resolved from a reference, together with the
+// derived relationship facts the core computes for it: what it waits on,
+// whether it is ready/blocked/stuck, and the inverse edges (what it blocks, its
+// children) that are never stored.
 func cmdShow(env Env, args []string) int {
 	fs, formatFlag := newFlagSet(env, "show")
 	pos, ok := parseArgs(fs, args)
@@ -23,29 +25,19 @@ func cmdShow(env Env, args []string) int {
 		return exitUsage
 	}
 
-	st, err := discover(env)
+	svc, err := open(env)
 	if err != nil {
-		return storeError(env, err)
+		return coreError(env, ref, err)
 	}
-
-	// show both resolves one issue and derives its relationships over the whole
-	// store, so one snapshot answers both rather than scanning the files twice.
-	snap, err := st.Snapshot()
+	detail, err := svc.Get(ref)
+	// The scan's warnings stand on their own: a skipped file is worth reporting
+	// whether or not the reference then resolved.
+	warnSkipped(env, detail.Warnings)
 	if err != nil {
-		errf(env, "%v", err)
-		return exitError
-	}
-	iss, _, code := resolveRef(env, snap, ref)
-	if code != exitOK {
-		return code
+		return coreError(env, ref, err)
 	}
 
-	// Enrich the view with derived relationship facts: what this issue waits
-	// on, whether it is ready/blocked/stuck, and the inverse edges (what it
-	// blocks, its children) that are never stored.
-	rel := issue.NewRelations(snap.Issues()).For(iss)
-
-	if err := output.WriteIssueWithRelationship(env.Stdout, iss, rel, format); err != nil {
+	if err := output.WriteIssueWithRelationship(env.Stdout, detail.Issue, detail.Relationship, format); err != nil {
 		errf(env, "%v", err)
 		return exitError
 	}

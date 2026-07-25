@@ -21,6 +21,12 @@ invokes a version-control system; committing the files is the operator's job.
 - `internal/cli/` — one file per command, plus shared plumbing. The engine
   takes everything it touches through an `Env` struct — the seam that lets
   tests substitute args, stdio, clock, and editor wholesale.
+- `internal/core/` — the application layer over a store: opening it, reading
+  one issue with its derived relationships, and querying with filters and
+  ordering. It knows nothing of flags, terminals, or exit codes — failures are
+  typed errors, skipped files come back as data — so any interface can call the
+  same rules. The rules the extraction has not moved yet still sit in
+  `internal/cli`.
 - `internal/issue/` — the issue model: parsing, serializing, validation, and
   relationships (`depends_on`, `parent`), including the derived
   blocked/ready/stuck conditions.
@@ -38,6 +44,10 @@ invokes a version-control system; committing the files is the operator's job.
 
 - **`Env` struct** (`internal/cli`): the dependency-injection boundary between
   the engine and the world. New external effects go through it, never around it.
+- **The core API** (`internal/core`): the boundary between an interface and the
+  application. A migrated command handler parses arguments, calls the core,
+  renders the result, and maps typed errors to exit codes — it never reaches
+  past the core to the store, the clock, or a file.
 - **The files themselves**: hand-editing an issue file is a first-class
   operation, so every module must tolerate files it didn't write — everyday
   commands skip-and-warn on invalid files, `doctor` repairs drift (ADR 0003).
