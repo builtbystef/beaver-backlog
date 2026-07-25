@@ -1,11 +1,3 @@
-# Beaver Backlog
-
-Beaver Backlog is a local-first issue tracker for software projects. It stores issues as
-Markdown files inside the project so that humans and coding agents can coordinate
-work through the files themselves — with no external service and no hard
-dependency on any version-control system. Git is the first-class companion, but
-Beaver Backlog stays correct with another VCS, or none.
-
 ## Language
 
 **Issue**:
@@ -33,8 +25,8 @@ not completed). The set is fixed.
 _Avoid_: Status, Stage
 
 **Open / Closed**:
-Umbrella query categories, not stored values. *Open* is any non-terminal issue
-(`todo` or `in-progress`); *Closed* is any terminal issue (`done` or
+Umbrella query categories, not stored values. _Open_ is any non-terminal issue
+(`todo` or `in-progress`); _Closed_ is any terminal issue (`done` or
 `cancelled`). Never use "open" to mean specifically "not started" — that sense is
 `todo`.
 
@@ -77,9 +69,9 @@ _Avoid_: Blocker
 
 **Blocked / Ready**:
 Derived conditions, not stored states. A dependency is satisfied only when its
-target is `done`. An issue is *blocked* when any `depends_on` target is not
-`done`, and *ready* when it is `todo` with every dependency `done`. A dependency
-on a `cancelled` issue is never satisfied, leaving the dependent *stuck* — a
+target is `done`. An issue is _blocked_ when any `depends_on` target is not
+`done`, and _ready_ when it is `todo` with every dependency `done`. A dependency
+on a `cancelled` issue is never satisfied, leaving the dependent _stuck_ — a
 condition `doctor` flags for a human to resolve, not one Beaver Backlog clears
 automatically. Like Open/Closed, these are query views over the data — never
 written to a file.

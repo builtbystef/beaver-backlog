@@ -8,6 +8,10 @@
 # Local recovery drafts (per-machine, never shared)
 .beaver/drafts/
 
+# Claude Code skills and agents (per-machine, never shared)
+.claude/skills/
+.agents/skills/
+
 # Editor and OS cruft
 .idea/
 .vscode/
