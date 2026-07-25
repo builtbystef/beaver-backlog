@@ -1,13 +1,13 @@
 ---
 id: 3o9a5b
 title: Move transitions and start into the core
-state: todo
+state: done
 priority: medium
 depends_on:
     - iw0vx3
 parent: kn7wzs
 created: 2026-07-25T08:47:52Z
-updated: 2026-07-25T08:47:52Z
+updated: 2026-07-25T10:15:16Z
 ---
 
 ## What to build

@@ -1,10 +1,12 @@
 package cli
 
 import (
+	"errors"
 	"fmt"
 	"strings"
 	"time"
 
+	"github.com/builtbystef/beaver-backlog/internal/core"
 	"github.com/builtbystef/beaver-backlog/internal/issue"
 	"github.com/builtbystef/beaver-backlog/internal/output"
 	"github.com/builtbystef/beaver-backlog/internal/store"
@@ -15,7 +17,8 @@ import (
 // auto-claiming an unowned issue. The guard behind claim and start refuses an issue
 // held by a different actor unless --force, but is best-effort only — concurrent
 // claims on two branches surface as a VCS merge conflict on the `assignee:` line
-// rather than silent double-ownership.
+// rather than silent double-ownership. Start's guard is the core's; claim keeps
+// its own until the command surface consolidates.
 
 // claimDecision is the ownership guard's ruling on an issue's current assignee
 // against the acting actor.
@@ -29,7 +32,8 @@ const (
 
 // decideClaim applies the ownership guard: re-claiming one's own issue is a no-op,
 // an unowned issue is claimed, and another actor's issue is refused unless force
-// steals it. claim and start share it so both guard ownership identically.
+// steals it. It is claim's copy of the rule the core applies to start, kept here
+// until the command surface consolidates and claim goes away.
 func decideClaim(current, actor string, force bool) claimDecision {
 	switch {
 	case current == actor:
@@ -191,92 +195,70 @@ func cmdStart(env Env, args []string) int {
 		errf(env, "start requires an issue reference: beaver start <ref>")
 		return exitUsage
 	}
+	ref := pos[0]
 	format, err := resolveFormat(env, *formatFlag)
 	if err != nil {
 		errf(env, "%v", err)
 		return exitUsage
 	}
 
-	st, err := discover(env)
+	svc, err := open(env)
 	if err != nil {
-		return storeError(env, err)
+		return coreError(env, ref, err)
 	}
 
-	// One snapshot serves the reference, the not-ready warning, and the JSON
-	// readiness view. Starting changes only this issue's own state, never a
-	// dependency's, so the pre-write snapshot also serves the post-start view:
-	// For is handed the updated issue.
-	snap, err := st.Snapshot()
-	if err != nil {
-		errf(env, "%v", err)
-		return exitError
-	}
-	iss, path, code := resolveRef(env, snap, pos[0])
-	if code != exitOK {
-		return code
-	}
-
-	if iss.State == issue.StateDone || iss.State == issue.StateCancelled {
-		errf(env, "%s is %s; reopen it first to start it", iss.ID, iss.State)
-		return exitUsage
-	}
-
-	// Resolve the actor only after the ref and state checks pass, so a bad ref or
-	// a closed issue never triggers an interactive identity prompt.
+	// The core takes the actor as a value, so identity is resolved before the
+	// call — after the store is found, so no interactive prompt fires outside a
+	// store.
 	me, err := resolveActor(env, *asFlag)
 	if err != nil {
 		errf(env, "%v", err)
 		return exitError
 	}
 
-	decision := decideClaim(iss.Assignee, me.name, *forceFlag)
-	if decision == claimRefuse {
-		errf(env, "%s is claimed by %s; use --force to steal it", iss.ID, iss.Assignee)
-		return exitUsage
+	out, err := svc.Start(ref, me.name, *forceFlag)
+	warnSkipped(env, out.Warnings)
+	if err != nil {
+		return startError(env, ref, err)
 	}
 
-	rel := issue.NewRelations(snap.Issues())
-
-	// The dependency warning fires only when work actually begins (todo moving to
-	// in-progress) and is non-fatal; the same facts reach an agent through the
+	// The dependency warning is non-fatal, and the core reports the dependencies
+	// only when work actually begins; the same facts reach an agent through the
 	// JSON relationships below.
-	if iss.State == issue.StateTodo {
-		if blockers := rel.BlockedOn(iss); len(blockers) > 0 {
-			errf(env, "warning: %s is not ready: waiting on %s. Starting anyway.", iss.ID, formatBlockers(blockers))
-		}
-	}
-
-	prev := iss.Assignee // previous owner, for a steal message
-	stateChanged := iss.State != issue.StateInProgress
-	claimSet := decision == claimSets
-
-	// A pure no-op — already in-progress and already the actor's — is not
-	// rewritten, so updated is not churned.
-	humanLine := fmt.Sprintf("%s is already in progress", iss.ID)
-	if stateChanged || claimSet {
-		iss.State = issue.StateInProgress
-		if claimSet {
-			iss.Assignee = me.name
-		}
-		iss.Updated = env.Clock.Now().UTC().Truncate(time.Second)
-		if _, err := st.Update(path, iss); err != nil {
-			errf(env, "%v", err)
-			return exitError
-		}
-		humanLine = startLine(iss.ID, me.name, prev, stateChanged, claimSet)
+	if len(out.UnmetDependencies) > 0 {
+		errf(env, "warning: %s is not ready: waiting on %s. Starting anyway.",
+			out.Issue.ID, formatBlockers(out.UnmetDependencies))
 	}
 
 	// JSON additionally carries the derived readiness view, so an agent sees in
 	// the start result whether the work it just began was blocked and on what.
 	if format == output.Human {
-		fmt.Fprintln(env.Stdout, humanLine)
+		fmt.Fprintln(env.Stdout, startLine(out))
 		return exitOK
 	}
-	if err := output.WriteIssueWithRelationship(env.Stdout, iss, rel.For(iss), output.JSON); err != nil {
+	if err := output.WriteIssueWithRelationship(env.Stdout, out.Issue, out.Relationship, output.JSON); err != nil {
 		errf(env, "%v", err)
 		return exitError
 	}
 	return exitOK
+}
+
+// startError maps start's own refusals onto its diagnostics: a closed issue must
+// be reopened first, and an issue another actor holds needs --force. Anything
+// else is a failure every command reports the same way.
+func startError(env Env, ref string, err error) int {
+	var illegal *core.IllegalTransitionError
+	var claimed *core.ClaimedError
+	switch {
+	case errors.As(err, &illegal):
+		errf(env, "%s is %s; reopen it first to start it", illegal.ID, illegal.From)
+		return exitUsage
+	case errors.As(err, &claimed):
+		errf(env, "%s is claimed by %s; use --force to steal it", claimed.ID, claimed.By)
+		return exitUsage
+	default:
+		return coreError(env, ref, err)
+	}
 }
 
 // writeAndReport bumps `updated`, writes the modified issue back, and renders the
@@ -291,20 +273,22 @@ func writeAndReport(env Env, st *store.Store, path string, iss issue.Issue, form
 	return reportIssue(env, format, iss, humanLine)
 }
 
-// startLine renders start's confirmation, covering the state move and any claim
-// or steal.
-func startLine(id, actor, prev string, stateChanged, claimSet bool) string {
-	head := fmt.Sprintf("%s is already in progress", id)
-	if stateChanged {
-		head = "Started " + id
+// startLine renders start's confirmation from what the core actually did: the
+// before-and-after pair says whether the state moved and whether the issue
+// changed hands, so a pure no-op reports itself as one.
+func startLine(out core.StartOutcome) string {
+	head := fmt.Sprintf("%s is already in progress", out.Issue.ID)
+	if out.Previous.State != out.Issue.State {
+		head = "Started " + out.Issue.ID
 	}
-	if !claimSet {
+	prev := out.Previous.Assignee
+	if prev == out.Issue.Assignee {
 		return head
 	}
 	if prev != "" {
-		return fmt.Sprintf("%s (claimed for %s, taken from %s)", head, actor, prev)
+		return fmt.Sprintf("%s (claimed for %s, taken from %s)", head, out.Issue.Assignee, prev)
 	}
-	return fmt.Sprintf("%s (claimed for %s)", head, actor)
+	return fmt.Sprintf("%s (claimed for %s)", head, out.Issue.Assignee)
 }
 
 // formatBlockers renders unmet dependencies as a comma-joined list of

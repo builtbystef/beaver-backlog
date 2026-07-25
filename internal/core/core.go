@@ -10,6 +10,7 @@ import (
 	"errors"
 	"fmt"
 	"strings"
+	"time"
 
 	"github.com/builtbystef/beaver-backlog/internal/clock"
 	"github.com/builtbystef/beaver-backlog/internal/issue"
@@ -109,12 +110,22 @@ func (s *Service) Get(ref string) (Detail, error) {
 	if err != nil {
 		return Detail{Warnings: warnings}, err
 	}
-	iss, err := resolve(snap, ref)
+	iss, _, err := resolve(snap, ref)
 	if err != nil {
 		return Detail{Warnings: warnings}, err
 	}
 	rel := issue.NewRelations(snap.Issues()).For(iss)
 	return Detail{Issue: iss, Relationship: rel, Warnings: warnings}, nil
+}
+
+// Outcome is the result of an operation that may modify an issue: the issue as
+// it now stands, whether anything was written, and the files the scan skipped.
+// An operation whose net effect is nothing reports Changed false and leaves the
+// file — and with it the updated timestamp — exactly as it was.
+type Outcome struct {
+	Issue    issue.Issue
+	Changed  bool
+	Warnings []Warning
 }
 
 // scan takes one point-in-time view of the store, collecting the files it skips
@@ -129,22 +140,36 @@ func (s *Service) scan() (*store.Snapshot, []Warning, error) {
 	return snap, warnings, err
 }
 
-// resolve turns a user reference into one issue of the scanned set,
-// translating the store's resolution failures into the core's typed errors.
-func resolve(snap *store.Snapshot, ref string) (issue.Issue, error) {
-	iss, _, err := snap.Resolve(ref)
+// resolve turns a user reference into one issue of the scanned set and the path
+// it was read from, translating the store's resolution failures into the core's
+// typed errors. The path is what a write goes back to, so a file whose name has
+// drifted is rewritten canonically rather than duplicated.
+func resolve(snap *store.Snapshot, ref string) (issue.Issue, string, error) {
+	iss, path, err := snap.Resolve(ref)
 
 	// SharedSlugError unwraps to the store's not-found, so it must be matched
 	// before the generic not-found branch swallows it.
 	var shared *store.SharedSlugError
 	switch {
 	case err == nil:
-		return iss, nil
+		return iss, path, nil
 	case errors.As(err, &shared):
-		return issue.Issue{}, &AmbiguousRefError{Ref: shared.Slug, Matches: shared.Matches}
+		return issue.Issue{}, "", &AmbiguousRefError{Ref: shared.Slug, Matches: shared.Matches}
 	case errors.Is(err, store.ErrNotFound):
-		return issue.Issue{}, fmt.Errorf("%w: %s", ErrNotFound, ref)
+		return issue.Issue{}, "", fmt.Errorf("%w: %s", ErrNotFound, ref)
 	default:
+		return issue.Issue{}, "", err
+	}
+}
+
+// write records a modified issue, stamping `updated` from the service clock and
+// returning the issue as it was written. Every write goes through it, so the
+// timestamp policy — UTC, truncated to the second — lives in one place, and no
+// path that decides nothing changed can bump the stamp by accident.
+func (s *Service) write(path string, iss issue.Issue) (issue.Issue, error) {
+	iss.Updated = s.clock.Now().UTC().Truncate(time.Second)
+	if _, err := s.store.Update(path, iss); err != nil {
 		return issue.Issue{}, err
 	}
+	return iss, nil
 }

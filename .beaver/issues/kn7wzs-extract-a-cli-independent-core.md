@@ -7,7 +7,7 @@ labels:
 depends_on:
     - tlz52g
 created: 2026-07-25T08:42:28Z
-updated: 2026-07-25T08:42:28Z
+updated: 2026-07-25T10:15:11Z
 ---
 
 # Extract a CLI-independent core
@@ -127,3 +127,9 @@ Prior art: the existing unit suites in the store and issue packages show the int
 ## Further Notes
 
 Second of three sequenced specs. Depends on VCS removal having landed (smaller `Env`, no commit paths to migrate). The coding-standards test-policy rewrite happens in the consolidation spec, when the end-to-end suite actually thins.
+
+## Notes
+
+**claude** — 2026-07-25T10:15:11Z
+
+StartOutcome.UnmetDependencies landed as []issue.Blocker, not []issue.Issue as this spec sketches: a dangling depends_on target has no issue to return, and start's warning names it — gone99 (missing). StartOutcome also carries Previous (the issue as it stood before) and Relationship, which the CLI needs to render start's confirmation line and its JSON readiness view.

@@ -22,11 +22,13 @@ invokes a version-control system; committing the files is the operator's job.
   takes everything it touches through an `Env` struct — the seam that lets
   tests substitute args, stdio, clock, and editor wholesale.
 - `internal/core/` — the application layer over a store: opening it, reading
-  one issue with its derived relationships, and querying with filters and
-  ordering. It knows nothing of flags, terminals, or exit codes — failures are
-  typed errors, skipped files come back as data — so any interface can call the
-  same rules. The rules the extraction has not moved yet still sit in
-  `internal/cli`.
+  one issue with its derived relationships, querying with filters and ordering,
+  and the lifecycle writes (legal state transitions and starting work, with its
+  ownership guard and dependency report). It knows nothing of flags, terminals,
+  or exit codes — failures are typed errors, skipped files come back as data —
+  so any interface can call the same rules. Every write stamps `updated` in one
+  place, and an operation that changes nothing writes nothing. The rules the
+  extraction has not moved yet still sit in `internal/cli`.
 - `internal/issue/` — the issue model: parsing, serializing, validation, and
   relationships (`depends_on`, `parent`), including the derived
   blocked/ready/stuck conditions.

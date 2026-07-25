@@ -1,21 +1,20 @@
 package cli
 
 import (
+	"errors"
 	"fmt"
-	"slices"
-	"time"
 
+	"github.com/builtbystef/beaver-backlog/internal/core"
 	"github.com/builtbystef/beaver-backlog/internal/issue"
 	"github.com/builtbystef/beaver-backlog/internal/output"
 )
 
-// verb is a lifecycle transition: it moves an issue to target from any of a
-// fixed set of source states, treating already-at-target as an idempotent
-// no-op — see classify.
+// verb is a lifecycle transition as this CLI presents it: the state it sets and
+// the wording for each way the core can answer. Which states may reach the
+// target, and whether a call changes anything, is the core's business.
 type verb struct {
-	name    string        // command name, used in usage diagnostics
-	target  issue.State   // state a successful transition sets
-	sources []issue.State // states the transition may start from
+	name   string      // command name, used in usage diagnostics
+	target issue.State // state a successful transition sets
 
 	did     string // human confirmation on a real transition; one %s (id)
 	already string // human line when already at target; one %s (id)
@@ -26,7 +25,6 @@ var (
 	verbDone = verb{
 		name:    "done",
 		target:  issue.StateDone,
-		sources: []issue.State{issue.StateTodo, issue.StateInProgress},
 		did:     "Marked %s done",
 		already: "%s is already done",
 		reject:  "%s is %s; reopen it first to mark it done",
@@ -34,7 +32,6 @@ var (
 	verbCancel = verb{
 		name:    "cancel",
 		target:  issue.StateCancelled,
-		sources: []issue.State{issue.StateTodo, issue.StateInProgress},
 		did:     "Cancelled %s",
 		already: "%s is already cancelled",
 		reject:  "%s is %s; reopen it first to cancel it",
@@ -42,7 +39,6 @@ var (
 	verbReopen = verb{
 		name:    "reopen",
 		target:  issue.StateTodo,
-		sources: []issue.State{issue.StateDone, issue.StateCancelled},
 		did:     "Reopened %s",
 		already: "%s is already todo",
 		reject:  "%s is %s, not closed; reopen only restores done or cancelled issues",
@@ -53,33 +49,10 @@ func cmdDone(env Env, args []string) int   { return runTransition(env, args, ver
 func cmdCancel(env Env, args []string) int { return runTransition(env, args, verbCancel) }
 func cmdReopen(env Env, args []string) int { return runTransition(env, args, verbReopen) }
 
-// transitionKind is the outcome of applying a verb to an issue's current state.
-type transitionKind int
-
-const (
-	transApply     transitionKind = iota // move the issue to the verb's target state
-	transRedundant                       // already at target: an idempotent no-op success
-	transReject                          // the current state forbids this verb
-)
-
-// classify decides how verb v applies to an issue currently in state cur:
-// already-at-target is a redundant no-op, a listed source transitions, and
-// anything else is rejected.
-func classify(v verb, cur issue.State) transitionKind {
-	switch {
-	case cur == v.target:
-		return transRedundant
-	case slices.Contains(v.sources, cur):
-		return transApply
-	default:
-		return transReject
-	}
-}
-
-// runTransition is the shared engine behind done, cancel, and reopen: it
-// resolves the referenced issue and either rewrites it with the new state and a
-// bumped `updated`, reports an idempotent no-op, or refuses a transition the
-// current state forbids. A refusal never touches the file.
+// runTransition is the shared engine behind done, cancel, and reopen: it parses
+// the invocation, asks the core to move the issue to the verb's target state,
+// and renders whichever of the three answers came back — moved, already there,
+// or refused by the current state.
 func runTransition(env Env, args []string, v verb) int {
 	fs, formatFlag := newFlagSet(env, v.name)
 	pos, ok := parseArgs(fs, args)
@@ -97,34 +70,28 @@ func runTransition(env Env, args []string, v verb) int {
 		return exitUsage
 	}
 
-	st, err := discover(env)
+	svc, err := open(env)
 	if err != nil {
-		return storeError(env, err)
+		return coreError(env, ref, err)
+	}
+	out, err := svc.Transition(ref, v.target)
+	warnSkipped(env, out.Warnings)
+	if err != nil {
+		var illegal *core.IllegalTransitionError
+		if errors.As(err, &illegal) {
+			errf(env, v.reject, illegal.ID, illegal.From)
+			return exitUsage
+		}
+		return coreError(env, ref, err)
 	}
 
-	iss, path, code := resolveRef(env, st, ref)
-	if code != exitOK {
-		return code
+	// An unchanged outcome is the idempotent no-op: the issue was already at the
+	// target, so nothing was written and `updated` stands.
+	line := fmt.Sprintf(v.already, out.Issue.ID)
+	if out.Changed {
+		line = fmt.Sprintf(v.did, out.Issue.ID)
 	}
-
-	switch classify(v, iss.State) {
-	case transReject:
-		errf(env, v.reject, iss.ID, iss.State)
-		return exitUsage
-
-	case transRedundant:
-		// Idempotent no-op: report without rewriting, so `updated` and the file
-		// bytes stay untouched.
-		return reportIssue(env, format, iss, fmt.Sprintf(v.already, iss.ID))
-	}
-
-	iss.State = v.target
-	iss.Updated = env.Clock.Now().UTC().Truncate(time.Second)
-	if _, err := st.Update(path, iss); err != nil {
-		errf(env, "%v", err)
-		return exitError
-	}
-	return reportIssue(env, format, iss, fmt.Sprintf(v.did, iss.ID))
+	return reportIssue(env, format, out.Issue, line)
 }
 
 // reportIssue renders a completed command's result: a concise confirmation line
