@@ -7,7 +7,6 @@ import (
 
 	"github.com/builtbystef/beaver-backlog/internal/beavertest"
 	"github.com/builtbystef/beaver-backlog/internal/userconfig"
-	"github.com/builtbystef/beaver-backlog/internal/vcs"
 )
 
 // Overlapping signals are set on purpose so each case proves the precedence, not
@@ -84,78 +83,30 @@ func TestWhoamiPrecedence(t *testing.T) {
 	}
 }
 
-func TestWhoamiInteractiveSeedsFromVCSWithConfirmation(t *testing.T) {
+// The interactive prompt is free-form: whatever the human types becomes the
+// identity, and it is saved so later runs read it straight from config.
+func TestWhoamiInteractivePromptsForNameAndSaves(t *testing.T) {
 	h := beavertest.New(t).Init()
 	h.StdinIsTTY = true
-	h.VCS = &vcs.Fake{Name: "Ada Lovelace", Found: true}
-	h.StdinText = "\n" // Enter accepts the [Y/n] default
+	h.StdinText = "Grace Hopper\n"
 
 	r := h.MustRun("whoami", "--format", "json")
 	out := h.DecodeJSON(r.Stdout)
-	if out["actor"] != "Ada Lovelace" || out["source"] != "prompt" {
-		t.Errorf("resolved = %v/%v, want Ada Lovelace/prompt", out["actor"], out["source"])
+	if out["actor"] != "Grace Hopper" || out["source"] != "prompt" {
+		t.Errorf("resolved = %v/%v, want Grace Hopper/prompt", out["actor"], out["source"])
 	}
-	if !strings.Contains(r.Stderr, "Ada Lovelace") {
-		t.Errorf("the confirmation prompt should show the VCS name:\n%s", r.Stderr)
+	if !strings.Contains(r.Stderr, "identity") {
+		t.Errorf("the prompt should ask for an identity on stderr:\n%s", r.Stderr)
 	}
-	if got := savedActor(t, h); got != "Ada Lovelace" {
-		t.Errorf("confirmed identity was not saved: %q", got)
+	if got := savedActor(t, h); got != "Grace Hopper" {
+		t.Errorf("prompted identity was not saved: %q", got)
 	}
 
 	// The second run must not prompt, so an empty stdin is fine.
 	h.StdinText = ""
 	out2 := h.DecodeJSON(h.MustRun("whoami", "--format", "json").Stdout)
-	if out2["actor"] != "Ada Lovelace" || out2["source"] != "config" {
-		t.Errorf("second run = %v/%v, want Ada Lovelace/config", out2["actor"], out2["source"])
-	}
-}
-
-func TestWhoamiInteractiveDeclineVCSThenType(t *testing.T) {
-	h := beavertest.New(t).Init()
-	h.StdinIsTTY = true
-	h.VCS = &vcs.Fake{Name: "Git Name", Found: true}
-	h.StdinText = "n\nStefan\n" // decline the seed, then type a name
-
-	out := h.DecodeJSON(h.MustRun("whoami", "--format", "json").Stdout)
-	if out["actor"] != "Stefan" {
-		t.Errorf("actor = %v, want Stefan (typed after declining the seed)", out["actor"])
-	}
-	if got := savedActor(t, h); got != "Stefan" {
-		t.Errorf("typed identity was not saved: %q", got)
-	}
-}
-
-func TestWhoamiInteractiveNoVCSPromptsForName(t *testing.T) {
-	h := beavertest.New(t).Init()
-	h.StdinIsTTY = true
-	h.VCS = nil // no adapter configured
-	h.StdinText = "Grace Hopper\n"
-
-	out := h.DecodeJSON(h.MustRun("whoami", "--format", "json").Stdout)
-	if out["actor"] != "Grace Hopper" || out["source"] != "prompt" {
-		t.Errorf("resolved = %v/%v, want Grace Hopper/prompt", out["actor"], out["source"])
-	}
-	if got := savedActor(t, h); got != "Grace Hopper" {
-		t.Errorf("prompted identity was not saved: %q", got)
-	}
-}
-
-// An agent inheriting the human's Git config must not claim work under the human's
-// name, so a non-interactive run never uses the VCS name and saves nothing.
-func TestVCSNameNeverUsedNonInteractively(t *testing.T) {
-	h := beavertest.New(t).Init()
-	h.StdinIsTTY = false // the key: not an interactive session
-	h.VCS = &vcs.Fake{Name: "Human Git Name", Found: true}
-
-	out := h.DecodeJSON(h.MustRun("whoami", "--format", "json").Stdout)
-	if out["actor"] == "Human Git Name" {
-		t.Fatal("a non-interactive run adopted the human's VCS name; it must not")
-	}
-	if out["actor"] != "agent" || out["source"] != "fallback" {
-		t.Errorf("resolved = %v/%v, want agent/fallback", out["actor"], out["source"])
-	}
-	if got := savedActor(t, h); got != "" {
-		t.Errorf("a non-interactive run saved an identity (%q); it must not", got)
+	if out2["actor"] != "Grace Hopper" || out2["source"] != "config" {
+		t.Errorf("second run = %v/%v, want Grace Hopper/config", out2["actor"], out2["source"])
 	}
 }
 
@@ -204,7 +155,6 @@ func TestWhoamiHumanPrintsName(t *testing.T) {
 func TestWhoamiInteractiveNoInputErrors(t *testing.T) {
 	h := beavertest.New(t).Init()
 	h.StdinIsTTY = true
-	h.VCS = nil
 	h.StdinText = "" // interactive, but the human provides no name
 
 	r := h.Run("whoami", "--format", "json")
@@ -219,8 +169,7 @@ func TestWhoamiInteractiveNoInputErrors(t *testing.T) {
 func TestInitSeedsIdentityInteractively(t *testing.T) {
 	h := beavertest.New(t) // not yet initialized
 	h.StdinIsTTY = true
-	h.VCS = &vcs.Fake{Name: "Ada Lovelace", Found: true}
-	h.StdinText = "\n" // accept the VCS seed
+	h.StdinText = "Ada Lovelace\n"
 
 	out := h.DecodeJSON(h.MustRun("init").Stdout)
 	if out["actor"] != "Ada Lovelace" {
@@ -244,7 +193,7 @@ func TestInitSeedsIdentityInteractively(t *testing.T) {
 func TestInitDoesNotSeedNonInteractively(t *testing.T) {
 	h := beavertest.New(t)
 	h.StdinIsTTY = false
-	h.VCS = &vcs.Fake{Name: "Ada Lovelace", Found: true}
+	h.StdinText = "Ada Lovelace\n" // available, but a non-interactive init must not read it
 
 	out := h.DecodeJSON(h.MustRun("init").Stdout)
 	if _, ok := out["actor"]; ok {
@@ -259,7 +208,6 @@ func TestInitIdentitySeedingIsIdempotent(t *testing.T) {
 	h := beavertest.New(t)
 	saveActor(t, h, "existing")
 	h.StdinIsTTY = true
-	h.VCS = &vcs.Fake{Name: "Different Name", Found: true}
 	h.StdinText = "" // if init prompted, an empty read would error; it must not prompt
 
 	out := h.DecodeJSON(h.MustRun("init").Stdout)

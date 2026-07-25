@@ -10,7 +10,6 @@ import (
 	"io"
 
 	"github.com/builtbystef/beaver-backlog/internal/clock"
-	"github.com/builtbystef/beaver-backlog/internal/vcs"
 )
 
 // Exit codes. 0 is success; the rest are stable so scripts and agents can branch
@@ -37,7 +36,6 @@ type Env struct {
 	Edit          func(string) error  // open a file in the user's editor, blocking until it exits; nil means no editor, so edit and interactive create refuse rather than hang
 	StdoutIsTTY   bool                // whether stdout is an interactive terminal
 	StdinIsTTY    bool                // whether stdin is interactive; gates human identity setup
-	VCS           vcs.System          // version-control integration (identity seed + commit); nil means no adapter
 	UserConfigDir string              // per-machine user-config dir; identity lives here, never committed
 }
 

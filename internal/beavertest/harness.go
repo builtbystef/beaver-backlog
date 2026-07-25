@@ -16,7 +16,6 @@ import (
 
 	"github.com/builtbystef/beaver-backlog/internal/cli"
 	"github.com/builtbystef/beaver-backlog/internal/issue"
-	"github.com/builtbystef/beaver-backlog/internal/vcs"
 )
 
 // DefaultNow is the instant the harness clock starts at, unless a test changes
@@ -51,8 +50,7 @@ type Harness struct {
 	Env           map[string]string  // environment seen by the CLI
 	IsTTY         bool               // whether stdout looks interactive (default false → JSON)
 	StdinIsTTY    bool               // the interactivity signal that gates human identity setup (default false)
-	StdinText     string             // interactive input fed to prompts (identity confirmation)
-	VCS           vcs.System         // VCS integration (identity seed + commit); nil means no adapter
+	StdinText     string             // interactive input fed to prompts (the identity prompt)
 	NewID         func() string      // ID generator override; nil uses the real one
 	Editor        func(string) error // fake editor: given a file path, it may rewrite the file to simulate a human editing in $EDITOR; nil means no editor is available
 }
@@ -92,7 +90,6 @@ func (h *Harness) Run(args ...string) Result {
 		Edit:          h.Editor,
 		StdoutIsTTY:   h.IsTTY,
 		StdinIsTTY:    h.StdinIsTTY,
-		VCS:           h.VCS,
 		UserConfigDir: h.UserConfigDir,
 	})
 	return Result{Code: code, Stdout: stdout.String(), Stderr: stderr.String()}

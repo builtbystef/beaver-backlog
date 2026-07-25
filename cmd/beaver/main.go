@@ -12,24 +12,21 @@ import (
 	"github.com/builtbystef/beaver-backlog/internal/cli"
 	"github.com/builtbystef/beaver-backlog/internal/clock"
 	"github.com/builtbystef/beaver-backlog/internal/issue"
-	"github.com/builtbystef/beaver-backlog/internal/vcs"
 )
 
 func main() {
-	wd := workDir()
 	os.Exit(cli.Run(cli.Env{
 		Args:          os.Args[1:],
 		Stdin:         os.Stdin,
 		Stdout:        os.Stdout,
 		Stderr:        os.Stderr,
-		WorkDir:       wd,
+		WorkDir:       workDir(),
 		Getenv:        os.Getenv,
 		Clock:         clock.System(),
 		NewID:         issue.NewID,
 		Edit:          editor(os.Getenv),
 		StdoutIsTTY:   term.IsTerminal(int(os.Stdout.Fd())),
 		StdinIsTTY:    term.IsTerminal(int(os.Stdin.Fd())),
-		VCS:           vcs.Git{Dir: wd}, // reference adapter: reads the identity seed from git
 		UserConfigDir: userConfigDir(),
 	}))
 }

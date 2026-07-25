@@ -15,18 +15,12 @@ import (
 type Config struct {
 	// FormatVersion records the on-disk layout the store was created with.
 	FormatVersion int `yaml:"format_version"`
-
-	// CommitOnDone opts the project in to commit-per-issue: when true, `beaver done`
-	// records each completed issue as its own atomic commit through the configured
-	// VCS adapter. Defaults to false — by default nothing is committed and no VCS
-	// is required.
-	CommitOnDone bool `yaml:"commit_on_done"`
 }
 
 // Config reads the project configuration from .beaver/config.yml. A missing
-// file yields defaults (shipped format version, commit-on-done off), not an
-// error; a present-but-unparseable file is a real error. Unknown keys are
-// tolerated for forward compatibility.
+// file yields defaults (the shipped format version), not an error; a
+// present-but-unparseable file is a real error. Unknown keys are tolerated for
+// forward compatibility.
 func (s *Store) Config() (Config, error) {
 	cfg := Config{FormatVersion: FormatVersion}
 	data, err := os.ReadFile(s.ConfigPath())
@@ -42,19 +36,13 @@ func (s *Store) Config() (Config, error) {
 	return cfg, nil
 }
 
-// defaultConfig is the config file Init writes: the format version, plus a
-// commented-out pointer to the opt-in commit-on-done setting so a user
-// discovers the feature by reading the file.
+// defaultConfig is the config file Init writes: the format version, the one
+// project-wide setting there is.
 func defaultConfig() []byte {
 	return fmt.Appendf(nil,
 		`# Beaver Backlog project configuration.
 # Committed and shared through version control, like the issues themselves.
 # Safe to read and edit by hand.
 format_version: %d
-
-# Optionally let Beaver Backlog drive your VCS. With commit_on_done enabled, "beaver done"
-# records each completed issue as its own atomic commit through the Git adapter.
-# Off by default: Beaver Backlog otherwise commits nothing and never requires a VCS.
-# commit_on_done: true
 `, FormatVersion)
 }

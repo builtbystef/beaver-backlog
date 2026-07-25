@@ -9,7 +9,7 @@ import (
 )
 
 // A freshly initialized store reads back the defaults: the shipped format
-// version and commit-on-done off.
+// version.
 func TestConfigDefaultsAfterInit(t *testing.T) {
 	st, _ := store.Discover(newStore(t))
 	cfg, err := st.Config()
@@ -18,23 +18,6 @@ func TestConfigDefaultsAfterInit(t *testing.T) {
 	}
 	if cfg.FormatVersion != store.FormatVersion {
 		t.Errorf("FormatVersion = %d, want %d", cfg.FormatVersion, store.FormatVersion)
-	}
-	if cfg.CommitOnDone {
-		t.Error("CommitOnDone = true by default, want false (Beaver Backlog commits nothing by default)")
-	}
-}
-
-func TestConfigReadsCommitOnDone(t *testing.T) {
-	root := newStore(t)
-	writeConfig(t, root, "format_version: 1\ncommit_on_done: true\n")
-
-	st, _ := store.Discover(root)
-	cfg, err := st.Config()
-	if err != nil {
-		t.Fatalf("Config: %v", err)
-	}
-	if !cfg.CommitOnDone {
-		t.Error("CommitOnDone = false, want true when the config enables it")
 	}
 }
 
@@ -49,7 +32,7 @@ func TestConfigMissingFileIsDefault(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Config with no file: %v", err)
 	}
-	if cfg.CommitOnDone || cfg.FormatVersion != store.FormatVersion {
+	if cfg.FormatVersion != store.FormatVersion {
 		t.Errorf("missing-file config = %+v, want defaults", cfg)
 	}
 }
@@ -57,13 +40,13 @@ func TestConfigMissingFileIsDefault(t *testing.T) {
 // Unknown keys are tolerated (forward compatibility); malformed YAML is a real error.
 func TestConfigToleratesUnknownAndRejectsMalformed(t *testing.T) {
 	root := newStore(t)
-	writeConfig(t, root, "format_version: 1\ncommit_on_done: true\nfuture_setting: 42\n")
+	writeConfig(t, root, "format_version: 1\nfuture_setting: 42\n")
 	st, _ := store.Discover(root)
-	if cfg, err := st.Config(); err != nil || !cfg.CommitOnDone {
+	if cfg, err := st.Config(); err != nil || cfg.FormatVersion != 1 {
 		t.Errorf("unknown key should be ignored: cfg=%+v err=%v", cfg, err)
 	}
 
-	writeConfig(t, root, "format_version: 1\ncommit_on_done: [not a bool\n")
+	writeConfig(t, root, "format_version: [not a number\n")
 	if _, err := st.Config(); err == nil {
 		t.Error("malformed config returned no error")
 	}

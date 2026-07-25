@@ -1,11 +1,12 @@
 ---
 id: 8sr966
 title: Remove VCS integration from the code
-state: todo
+state: done
+assignee: claude
 priority: medium
 parent: tlz52g
 created: 2026-07-25T08:47:52Z
-updated: 2026-07-25T08:47:52Z
+updated: 2026-07-25T09:00:01Z
 ---
 
 ## What to build

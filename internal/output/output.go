@@ -69,17 +69,6 @@ func WriteIssueWithRelationship(w io.Writer, iss issue.Issue, rel issue.Relation
 	return err
 }
 
-// WriteIssueWithCommit renders one issue together with the completion commit
-// the command may have recorded. In JSON the "commit" object is always present
-// beside the same issue fields — null when no commit was made — so consumers
-// see one constant shape. Human output stays the plain issue.
-func WriteIssueWithCommit(w io.Writer, iss issue.Issue, revision string, f Format) error {
-	if f == JSON {
-		return WriteJSON(w, issueWithCommit{jsonView: toJSONView(iss), Commit: toCommitView(revision)})
-	}
-	return writeHuman(w, iss)
-}
-
 // WriteList renders a collection of issues in the given format, preserving the
 // caller's order. JSON is an array of the same per-issue objects WriteIssue
 // emits; human output is an aligned table.
@@ -247,26 +236,6 @@ func toNoteViews(notes []issue.Note) []noteView {
 		views[i] = noteView{Author: n.Author, Time: formatTime(n.Time), Text: n.Text}
 	}
 	return views
-}
-
-// issueWithCommit is the base jsonView plus an always-present "commit" key:
-// the completion commit when one was recorded, null otherwise.
-type issueWithCommit struct {
-	jsonView
-	Commit *commitView `json:"commit"`
-}
-
-// commitView is the completion commit in JSON: the short revision the VCS
-// adapter reported.
-type commitView struct {
-	Revision string `json:"revision"`
-}
-
-func toCommitView(revision string) *commitView {
-	if revision == "" {
-		return nil
-	}
-	return &commitView{Revision: revision}
 }
 
 // issueWithRel is the base jsonView plus an additive "relationships" object

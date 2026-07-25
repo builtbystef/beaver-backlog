@@ -33,8 +33,7 @@ func cmdInit(env Env, args []string) int {
 
 	// Seed the runner's identity so the common solo case is "one command and
 	// you're ready". This only happens interactively and only when nothing is
-	// saved yet — a non-interactive init (agent or CI) neither prompts nor
-	// borrows the human's VCS name.
+	// saved yet — a non-interactive init (agent or CI) never prompts.
 	seeded := seedIdentity(env)
 
 	if format == output.JSON {

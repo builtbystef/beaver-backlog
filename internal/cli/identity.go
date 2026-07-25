@@ -15,11 +15,10 @@ import (
 //  1. --as <actor>         explicit, always wins
 //  2. BEAVER_BACKLOG_ACTOR    explicit override (agents, CI)
 //  3. agent detection      AGENT, else a known marker (CLAUDECODE → claude, …)
-//  4. interactive human    the saved user-config identity; if unset, seed from the
-//                          VCS and confirm, or prompt, then save
+//  4. interactive human    the saved user-config identity; if unset, prompt, then save
 //  5. non-interactive      a loud generic `agent` when nothing above matched
 //
-// The human's stored/VCS identity (step 4) is consulted only in an interactive
+// The human's stored identity (step 4) is consulted only in an interactive
 // session — a non-interactive run never borrows it — and a human's identity is
 // never placed in BEAVER_BACKLOG_ACTOR, which a child agent would inherit and act
 // under.
@@ -101,9 +100,8 @@ func knownAgent(getenv func(string) string) (string, bool) {
 	return "", false
 }
 
-// establishHumanIdentity prompts for a name (offering the VCS identity for
-// confirmation) and saves it to user-level config so later interactive runs skip
-// the prompt.
+// establishHumanIdentity prompts for a name and saves it to user-level config so
+// later interactive runs skip the prompt.
 func establishHumanIdentity(env Env) (string, error) {
 	name, err := promptForIdentity(env)
 	if err != nil {
@@ -120,38 +118,11 @@ func establishHumanIdentity(env Env) (string, error) {
 }
 
 // promptForIdentity asks the human for their name and reads the answer from
-// stdin. A VCS identity is offered as a confirmable default; declining falls to a
-// free-form prompt. Prompts go to stderr so they never pollute stdout, which a
-// caller may be capturing.
+// stdin. The prompt goes to stderr so it never pollutes stdout, which a caller
+// may be capturing.
 func promptForIdentity(env Env) (string, error) {
-	r := bufio.NewReader(env.Stdin)
-	if seed, ok := vcsIdentity(env); ok {
-		fmt.Fprintf(env.Stderr, "Use %q as your Beaver Backlog identity? [Y/n] ", seed)
-		line, err := readReply(r)
-		if err != nil {
-			return "", err
-		}
-		if isYes(line) {
-			return seed, nil
-		}
-	}
 	fmt.Fprint(env.Stderr, "Enter your Beaver Backlog identity (a name): ")
-	return readReply(r)
-}
-
-// vcsIdentity reads the configured VCS identity to seed the interactive
-// confirmation. A nil System, a not-found result, or any error all mean "no
-// seed", and resolution prompts for a name instead.
-func vcsIdentity(env Env) (string, bool) {
-	if env.VCS == nil {
-		return "", false
-	}
-	name, found, err := env.VCS.Identity()
-	if err != nil || !found {
-		return "", false
-	}
-	name = strings.TrimSpace(name)
-	return name, name != ""
+	return readReply(bufio.NewReader(env.Stdin))
 }
 
 // warnGenericAgent tells stderr that work is being attributed to the shared
@@ -171,17 +142,6 @@ func readReply(r *bufio.Reader) (string, error) {
 		return "", fmt.Errorf("reading identity: %w", err)
 	}
 	return line, nil
-}
-
-// isYes reports whether a reply accepts the offered default. An empty reply (a
-// bare Enter) accepts, since the prompt shows an uppercase default.
-func isYes(reply string) bool {
-	switch strings.ToLower(strings.TrimSpace(reply)) {
-	case "", "y", "yes":
-		return true
-	default:
-		return false
-	}
 }
 
 // cmdWhoami prints the actor Beaver Backlog resolves for the current environment. It

@@ -20,21 +20,16 @@ type verb struct {
 	did     string // human confirmation on a real transition; one %s (id)
 	already string // human line when already at target; one %s (id)
 	reject  string // stderr guidance when the current state forbids it; two %s (id, current state)
-
-	// completes marks the verb that finishes an issue (done), which may record
-	// the opt-in commit-per-issue.
-	completes bool
 }
 
 var (
 	verbDone = verb{
-		name:      "done",
-		target:    issue.StateDone,
-		sources:   []issue.State{issue.StateTodo, issue.StateInProgress},
-		did:       "Marked %s done",
-		already:   "%s is already done",
-		reject:    "%s is %s; reopen it first to mark it done",
-		completes: true,
+		name:    "done",
+		target:  issue.StateDone,
+		sources: []issue.State{issue.StateTodo, issue.StateInProgress},
+		did:     "Marked %s done",
+		already: "%s is already done",
+		reject:  "%s is %s; reopen it first to mark it done",
 	}
 	verbCancel = verb{
 		name:    "cancel",
@@ -119,50 +114,17 @@ func runTransition(env Env, args []string, v verb) int {
 
 	case transRedundant:
 		// Idempotent no-op: report without rewriting, so `updated` and the file
-		// bytes stay untouched. The completing verb still uses the
-		// commit-carrying shape so done's JSON is constant across no-op and
-		// real transitions.
-		line := fmt.Sprintf(v.already, iss.ID)
-		if v.completes {
-			return reportCompletion(env, format, iss, "", line)
-		}
-		return reportIssue(env, format, iss, line)
+		// bytes stay untouched.
+		return reportIssue(env, format, iss, fmt.Sprintf(v.already, iss.ID))
 	}
 
 	iss.State = v.target
 	iss.Updated = env.Clock.Now().UTC().Truncate(time.Second)
-	newPath, err := st.Update(path, iss)
-	if err != nil {
+	if _, err := st.Update(path, iss); err != nil {
 		errf(env, "%v", err)
 		return exitError
 	}
-
-	line := fmt.Sprintf(v.did, iss.ID)
-	// The opt-in completion commit runs only after the file is safely written
-	// and never fails the command — the issue is done regardless.
-	if v.completes {
-		rev := commitCompletion(env, st, iss, commitPaths(newPath, path))
-		if rev != "" {
-			line += fmt.Sprintf(" (committed %s)", rev)
-		}
-		return reportCompletion(env, format, iss, rev, line)
-	}
-	return reportIssue(env, format, iss, line)
-}
-
-// reportCompletion is reportIssue for the completing verb: the JSON result adds
-// an always-present "commit" key (null when no commit was made), so done's JSON
-// has one constant shape.
-func reportCompletion(env Env, format output.Format, iss issue.Issue, revision, humanLine string) int {
-	if format == output.Human {
-		fmt.Fprintln(env.Stdout, humanLine)
-		return exitOK
-	}
-	if err := output.WriteIssueWithCommit(env.Stdout, iss, revision, output.JSON); err != nil {
-		errf(env, "%v", err)
-		return exitError
-	}
-	return exitOK
+	return reportIssue(env, format, iss, fmt.Sprintf(v.did, iss.ID))
 }
 
 // reportIssue renders a completed command's result: a concise confirmation line
