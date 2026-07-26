@@ -23,12 +23,15 @@ invokes a version-control system; committing the files is the operator's job.
   tests substitute args, stdio, clock, and editor wholesale.
 - `internal/core/` — the application layer over a store: opening it, reading
   one issue with its derived relationships, querying with filters and ordering,
-  and the lifecycle writes (legal state transitions and starting work, with its
-  ownership guard and dependency report). It knows nothing of flags, terminals,
-  or exit codes — failures are typed errors, skipped files come back as data —
-  so any interface can call the same rules. Every write stamps `updated` in one
-  place, and an operation that changes nothing writes nothing. The rules the
-  extraction has not moved yet still sit in `internal/cli`.
+  the lifecycle writes (legal state transitions and starting work, with its
+  ownership guard and dependency report), creation (a draft validated, its edges
+  resolved to ids, an id minted collision-safe — plus the compose/finish/abandon
+  moves an interactive authoring is driven through), and the coordination log.
+  It knows nothing of flags, terminals, or exit codes — failures are typed
+  errors, skipped files come back as data — so any interface can call the same
+  rules. Every timestamp it stamps comes from one place, and an operation that
+  changes nothing writes nothing. The rules the extraction has not moved yet
+  still sit in `internal/cli`.
 - `internal/issue/` — the issue model: parsing, serializing, validation, and
   relationships (`depends_on`, `parent`), including the derived
   blocked/ready/stuck conditions.

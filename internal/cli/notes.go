@@ -3,9 +3,6 @@ package cli
 import (
 	"fmt"
 	"strings"
-	"time"
-
-	"github.com/builtbystef/beaver-backlog/internal/issue"
 )
 
 // cmdNote appends an attributed, timestamped entry under the issue body's
@@ -34,29 +31,24 @@ func cmdNote(env Env, args []string) int {
 		return exitUsage
 	}
 
-	st, err := discover(env)
+	svc, err := open(env)
 	if err != nil {
-		return storeError(env, err)
-	}
-	iss, path, code := resolveRef(env, st, pos[0])
-	if code != exitOK {
-		return code
+		return coreError(env, err)
 	}
 
-	// Resolve the actor only once the reference is known good, so a typo'd ref
-	// fails fast without triggering an interactive identity prompt.
+	// The core takes the actor as a value, so identity is resolved before the
+	// call — after the store is found, so no interactive prompt fires outside a
+	// store.
 	me, err := resolveActor(env, *asFlag)
 	if err != nil {
 		errf(env, "%v", err)
 		return exitError
 	}
 
-	now := env.Clock.Now().UTC().Truncate(time.Second)
-	iss.Body = issue.AppendNote(iss.Body, issue.Note{Author: me.name, Time: now, Text: text})
-	iss.Updated = now
-	if _, err := st.Update(path, iss); err != nil {
-		errf(env, "%v", err)
-		return exitError
+	out, err := svc.Note(pos[0], me.name, text)
+	warnSkipped(env, out.Warnings)
+	if err != nil {
+		return coreError(env, err)
 	}
-	return reportIssue(env, format, iss, fmt.Sprintf("Added note to %s as %s", iss.ID, me.name))
+	return reportIssue(env, format, out.Issue, fmt.Sprintf("Added note to %s as %s", out.Issue.ID, me.name))
 }

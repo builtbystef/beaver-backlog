@@ -70,12 +70,12 @@ func cmdList(env Env, args []string) int {
 
 	svc, err := open(env)
 	if err != nil {
-		return coreError(env, "", err)
+		return coreError(env, err)
 	}
 	listing, err := svc.List(q)
 	warnSkipped(env, listing.Warnings)
 	if err != nil {
-		return coreError(env, "", err)
+		return coreError(env, err)
 	}
 
 	if err := output.WriteList(env.Stdout, listing.Issues, format); err != nil {

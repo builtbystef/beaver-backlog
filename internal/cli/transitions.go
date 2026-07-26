@@ -72,7 +72,7 @@ func runTransition(env Env, args []string, v verb) int {
 
 	svc, err := open(env)
 	if err != nil {
-		return coreError(env, ref, err)
+		return coreError(env, err)
 	}
 	out, err := svc.Transition(ref, v.target)
 	warnSkipped(env, out.Warnings)
@@ -82,7 +82,7 @@ func runTransition(env Env, args []string, v verb) int {
 			errf(env, v.reject, illegal.ID, illegal.From)
 			return exitUsage
 		}
-		return coreError(env, ref, err)
+		return coreError(env, err)
 	}
 
 	// An unchanged outcome is the idempotent no-op: the issue was already at the

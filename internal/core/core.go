@@ -27,6 +27,17 @@ var (
 	ErrNotFound = errors.New("issue not found")
 )
 
+// UnknownRefError reports that a reference matched no issue, carrying the
+// reference so a caller can name it without having to remember which of several
+// references an operation was given. It unwraps to ErrNotFound.
+type UnknownRefError struct {
+	Ref string // the reference as given
+}
+
+func (e *UnknownRefError) Error() string { return fmt.Sprintf("no issue matches %q", e.Ref) }
+
+func (e *UnknownRefError) Unwrap() error { return ErrNotFound }
+
 // AmbiguousRefError reports that a reference names several issues rather than
 // one — the case of a slug two issues share. It carries the candidates (sorted
 // by ID) so a caller can list them, and unwraps to ErrNotFound because the
@@ -156,18 +167,30 @@ func resolve(snap *store.Snapshot, ref string) (issue.Issue, string, error) {
 	case errors.As(err, &shared):
 		return issue.Issue{}, "", &AmbiguousRefError{Ref: shared.Slug, Matches: shared.Matches}
 	case errors.Is(err, store.ErrNotFound):
-		return issue.Issue{}, "", fmt.Errorf("%w: %s", ErrNotFound, ref)
+		return issue.Issue{}, "", &UnknownRefError{Ref: ref}
 	default:
 		return issue.Issue{}, "", err
 	}
 }
 
-// write records a modified issue, stamping `updated` from the service clock and
-// returning the issue as it was written. Every write goes through it, so the
-// timestamp policy — UTC, truncated to the second — lives in one place, and no
-// path that decides nothing changed can bump the stamp by accident.
+// now is the instant a write records: the service clock in UTC, truncated to
+// the second. Every timestamp the core stamps — an issue's created and updated,
+// a note's time — comes from here, so the policy lives in exactly one place.
+func (s *Service) now() time.Time { return s.clock.Now().UTC().Truncate(time.Second) }
+
+// write records a modified issue, stamping `updated` with the current instant
+// and returning the issue as it was written. Every modification goes through it
+// or writeAt, so no path that decides nothing changed can bump the stamp by
+// accident.
 func (s *Service) write(path string, iss issue.Issue) (issue.Issue, error) {
-	iss.Updated = s.clock.Now().UTC().Truncate(time.Second)
+	return s.writeAt(path, iss, s.now())
+}
+
+// writeAt is write with the instant supplied, for an operation that records the
+// same moment inside the issue as in its `updated` — a note's timestamp, which
+// would otherwise be drawn from a second reading of the clock.
+func (s *Service) writeAt(path string, iss issue.Issue, now time.Time) (issue.Issue, error) {
+	iss.Updated = now
 	if _, err := s.store.Update(path, iss); err != nil {
 		return issue.Issue{}, err
 	}

@@ -40,25 +40,6 @@ func resolveRef(env Env, st resolver, ref string) (iss issue.Issue, path string,
 	}
 }
 
-// resolveEdges turns raw relationship references into canonical issue ids,
-// deduping by resolved id while preserving first-seen order. The first
-// reference that does not resolve is reported and its non-OK code returned, so
-// a typo fails fast instead of persisting as a dangling edge.
-func resolveEdges(env Env, st resolver, refs []string) (ids []string, code int) {
-	seen := make(map[string]bool)
-	for _, ref := range refs {
-		iss, _, code := resolveRef(env, st, ref)
-		if code != exitOK {
-			return nil, code
-		}
-		if !seen[iss.ID] {
-			seen[iss.ID] = true
-			ids = append(ids, iss.ID)
-		}
-	}
-	return ids, exitOK
-}
-
 // reportSharedSlug explains that a slug names several issues and lists them so
 // the user can pick one by its unique ID.
 func reportSharedSlug(env Env, e *store.SharedSlugError) {

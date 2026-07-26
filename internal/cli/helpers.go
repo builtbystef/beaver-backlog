@@ -59,12 +59,15 @@ func open(env Env) (*core.Service, error) {
 }
 
 // coreError maps a failure from the core onto this CLI's diagnostic and exit
-// code. ref is the reference the command was given — it names the issue in a
-// not-found message, and is empty for a command that resolved none.
-func coreError(env Env, ref string, err error) int {
-	// AmbiguousRefError unwraps to ErrNotFound, so it must be matched before the
-	// generic not-found branch swallows it.
+// code. The reference a failure is about travels in the error itself, so a
+// command that resolved several — create, with its edges — still reports the one
+// at fault.
+func coreError(env Env, err error) int {
+	// Both ref errors unwrap to ErrNotFound, so they must be matched before the
+	// generic not-found branch swallows them.
 	var ambiguous *core.AmbiguousRefError
+	var unknown *core.UnknownRefError
+	var invalid *core.ValidationError
 	switch {
 	case errors.Is(err, core.ErrNoStore):
 		errf(env, "not a Beaver Backlog store; run `beaver init`")
@@ -72,9 +75,18 @@ func coreError(env Env, ref string, err error) int {
 	case errors.As(err, &ambiguous):
 		reportAmbiguous(env, ambiguous)
 		return exitNotFound
-	case errors.Is(err, core.ErrNotFound):
-		errf(env, "no issue found matching %q", ref)
+	case errors.As(err, &unknown):
+		errf(env, "no issue found matching %q", unknown.Ref)
 		return exitNotFound
+	case errors.Is(err, core.ErrNotFound):
+		// A not-found that names no reference: there is nothing to quote back.
+		errf(env, "no issue found")
+		return exitNotFound
+	case errors.As(err, &invalid):
+		// Input the core refuses describes an issue that cannot exist: the
+		// invocation was wrong, not the store.
+		errf(env, "%v", invalid)
+		return exitUsage
 	default:
 		errf(env, "%v", err)
 		return exitError

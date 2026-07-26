@@ -204,7 +204,7 @@ func cmdStart(env Env, args []string) int {
 
 	svc, err := open(env)
 	if err != nil {
-		return coreError(env, ref, err)
+		return coreError(env, err)
 	}
 
 	// The core takes the actor as a value, so identity is resolved before the
@@ -219,7 +219,7 @@ func cmdStart(env Env, args []string) int {
 	out, err := svc.Start(ref, me.name, *forceFlag)
 	warnSkipped(env, out.Warnings)
 	if err != nil {
-		return startError(env, ref, err)
+		return startError(env, err)
 	}
 
 	// The dependency warning is non-fatal, and the core reports the dependencies
@@ -246,7 +246,7 @@ func cmdStart(env Env, args []string) int {
 // startError maps start's own refusals onto its diagnostics: a closed issue must
 // be reopened first, and an issue another actor holds needs --force. Anything
 // else is a failure every command reports the same way.
-func startError(env Env, ref string, err error) int {
+func startError(env Env, err error) int {
 	var illegal *core.IllegalTransitionError
 	var claimed *core.ClaimedError
 	switch {
@@ -257,7 +257,7 @@ func startError(env Env, ref string, err error) int {
 		errf(env, "%s is claimed by %s; use --force to steal it", claimed.ID, claimed.By)
 		return exitUsage
 	default:
-		return coreError(env, ref, err)
+		return coreError(env, err)
 	}
 }
 

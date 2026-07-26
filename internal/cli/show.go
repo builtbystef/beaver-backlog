@@ -27,14 +27,14 @@ func cmdShow(env Env, args []string) int {
 
 	svc, err := open(env)
 	if err != nil {
-		return coreError(env, ref, err)
+		return coreError(env, err)
 	}
 	detail, err := svc.Get(ref)
 	// The scan's warnings stand on their own: a skipped file is worth reporting
 	// whether or not the reference then resolved.
 	warnSkipped(env, detail.Warnings)
 	if err != nil {
-		return coreError(env, ref, err)
+		return coreError(env, err)
 	}
 
 	if err := output.WriteIssueWithRelationship(env.Stdout, detail.Issue, detail.Relationship, format); err != nil {

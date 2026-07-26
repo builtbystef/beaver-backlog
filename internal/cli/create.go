@@ -1,17 +1,14 @@
 package cli
 
 import (
-	"errors"
 	"fmt"
 	"io"
 	"os"
 	"path/filepath"
 	"strings"
-	"time"
 
-	"github.com/builtbystef/beaver-backlog/internal/issue"
+	"github.com/builtbystef/beaver-backlog/internal/core"
 	"github.com/builtbystef/beaver-backlog/internal/output"
-	"github.com/builtbystef/beaver-backlog/internal/store"
 )
 
 // cmdCreate mints a new issue from a title, optionally wiring relationship
@@ -70,79 +67,50 @@ func cmdCreate(env Env, args []string) int {
 		return exitUsage
 	}
 
-	st, err := discover(env)
+	svc, err := open(env)
 	if err != nil {
-		return storeError(env, err)
+		return coreError(env, err)
 	}
-
-	// One snapshot answers every store question — edges, parent, id collision —
-	// so the command scans the files once, not once per question.
-	snap, err := st.Snapshot()
-	if err != nil {
-		errf(env, "%v", err)
-		return exitError
-	}
-
-	// Resolve relationship references to canonical ids before minting anything,
-	// so a typo'd --depends-on/--parent fails fast and the stored edges hold
-	// real ids, never slugs.
-	deps, code := resolveEdges(env, snap, dependsOn.values)
-	if code != exitOK {
-		return code
-	}
-	var parent string
-	if ref := strings.TrimSpace(*parentFlag); ref != "" {
-		p, _, c := resolveRef(env, snap, ref)
-		if c != exitOK {
-			return c
-		}
-		parent = p.ID
-	}
-
-	id, err := mintID(env, snap)
-	if err != nil {
-		errf(env, "%v", err)
-		return exitError
-	}
-
-	now := env.Clock.Now().UTC().Truncate(time.Second)
-	iss := issue.Issue{
-		ID:        id,
-		Title:     title, // empty in the interactive editor path; the human supplies it
-		State:     issue.StateTodo,
-		Priority:  priority,
-		Labels:    dedupe(labels.values), // nil when none, so the field marshals away
-		DependsOn: deps,
-		Parent:    parent,
-		Created:   now,
-		Updated:   now,
+	draft := core.Draft{
+		Title:     title,
 		Body:      body,
+		Labels:    labels.values,
+		Priority:  priority,
+		DependsOn: dependsOn.values,
+		Parent:    *parentFlag,
 	}
 
 	// With no title, the gate above has already guaranteed an interactive
-	// session with an editor, so authorInEditor can supply it — a --body given
+	// session with an editor, so the human supplies it there — a --body given
 	// alongside no title seeds the skeleton the editor opens on.
-	var path string
-	if title != "" {
-		if path, err = st.Write(iss); err != nil {
-			errf(env, "%v", err)
-			return exitError
-		}
-	} else {
-		var code int
-		if iss, path, code = authorInEditor(env, st, iss); code != exitOK {
+	if title == "" {
+		created, code := authorInEditor(env, svc, draft)
+		if code != exitOK {
 			return code
 		}
+		return reportCreated(env, format, created)
 	}
 
+	created, err := svc.Create(draft)
+	warnSkipped(env, created.Warnings)
+	if err != nil {
+		return coreError(env, err)
+	}
+	return reportCreated(env, format, created)
+}
+
+// reportCreated renders a created issue: a confirmation naming the file for a
+// human, or the issue itself as JSON for a machine.
+func reportCreated(env Env, format output.Format, created core.Created) int {
 	if format == output.JSON {
-		if err := output.WriteIssue(env.Stdout, iss, output.JSON); err != nil {
+		if err := output.WriteIssue(env.Stdout, created.Issue, output.JSON); err != nil {
 			errf(env, "%v", err)
 			return exitError
 		}
 		return exitOK
 	}
-	fmt.Fprintf(env.Stdout, "Created %s  %s\n  %s\n", iss.ID, iss.Title, relPath(env.WorkDir, path))
+	fmt.Fprintf(env.Stdout, "Created %s  %s\n  %s\n",
+		created.Issue.ID, created.Issue.Title, relPath(env.WorkDir, created.Path))
 	return exitOK
 }
 
@@ -176,16 +144,4 @@ func readBody(env Env, inline, file string) (string, int) {
 	default:
 		return inline, exitOK
 	}
-}
-
-// mintID generates a fresh ID, retrying on the rare collision with an existing
-// issue. The bound guards against a pathological generator, not a full store.
-func mintID(env Env, snap *store.Snapshot) (string, error) {
-	for range 100 {
-		id := env.NewID()
-		if !snap.IDTaken(id) {
-			return id, nil
-		}
-	}
-	return "", errors.New("could not generate a unique issue ID")
 }
