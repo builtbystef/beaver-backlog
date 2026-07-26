@@ -10,11 +10,11 @@ import (
 	"golang.org/x/term"
 
 	"github.com/builtbystef/beaver-backlog/internal/cli"
-	"github.com/builtbystef/beaver-backlog/internal/clock"
-	"github.com/builtbystef/beaver-backlog/internal/issue"
 )
 
 func main() {
+	// No core options: the real process wants the real clock and ID generator,
+	// which the core defaults to.
 	os.Exit(cli.Run(cli.Env{
 		Args:          os.Args[1:],
 		Stdin:         os.Stdin,
@@ -22,8 +22,6 @@ func main() {
 		Stderr:        os.Stderr,
 		WorkDir:       workDir(),
 		Getenv:        os.Getenv,
-		Clock:         clock.System(),
-		NewID:         issue.NewID,
 		Edit:          editor(os.Getenv),
 		StdoutIsTTY:   term.IsTerminal(int(os.Stdout.Fd())),
 		StdinIsTTY:    term.IsTerminal(int(os.Stdin.Fd())),

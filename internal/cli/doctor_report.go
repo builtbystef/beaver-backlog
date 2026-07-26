@@ -1,224 +1,116 @@
 package cli
 
-// This file holds doctor's report half: the finding and report types, the --fix
-// application, and the human and JSON renderings. The scanning lives in doctor.go.
+// This file holds doctor's presentation: the words each class of finding is
+// stated in, the paths rendered relative to where the command was run, and the
+// human and JSON shapes of the report. The findings themselves are the core's.
 
 import (
 	"fmt"
 	"io"
-	"path/filepath"
-	"sort"
 	"strings"
 	"text/tabwriter"
 
-	"github.com/builtbystef/beaver-backlog/internal/issue"
+	"github.com/builtbystef/beaver-backlog/internal/core"
 	"github.com/builtbystef/beaver-backlog/internal/output"
-	"github.com/builtbystef/beaver-backlog/internal/store"
 )
 
-// category is the class of a health problem. Declaration order is the report's
-// severity order, most serious first, so findings sort into a stable list.
-type category int
-
-const (
-	catInvalid category = iota
-	catDuplicateID
-	catCycle
-	catParentCycle
-	catDangling
-	catStuck
-	catUnknownKey
-	catUnknownValue
-	catNoTimestamp
-	catDrift
-)
-
-// advisory reports whether findings of this class are informational: reported, but
-// never counted toward the exit code or the ok flag. Unknown-key is advisory
-// because resemblance is only a guess — a deliberate custom field like `status`
-// sits within typo distance of `state` and must not fail an otherwise healthy
-// store.
-func (c category) advisory() bool { return c == catUnknownKey }
-
-// slug is the stable machine name of a category, used in JSON.
-func (c category) slug() string {
-	switch c {
-	case catInvalid:
-		return "invalid"
-	case catDuplicateID:
-		return "duplicate_id"
-	case catCycle:
-		return "dependency_cycle"
-	case catParentCycle:
-		return "parent_cycle"
-	case catDangling:
-		return "dangling_reference"
-	case catStuck:
-		return "stuck"
-	case catUnknownKey:
-		return "unknown_key"
-	case catUnknownValue:
-		return "unknown_value"
-	case catNoTimestamp:
-		return "missing_timestamp"
-	case catDrift:
-		return "filename_drift"
+// renderReport writes a health report in the resolved format.
+func renderReport(env Env, rep core.Report, format output.Format, fix bool) error {
+	if format == output.JSON {
+		return renderReportJSON(env, rep)
 	}
-	return "unknown"
+	return renderReportHuman(env, rep, fix)
 }
 
-// label is the short human name of a category, the left column of the human report.
-func (c category) label() string {
+// findingLabel is the short human name of a category, the left column of the
+// human report.
+func findingLabel(c core.Category) string {
 	switch c {
-	case catInvalid:
+	case core.CategoryInvalid:
 		return "invalid"
-	case catDuplicateID:
+	case core.CategoryDuplicateID:
 		return "duplicate id"
-	case catCycle:
+	case core.CategoryDependencyCycle:
 		return "cycle"
-	case catParentCycle:
+	case core.CategoryParentCycle:
 		return "parent cycle"
-	case catDangling:
+	case core.CategoryDanglingRef:
 		return "dangling ref"
-	case catStuck:
+	case core.CategoryStuck:
 		return "stuck"
-	case catUnknownKey:
+	case core.CategoryUnknownKey:
 		return "unknown key"
-	case catUnknownValue:
+	case core.CategoryUnknownValue:
 		return "unknown value"
-	case catNoTimestamp:
+	case core.CategoryMissingTimestamp:
 		return "missing time"
-	case catDrift:
+	case core.CategoryFilenameDrift:
 		return "filename drift"
 	}
 	return "problem"
 }
 
-// finding is one health problem. detail is a self-contained, human-readable summary
-// that doubles as the JSON message; file and ids expose the same anchors
-// structurally. Only filename drift is fixable and carries the fix payload; fixed
-// flips to true once --fix has renamed it.
-type finding struct {
-	cat     category
-	file    string   // relative path of the primary file, or "" when the finding spans files
-	ids     []string // issue ids the finding concerns
-	detail  string   // self-contained problem statement
-	fixable bool
-	fixed   bool
-
-	// Filename-drift repair payload and display target.
-	want   string      // canonical base name the file should have
-	fixSrc string      // absolute path to rename
-	fixIss issue.Issue // issue whose canonical name is the destination
-}
-
-// report is the whole health scan: how many valid issues were checked and every
-// finding, most serious first.
-type report struct {
-	checked  int
-	findings []finding
-}
-
-// remaining counts the non-advisory findings not repaired this run, which is what
-// the exit code and the ok flag turn on.
-func (r *report) remaining() int {
-	n := 0
-	for _, f := range r.findings {
-		if !f.fixed && !f.cat.advisory() {
-			n++
+// findingMessage states a finding in one self-contained line, which doubles as
+// the JSON message. It is built from the facts the core hands back rather than
+// carried with them, so the file names in it can be rendered relative to the
+// working directory and the wording stays this interface's.
+func findingMessage(env Env, f core.Finding) string {
+	id, path := firstID(f.IDs), relPath(env.WorkDir, f.Path())
+	switch f.Category {
+	case core.CategoryInvalid:
+		return fmt.Sprintf("%s: %v", path, f.Err)
+	case core.CategoryDuplicateID:
+		return fmt.Sprintf("id %s is used by %d files: %s",
+			id, len(f.Paths), strings.Join(relPaths(env, f.Paths), ", "))
+	case core.CategoryDependencyCycle:
+		return "dependency cycle: " + strings.Join(f.IDs, ", ")
+	case core.CategoryParentCycle:
+		// A single-issue cycle is an issue that is its own parent, which reads as
+		// nonsense described as a loop.
+		if len(f.IDs) == 1 {
+			return fmt.Sprintf("%s: is its own parent", id)
 		}
+		return "parent cycle: " + strings.Join(f.IDs, ", ")
+	case core.CategoryDanglingRef:
+		return fmt.Sprintf("%s: %s %s, but no such issue exists", id, f.Field, f.Target)
+	case core.CategoryStuck:
+		return fmt.Sprintf("%s: waits on cancelled %s", id, strings.Join(f.Cancelled, ", "))
+	case core.CategoryUnknownKey:
+		return fmt.Sprintf("%s: %q looks like a typo of %q", path, f.Key, f.Resembles)
+	case core.CategoryUnknownValue:
+		return fmt.Sprintf("%s: priority %q is not a recognized level (urgent|high|medium|low); no --priority filter will match it", id, f.Value)
+	case core.CategoryMissingTimestamp:
+		return fmt.Sprintf("%s: missing %s timestamp (an issue with no created time sorts as the oldest)",
+			id, strings.Join(f.Missing, " and "))
+	case core.CategoryFilenameDrift:
+		return fmt.Sprintf("%s: should be named %s", path, f.Canonical)
 	}
-	return n
+	return f.Category.String()
 }
 
-// advisoryCount counts the informational findings.
-func (r *report) advisoryCount() int {
-	n := 0
-	for _, f := range r.findings {
-		if f.cat.advisory() {
-			n++
-		}
-	}
-	return n
-}
-
-func (r *report) fixedCount() int {
-	n := 0
-	for _, f := range r.findings {
-		if f.fixed {
-			n++
-		}
-	}
-	return n
-}
-
-func (r *report) fixableCount() int {
-	n := 0
-	for _, f := range r.findings {
-		if f.fixable && !f.fixed {
-			n++
-		}
-	}
-	return n
-}
-
-// applyFixes renames each drifted file to its canonical name through the store,
-// which refuses to overwrite another file, so a fix never destroys data. Passes
-// repeat while any makes progress, so chained drifts that free each other's names
-// all resolve; a destination that stays occupied (a mutual swap) is left standing
-// and reported, never forced.
-func (r *report) applyFixes(st *store.Store) {
-	for {
-		progress := false
-		for i := range r.findings {
-			f := &r.findings[i]
-			if !f.fixable || f.fixed {
-				continue
-			}
-			newPath, err := st.Rename(f.fixSrc, f.fixIss)
-			if err != nil {
-				continue // destination taken (or a write error): leave it standing
-			}
-			f.fixed = true
-			f.want = filepath.Base(newPath)
-			progress = true
-		}
-		if !progress {
-			return
-		}
-	}
-}
-
-// render writes the report in the resolved format.
-func (r *report) render(w io.Writer, format output.Format, fix bool) error {
-	if format == output.JSON {
-		return r.renderJSON(w)
-	}
-	return r.renderHuman(w, fix)
-}
-
-// renderHuman writes a headline, an aligned class/detail table of the findings,
-// and a closing summary.
-func (r *report) renderHuman(w io.Writer, fix bool) error {
-	if len(r.findings) == 0 {
-		_, err := fmt.Fprintf(w, "No problems found (checked %d issue%s).\n", r.checked, plural(r.checked))
+// renderReportHuman writes a headline, an aligned class/detail table of the
+// findings, and a closing summary.
+func renderReportHuman(env Env, rep core.Report, fix bool) error {
+	if len(rep.Findings) == 0 {
+		_, err := fmt.Fprintf(env.Stdout, "No problems found (checked %d issue%s).\n", rep.Checked, plural(rep.Checked))
 		return err
 	}
 	var b strings.Builder
-	fmt.Fprintf(&b, "Found %s (checked %d issue%s):\n\n", foundClause(len(r.findings)-r.advisoryCount(), r.advisoryCount()), r.checked, plural(r.checked))
+	fmt.Fprintf(&b, "Found %s (checked %d issue%s):\n\n",
+		foundClause(len(rep.Findings)-rep.Advisories(), rep.Advisories()), rep.Checked, plural(rep.Checked))
 	tw := tabwriter.NewWriter(&b, 0, 0, 2, ' ', 0)
-	for _, f := range r.findings {
-		label, detail := f.cat.label(), f.detail
-		if f.fixed {
-			label, detail = "fixed", "renamed to "+f.want
+	for _, f := range rep.Findings {
+		class, detail := findingLabel(f.Category), findingMessage(env, f)
+		if f.Fixed {
+			class, detail = "fixed", "renamed to "+f.Canonical
 		}
-		fmt.Fprintf(tw, "  %s\t%s\n", label, detail)
+		fmt.Fprintf(tw, "  %s\t%s\n", class, detail)
 	}
 	tw.Flush()
 
 	b.WriteByte('\n')
-	writeSummary(&b, r, fix)
-	_, err := io.WriteString(w, b.String())
+	writeSummary(&b, rep, fix)
+	_, err := io.WriteString(env.Stdout, b.String())
 	return err
 }
 
@@ -241,10 +133,10 @@ const advisoryOnlyLine = "Advisory notes are informational and do not fail docto
 // writeSummary writes the closing line: before --fix, an offer to repair the
 // fixable findings; after --fix, an accounting of what was repaired and what still
 // needs a human.
-func writeSummary(b *strings.Builder, r *report, fix bool) {
-	remaining := r.remaining()
+func writeSummary(b *strings.Builder, rep core.Report, fix bool) {
+	remaining := rep.Problems()
 	if fix {
-		fixed := r.fixedCount()
+		fixed := rep.Fixed()
 		switch {
 		case fixed == 0 && remaining == 0:
 			fmt.Fprintln(b, advisoryOnlyLine)
@@ -257,7 +149,7 @@ func writeSummary(b *strings.Builder, r *report, fix bool) {
 		}
 		return
 	}
-	if n := r.fixableCount(); n > 0 {
+	if n := rep.Fixable(); n > 0 {
 		fmt.Fprintf(b, "%d of these can be fixed automatically — run `beaver doctor --fix`.\n", n)
 		return
 	}
@@ -292,44 +184,25 @@ type findingView struct {
 	Advisory bool     `json:"advisory"`
 }
 
-func (r *report) renderJSON(w io.Writer) error {
-	views := make([]findingView, len(r.findings))
-	for i, f := range r.findings {
+func renderReportJSON(env Env, rep core.Report) error {
+	views := make([]findingView, len(rep.Findings))
+	for i, f := range rep.Findings {
 		views[i] = findingView{
-			Category: f.cat.slug(),
-			File:     nilIfEmpty(f.file),
-			IDs:      strsOrEmpty(f.ids),
-			Message:  f.detail,
-			Fixable:  f.fixable,
-			Fixed:    f.fixed,
-			Advisory: f.cat.advisory(),
+			Category: f.Category.String(),
+			File:     nilIfEmpty(relPath(env.WorkDir, f.Path())),
+			IDs:      strsOrEmpty(f.IDs),
+			Message:  findingMessage(env, f),
+			Fixable:  f.Fixable,
+			Fixed:    f.Fixed,
+			Advisory: f.Category.Advisory(),
 		}
 	}
-	return output.WriteJSON(w, reportView{
-		OK:       r.remaining() == 0,
-		Checked:  r.checked,
-		Problems: r.remaining(),
-		Fixed:    r.fixedCount(),
+	return output.WriteJSON(env.Stdout, reportView{
+		OK:       rep.Problems() == 0,
+		Checked:  rep.Checked,
+		Problems: rep.Problems(),
+		Fixed:    rep.Fixed(),
 		Findings: views,
-	})
-}
-
-// sortFindings orders findings by category (most serious first), then file, first
-// id, and detail — a total order, so the report is deterministic regardless of
-// file iteration order.
-func sortFindings(fs []finding) {
-	sort.Slice(fs, func(i, j int) bool {
-		a, b := fs[i], fs[j]
-		if a.cat != b.cat {
-			return a.cat < b.cat
-		}
-		if a.file != b.file {
-			return a.file < b.file
-		}
-		if ai, bi := firstID(a.ids), firstID(b.ids); ai != bi {
-			return ai < bi
-		}
-		return a.detail < b.detail
 	})
 }
 
@@ -340,6 +213,16 @@ func firstID(ids []string) string {
 		return ""
 	}
 	return ids[0]
+}
+
+// relPaths renders every path relative to the working directory, in the order
+// given.
+func relPaths(env Env, paths []string) []string {
+	out := make([]string, len(paths))
+	for i, p := range paths {
+		out[i] = relPath(env.WorkDir, p)
+	}
+	return out
 }
 
 func nilIfEmpty(s string) *string {

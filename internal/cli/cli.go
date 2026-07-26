@@ -1,7 +1,8 @@
-// Package cli is the engine that turns a command invocation into actions on the
-// store and rendered output. Everything it depends on (arguments, stdio, the
-// working directory, the environment, the clock, and the ID generator) arrives
-// through an Env struct.
+// Package cli is the engine that turns a command invocation into a call on the
+// core and rendered output. Everything it depends on (arguments, stdio, the
+// working directory, the environment, the editor) arrives through an Env struct;
+// every command handler parses its invocation, calls the core, renders what comes
+// back, and maps the core's typed failures to exit codes.
 package cli
 
 import (
@@ -9,7 +10,7 @@ import (
 	"fmt"
 	"io"
 
-	"github.com/builtbystef/beaver-backlog/internal/clock"
+	"github.com/builtbystef/beaver-backlog/internal/core"
 )
 
 // Exit codes. 0 is success; the rest are stable so scripts and agents can branch
@@ -25,18 +26,21 @@ const (
 // real process; the test harness wires them to buffers, a temp directory, and a
 // fixed clock.
 type Env struct {
-	Args          []string            // arguments after the program name
-	Stdin         io.Reader           // interactive input (identity confirmation/prompt)
-	Stdout        io.Writer           // command output
-	Stderr        io.Writer           // diagnostics, errors, and interactive prompts
-	WorkDir       string              // directory the store is resolved from
-	Getenv        func(string) string // environment lookup
-	Clock         clock.Clock         // source of timestamps
-	NewID         func() string       // issue ID generator (injectable for tests)
-	Edit          func(string) error  // open a file in the user's editor, blocking until it exits; nil means no editor, so edit and interactive create refuse rather than hang
-	StdoutIsTTY   bool                // whether stdout is an interactive terminal
-	StdinIsTTY    bool                // whether stdin is interactive; gates human identity setup
-	UserConfigDir string              // per-machine user-config dir; identity lives here, never committed
+	Args    []string            // arguments after the program name
+	Stdin   io.Reader           // interactive input (identity confirmation/prompt)
+	Stdout  io.Writer           // command output
+	Stderr  io.Writer           // diagnostics, errors, and interactive prompts
+	WorkDir string              // directory the store is resolved from
+	Getenv  func(string) string // environment lookup
+	// CoreOptions configure the core service the handlers work through. Time and
+	// the identity of new issues are the application's seams, not this
+	// interface's, so they travel here rather than as fields of their own; an
+	// empty slice takes the real clock and ID generator.
+	CoreOptions   []core.Option
+	Edit          func(string) error // open a file in the user's editor, blocking until it exits; nil means no editor, so edit and interactive create refuse rather than hang
+	StdoutIsTTY   bool               // whether stdout is an interactive terminal
+	StdinIsTTY    bool               // whether stdin is interactive; gates human identity setup
+	UserConfigDir string             // per-machine user-config dir; identity lives here, never committed
 }
 
 // Run dispatches one command and returns its exit code. It never calls os.Exit;

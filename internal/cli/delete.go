@@ -26,28 +26,25 @@ func cmdDelete(env Env, args []string) int {
 		return exitUsage
 	}
 
-	st, err := discover(env)
+	svc, err := open(env)
 	if err != nil {
-		return storeError(env, err)
+		return coreError(env, err)
 	}
-
-	iss, path, code := resolveRef(env, st, pos[0])
-	if code != exitOK {
-		return code
-	}
-
-	if err := st.Delete(path); err != nil {
-		errf(env, "%v", err)
-		return exitError
+	deleted, err := svc.Delete(pos[0])
+	warnSkipped(env, deleted.Warnings)
+	if err != nil {
+		return coreError(env, err)
 	}
 
 	if format == output.JSON {
-		if err := output.WriteJSON(env.Stdout, map[string]any{"id": iss.ID, "title": iss.Title, "deleted": true}); err != nil {
+		result := map[string]any{"id": deleted.Issue.ID, "title": deleted.Issue.Title, "deleted": true}
+		if err := output.WriteJSON(env.Stdout, result); err != nil {
 			errf(env, "%v", err)
 			return exitError
 		}
 		return exitOK
 	}
-	fmt.Fprintf(env.Stdout, "Deleted %s  %s\n  removed %s\n", iss.ID, output.OneLine(iss.Title), relPath(env.WorkDir, path))
+	fmt.Fprintf(env.Stdout, "Deleted %s  %s\n  removed %s\n",
+		deleted.Issue.ID, output.OneLine(deleted.Issue.Title), relPath(env.WorkDir, deleted.Path))
 	return exitOK
 }

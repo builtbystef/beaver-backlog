@@ -3,8 +3,8 @@ package cli
 import (
 	"fmt"
 
+	"github.com/builtbystef/beaver-backlog/internal/core"
 	"github.com/builtbystef/beaver-backlog/internal/output"
-	"github.com/builtbystef/beaver-backlog/internal/store"
 	"github.com/builtbystef/beaver-backlog/internal/userconfig"
 )
 
@@ -25,7 +25,7 @@ func cmdInit(env Env, args []string) int {
 		return exitUsage
 	}
 
-	root, created, err := store.Init(env.WorkDir)
+	root, created, err := core.Init(env.WorkDir)
 	if err != nil {
 		errf(env, "%v", err)
 		return exitError

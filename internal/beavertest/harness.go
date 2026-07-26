@@ -15,6 +15,7 @@ import (
 	"time"
 
 	"github.com/builtbystef/beaver-backlog/internal/cli"
+	"github.com/builtbystef/beaver-backlog/internal/core"
 	"github.com/builtbystef/beaver-backlog/internal/issue"
 )
 
@@ -79,14 +80,15 @@ func (h *Harness) Run(args ...string) Result {
 	}
 	var stdout, stderr bytes.Buffer
 	code := cli.Run(cli.Env{
-		Args:          args,
-		Stdin:         strings.NewReader(h.StdinText),
-		Stdout:        &stdout,
-		Stderr:        &stderr,
-		WorkDir:       h.Dir,
-		Getenv:        func(k string) string { return h.Env[k] },
-		Clock:         h.Clock,
-		NewID:         newID,
+		Args:    args,
+		Stdin:   strings.NewReader(h.StdinText),
+		Stdout:  &stdout,
+		Stderr:  &stderr,
+		WorkDir: h.Dir,
+		Getenv:  func(k string) string { return h.Env[k] },
+		// The clock and the ID source belong to the application, so the fakes
+		// reach it as core options rather than as fields of the CLI's own env.
+		CoreOptions:   []core.Option{core.WithClock(h.Clock), core.WithIDSource(newID)},
 		Edit:          h.Editor,
 		StdoutIsTTY:   h.IsTTY,
 		StdinIsTTY:    h.StdinIsTTY,

@@ -23,9 +23,12 @@ mergeable only when all of them pass.
 
 ```
 cmd/beaver/          the binary: wires the real process to the CLI engine
-internal/cli/        one file per command, plus shared plumbing; the engine
-                     takes everything (args, stdio, clock, editor)
-                     through an Env struct so tests can substitute all of it
+internal/cli/        one file per command, plus shared plumbing; each handler
+                     parses, calls the core, renders, and maps errors to exit
+                     codes, taking everything (args, stdio, editor) through an
+                     Env struct so tests can substitute all of it
+internal/core/       the application layer over a store: the rules every
+                     interface shares, free of flags and exit codes
 internal/issue/      the issue model: parsing, serializing, validation,
                      relationships
 internal/store/      the .beaver store: discovery, scanning, writing, config

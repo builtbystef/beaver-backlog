@@ -85,6 +85,13 @@ func WithClock(c clock.Clock) Option { return func(s *Service) { s.clock = c } }
 // WithIDSource replaces the generator new issues draw their IDs from.
 func WithIDSource(gen func() string) Option { return func(s *Service) { s.newID = gen } }
 
+// Init creates the store dir will hold, returning its root and whether it was
+// newly made. It is idempotent: re-running over an existing store never clobbers
+// what is already there, so an interface can offer it as a safe repair.
+func Init(dir string) (root string, created bool, err error) {
+	return store.Init(dir)
+}
+
 // Open finds the store by walking up from dir and returns the service over it.
 // It returns ErrNoStore when neither dir nor any of its ancestors holds one.
 func Open(dir string, opts ...Option) (*Service, error) {

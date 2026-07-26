@@ -1,14 +1,14 @@
 ---
 id: 3agw9c
 title: Move doctor and delete into the core and finish the contraction
-state: todo
+state: done
 priority: medium
 depends_on:
     - 3o9a5b
     - u09zmf
 parent: kn7wzs
 created: 2026-07-25T08:47:52Z
-updated: 2026-07-25T08:47:52Z
+updated: 2026-07-26T20:24:47Z
 ---
 
 ## What to build

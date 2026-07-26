@@ -7,7 +7,7 @@ labels:
 depends_on:
     - tlz52g
 created: 2026-07-25T08:42:28Z
-updated: 2026-07-26T19:11:41Z
+updated: 2026-07-26T20:24:42Z
 ---
 
 # Extract a CLI-independent core
@@ -143,3 +143,15 @@ Outcome gained a Previous field — the issue as it stood before the call — an
 Cycle detection has no create-side counterpart to match. This spec and the consolidation spec both say update's cycle rule works "as at create", but create runs none — a newly minted issue can only depend on issues that already exist, so it can never close a loop. Update introduces the rule, and *CycleError with it, refusing only a cycle the change itself introduces: one that arrived by merge or hand-edit stays doctor's (ADR 0005), and refusing every edit to an issue caught in one would leave no way to edit it back out. So the update-command slice (u3krpx) must pick that refusal's wording and exit code itself rather than copy create's; nothing maps *CycleError in the CLI yet.
 
 One more shape decision u3krpx will document: a depends-on removal takes its reference as written when nothing resolves it, so "-gone99" drops a dangling edge. Additions stay strict.
+
+**claude** — 2026-07-26T20:24:42Z
+
+Four findings from the doctor and delete slice (3agw9c), which completes the contraction.
+
+Doctor's findings crossed the seam as facts rather than as prose. Every message doctor prints embeds a file path rendered relative to where the command ran, so a core that built the sentences would own a display concern. core.Finding instead carries the anchors (the files at fault, the ids) and the facts of its class — the canonical name a drifted file should hold, the suspect key and the field it resembles, the unrecognized priority value, the timestamp fields an issue lacks, the field and target of a dangling edge, the cancelled dependencies a stuck issue waits on — and the CLI words them. Report answers Problems, Advisories, Fixed, and Fixable, since the exit code and the ok flag turn on the count of what still stands. Doctor also no longer bypasses store discovery to avoid double-reporting: unusable files come back as findings and the scan raises no warnings at all.
+
+Delete returns a Deleted (issue, path, warnings), not the bare error the spec sketches. The human confirmation names the id, the title, and the file it removed, and none of that survives an error-only signature — the same reason Create returns a Created.
+
+Two operations the API list does not mention had to exist for "no handler touches the store" to be true. core.Init wraps store creation, which init called directly; and Editable/Reread are the hand-editing seam, which edit needed because a hand-edit happens in the file rather than through an operation the core could apply. Editable is the only core read that hands out a path, and both it and Reread die with the editor machinery in 0b8jtl.
+
+Env shed Clock and NewID for CoreOptions []core.Option, so the harness's fakes now reach the application rather than the interface. With that and the last of the pre-core plumbing deleted (discover, storeError, resolveRef and its resolver interface, warnInvalid), internal/cli no longer imports internal/store at all — a checkable statement of the contraction, and the invariant the next slice inherits.
