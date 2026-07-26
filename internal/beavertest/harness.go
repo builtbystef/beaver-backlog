@@ -45,15 +45,14 @@ type Result struct {
 // Harness drives the CLI in-process against a temporary store.
 type Harness struct {
 	t             *testing.T
-	Dir           string             // project directory; the store lives at Dir/.beaver
-	UserConfigDir string             // per-machine user-config dir; separate from Dir, never committed
-	Clock         *FakeClock         // controllable time source
-	Env           map[string]string  // environment seen by the CLI
-	IsTTY         bool               // whether stdout looks interactive (default false → JSON)
-	StdinIsTTY    bool               // the interactivity signal that gates human identity setup (default false)
-	StdinText     string             // interactive input fed to prompts (the identity prompt)
-	NewID         func() string      // ID generator override; nil uses the real one
-	Editor        func(string) error // fake editor: given a file path, it may rewrite the file to simulate a human editing in $EDITOR; nil means no editor is available
+	Dir           string            // project directory; the store lives at Dir/.beaver
+	UserConfigDir string            // per-machine user-config dir; separate from Dir, never committed
+	Clock         *FakeClock        // controllable time source
+	Env           map[string]string // environment seen by the CLI
+	IsTTY         bool              // whether stdout looks interactive (default false → JSON)
+	StdinIsTTY    bool              // the interactivity signal that gates human identity setup (default false)
+	StdinText     string            // interactive input fed to prompts (the identity prompt)
+	NewID         func() string     // ID generator override; nil uses the real one
 }
 
 // New returns a harness backed by a fresh temp directory. The store is not yet
@@ -89,7 +88,6 @@ func (h *Harness) Run(args ...string) Result {
 		// The clock and the ID source belong to the application, so the fakes
 		// reach it as core options rather than as fields of the CLI's own env.
 		CoreOptions:   []core.Option{core.WithClock(h.Clock), core.WithIDSource(newID)},
-		Edit:          h.Editor,
 		StdoutIsTTY:   h.IsTTY,
 		StdinIsTTY:    h.StdinIsTTY,
 		UserConfigDir: h.UserConfigDir,

@@ -78,6 +78,28 @@ func TestTransitionAppliesTheLegalityTable(t *testing.T) {
 	}
 }
 
+// A transition moves the state and nothing else: the assignee is kept as the
+// record of who did the work, so a closed issue still names them.
+func TestTransitionKeepsTheAssignee(t *testing.T) {
+	root := newStore(t)
+	seed(t, root, withAssignee(withState(mkIssue("iss001", "Work to finish"), issue.StateInProgress), "alice"))
+
+	out, err := openAt(t, root).Transition("iss001", issue.StateDone)
+	if err != nil {
+		t.Fatalf("Transition: %v", err)
+	}
+	if out.Issue.Assignee != "alice" {
+		t.Errorf("assignee after done = %q, want alice retained", out.Issue.Assignee)
+	}
+	detail, err := open(t, root).Get("iss001")
+	if err != nil {
+		t.Fatalf("Get after Transition: %v", err)
+	}
+	if detail.Issue.Assignee != "alice" {
+		t.Errorf("persisted assignee = %q, want alice", detail.Issue.Assignee)
+	}
+}
+
 // A transition to the state an issue already holds is an idempotent no-op: it
 // reports the issue unchanged and leaves the file — and its `updated` — alone.
 func TestTransitionToTheCurrentStateWritesNothing(t *testing.T) {

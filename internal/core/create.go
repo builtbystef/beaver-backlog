@@ -1,14 +1,11 @@
 package core
 
 // This file holds issue creation: the draft an interface hands in, the rules a
-// draft must satisfy, collision-safe id minting, and the three moves an
-// interactive authoring is made of — compose a skeleton, finish it, abandon it.
+// draft must satisfy, and collision-safe id minting.
 
 import (
-	"bytes"
 	"errors"
 	"fmt"
-	"os"
 	"strings"
 
 	"github.com/builtbystef/beaver-backlog/internal/issue"
@@ -54,20 +51,6 @@ func (s *Service) Create(d Draft) (Created, error) {
 	if strings.TrimSpace(d.Title) == "" {
 		return Created{}, &ValidationError{Field: "title", Problem: "must not be empty"}
 	}
-	return s.create(d)
-}
-
-// Compose opens an interactive authoring: it does everything Create does except
-// require a title, and what it writes is a skeleton for a human to finish in an
-// editor. The id is minted here rather than on the way back, so the id the human
-// is shown is the id the issue keeps — see Finish, which holds them to it.
-func (s *Service) Compose(d Draft) (Created, error) {
-	return s.create(d)
-}
-
-// create is Create and Compose's shared body: every creation rule except the
-// title, which only a finished issue must satisfy.
-func (s *Service) create(d Draft) (Created, error) {
 	if !d.Priority.Valid() {
 		return Created{}, &ValidationError{
 			Field:   "priority",
@@ -101,7 +84,7 @@ func (s *Service) create(d Draft) (Created, error) {
 	now := s.now()
 	iss := issue.Issue{
 		ID:        id,
-		Title:     strings.TrimSpace(d.Title), // empty for a composed skeleton; the human supplies it
+		Title:     strings.TrimSpace(d.Title),
 		State:     issue.StateTodo,
 		Priority:  d.Priority,
 		Labels:    dedupe(d.Labels), // nil when none, so the field marshals away
@@ -116,100 +99,6 @@ func (s *Service) create(d Draft) (Created, error) {
 		return Created{Warnings: warnings}, err
 	}
 	return Created{Issue: iss, Path: path, Warnings: warnings}, nil
-}
-
-// UnusableAuthoringError reports that what came back from an authoring is not a
-// usable issue at all — unreadable, malformed, or failing validation — so there
-// is nothing to file. It carries the underlying reason.
-type UnusableAuthoringError struct {
-	Path string // the file the authoring was in
-	Err  error  // why it is not a usable issue
-}
-
-func (e *UnusableAuthoringError) Error() string {
-	return fmt.Sprintf("%s is not a usable issue: %v", e.Path, e.Err)
-}
-
-func (e *UnusableAuthoringError) Unwrap() error { return e.Err }
-
-// ReassignedIDError reports an authoring that came back under a different id
-// than the one composed for it. The id is the machine's: were the new one
-// another issue's, filing the authoring at its canonical name would land on that
-// issue's file and replace it.
-type ReassignedIDError struct {
-	Minted string // the id Compose minted
-	Found  string // the id the authoring now carries
-}
-
-func (e *ReassignedIDError) Error() string {
-	return fmt.Sprintf("the composed id %s came back as %s", e.Minted, e.Found)
-}
-
-// Finish files the issue a human authored over a composed skeleton: the
-// authoring must still be a usable issue, must carry the composed id back
-// unchanged, and must have gained a title. It is written at the canonical
-// <id>-<slug> name the title now implies, which drops the skeleton's file.
-//
-// The timestamps are left as the authoring carries them: the issue is the one
-// Compose stamped, so finishing it is not a modification of an existing issue.
-func (s *Service) Finish(path string, seed issue.Issue) (Created, error) {
-	authored, err := s.store.Read(path)
-	if err != nil {
-		return Created{}, &UnusableAuthoringError{Path: path, Err: err}
-	}
-	if authored.ID != seed.ID {
-		return Created{}, &ReassignedIDError{Minted: seed.ID, Found: authored.ID}
-	}
-	if strings.TrimSpace(authored.Title) == "" {
-		return Created{}, &ValidationError{Field: "title", Problem: "must not be empty"}
-	}
-	final, err := s.store.Update(path, authored)
-	if err != nil {
-		return Created{}, err
-	}
-	return Created{Issue: authored, Path: final}, nil
-}
-
-// Abandon disposes of an authoring that never became an issue, so a composed
-// skeleton is never left in the issue set. A skeleton the human said nothing new
-// in is deleted outright; one they typed into is stashed as a draft and its
-// destination returned ("" when it was deleted), because their words are not
-// ours to discard.
-func (s *Service) Abandon(path string, seed issue.Issue) (stashed string, err error) {
-	if s.untouched(path, seed) {
-		// Best effort: a skeleton that cannot be removed is junk in the store, not
-		// lost work, and doctor reports it.
-		s.store.Delete(path)
-		return "", nil
-	}
-	stashed, err = s.store.StashDraft(path)
-	if errors.Is(err, os.ErrNotExist) {
-		// The authoring is already gone — the editor removed it, or another hand
-		// did. There is nothing left to keep and nothing to report.
-		return "", nil
-	}
-	return stashed, err
-}
-
-// untouched reports whether the authoring at path still says exactly what the
-// skeleton said. It compares the issue the file now holds against the seed
-// re-serialized, so an authoring saved unchanged — or changed only in
-// formatting — reads as untouched, while one that no longer parses certainly
-// does not.
-func (s *Service) untouched(path string, seed issue.Issue) bool {
-	authored, err := s.store.Read(path)
-	if err != nil {
-		return false
-	}
-	current, err := issue.Marshal(authored)
-	if err != nil {
-		return false
-	}
-	seeded, err := issue.Marshal(seed)
-	if err != nil {
-		return false
-	}
-	return bytes.Equal(current, seeded)
 }
 
 // mintID draws a fresh id from the service's source, retrying on the rare

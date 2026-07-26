@@ -250,7 +250,7 @@ func TestMutationLeavesMissingCreatedAbsent(t *testing.T) {
 	h := beavertest.New(t).Init()
 	h.WriteFile("issues/nots01-no-stamps.md", "---\nid: nots01\ntitle: No Stamps\nstate: todo\n---\n")
 
-	h.MustRun("label", "nots01", "sprint-7")
+	h.MustRun("update", "nots01", "--label", "sprint-7")
 
 	file := h.ReadFile("issues/nots01-no-stamps.md")
 	if strings.Contains(file, "0001-01-01") || strings.Contains(file, "created:") {

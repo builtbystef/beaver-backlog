@@ -1,6 +1,7 @@
 package cli_test
 
 import (
+	"slices"
 	"strings"
 	"testing"
 	"time"
@@ -195,6 +196,50 @@ func TestCommandsRequireStore(t *testing.T) {
 	}
 }
 
+// The surface is exactly these thirteen commands, in this order, and the help
+// text is where the tool explains itself — so it lists them and nothing else.
+func TestUsageListsExactlyTheCommandSet(t *testing.T) {
+	h := beavertest.New(t)
+
+	got := usageCommands(h.MustRun("help").Stdout)
+	want := []string{
+		"init", "create", "list", "show", "start", "done", "cancel", "reopen",
+		"update", "note", "delete", "doctor", "whoami",
+	}
+	if !slices.Equal(got, want) {
+		t.Errorf("help lists %v, want %v", got, want)
+	}
+}
+
+// The folded setters and the editor path are gone, and gone means
+// never-existed: each is refused exactly as an invented command is, with no
+// alias or deprecation shim in between.
+func TestRemovedCommandsAreUnknown(t *testing.T) {
+	h := beavertest.New(t).Init()
+	seed(t, h, "iss001", "Some work", issue.StateTodo, beavertest.DefaultNow)
+	before := h.ReadFile("issues/" + h.IssueFiles()[0])
+
+	for _, args := range [][]string{
+		{"claim", "iss001"},
+		{"assign", "iss001", "alice"},
+		{"release", "iss001"},
+		{"priority", "iss001", "high"},
+		{"label", "iss001", "bug"},
+		{"edit", "iss001"},
+	} {
+		r := h.Run(args...)
+		if r.Code != 2 {
+			t.Errorf("%v exit = %d, want 2 (usage)", args, r.Code)
+		}
+		if !strings.Contains(r.Stderr, "unknown command") || !strings.Contains(r.Stderr, args[0]) {
+			t.Errorf("%v should be refused as an unknown command:\n%s", args, r.Stderr)
+		}
+	}
+	if after := h.ReadFile("issues/" + h.IssueFiles()[0]); after != before {
+		t.Error("a removed command touched the issue file")
+	}
+}
+
 func TestUsageErrors(t *testing.T) {
 	h := beavertest.New(t).Init()
 	cases := [][]string{
@@ -209,4 +254,21 @@ func TestUsageErrors(t *testing.T) {
 			t.Errorf("%v exit = %d, want 2 (usage)", args, r.Code)
 		}
 	}
+}
+
+// --- helpers ---
+
+// usageCommands pulls the command names out of the help text's command list, in
+// the order they are listed. Only that list indents "beaver <cmd>"; the flag
+// blocks and the prose below do not.
+func usageCommands(usage string) []string {
+	var names []string
+	for line := range strings.SplitSeq(usage, "\n") {
+		rest, ok := strings.CutPrefix(line, "  beaver ")
+		if !ok {
+			continue
+		}
+		names = append(names, strings.Fields(rest)[0])
+	}
+	return names
 }

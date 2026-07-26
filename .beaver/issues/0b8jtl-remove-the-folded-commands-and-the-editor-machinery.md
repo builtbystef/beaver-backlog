@@ -1,14 +1,14 @@
 ---
 id: 0b8jtl
 title: Remove the folded commands and the editor machinery
-state: todo
+state: done
 priority: medium
 depends_on:
     - 3agw9c
     - u3krpx
 parent: gevz8m
 created: 2026-07-25T08:47:52Z
-updated: 2026-07-25T08:47:52Z
+updated: 2026-07-26T22:53:28Z
 ---
 
 ## What to build

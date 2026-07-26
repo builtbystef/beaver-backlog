@@ -251,21 +251,6 @@ func (s *Store) Rename(oldPath string, iss issue.Issue) (string, error) {
 	return newPath, nil
 }
 
-// StashDraft moves the file at path into .beaver/drafts, preserving its base
-// name, and returns the destination. Stashing keeps a human's typed-but-invalid
-// authoring out of the scanned issue set without discarding their words.
-func (s *Store) StashDraft(path string) (string, error) {
-	dir := filepath.Join(s.root, "drafts")
-	if err := os.MkdirAll(dir, 0o755); err != nil {
-		return "", err
-	}
-	dest := filepath.Join(dir, filepath.Base(path))
-	if err := os.Rename(path, dest); err != nil {
-		return "", err
-	}
-	return dest, nil
-}
-
 // Delete removes the issue file at path. The store keeps no other copy; a
 // missing file surfaces as the underlying os error.
 func (s *Store) Delete(path string) error {

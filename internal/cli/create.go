@@ -41,23 +41,20 @@ func cmdCreate(env Env, args []string) int {
 	if code != exitOK {
 		return code
 	}
-	// Zero positionals is allowed only when an interactive editor can supply
-	// the title; otherwise create requires one and fails before any store work.
-	var title string
+	// The title is the one thing an issue cannot be created without, so a
+	// missing or empty one fails before any store work.
 	switch len(pos) {
 	case 1:
-		title = strings.TrimSpace(pos[0])
-		if title == "" {
-			errf(env, "title must not be empty")
-			return exitUsage
-		}
 	case 0:
-		if editorGate(env) != nil {
-			errf(env, "create requires a title: beaver create \"<title>\"")
-			return exitUsage
-		}
+		errf(env, "create requires a title: beaver create \"<title>\"")
+		return exitUsage
 	default:
 		errf(env, "create takes a single title argument (quote it): beaver create \"<title>\"")
+		return exitUsage
+	}
+	title := strings.TrimSpace(pos[0])
+	if title == "" {
+		errf(env, "title must not be empty")
 		return exitUsage
 	}
 
@@ -78,17 +75,6 @@ func cmdCreate(env Env, args []string) int {
 		Priority:  priority,
 		DependsOn: dependsOn.values,
 		Parent:    *parentFlag,
-	}
-
-	// With no title, the gate above has already guaranteed an interactive
-	// session with an editor, so the human supplies it there — a --body given
-	// alongside no title seeds the skeleton the editor opens on.
-	if title == "" {
-		created, code := authorInEditor(env, svc, draft)
-		if code != exitOK {
-			return code
-		}
-		return reportCreated(env, format, created)
 	}
 
 	created, err := svc.Create(draft)

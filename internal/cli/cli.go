@@ -1,7 +1,7 @@
 // Package cli is the engine that turns a command invocation into a call on the
 // core and rendered output. Everything it depends on (arguments, stdio, the
-// working directory, the environment, the editor) arrives through an Env struct;
-// every command handler parses its invocation, calls the core, renders what comes
+// working directory, the environment) arrives through an Env struct; every
+// command handler parses its invocation, calls the core, renders what comes
 // back, and maps the core's typed failures to exit codes.
 package cli
 
@@ -37,10 +37,9 @@ type Env struct {
 	// interface's, so they travel here rather than as fields of their own; an
 	// empty slice takes the real clock and ID generator.
 	CoreOptions   []core.Option
-	Edit          func(string) error // open a file in the user's editor, blocking until it exits; nil means no editor, so edit and interactive create refuse rather than hang
-	StdoutIsTTY   bool               // whether stdout is an interactive terminal
-	StdinIsTTY    bool               // whether stdin is interactive; gates human identity setup
-	UserConfigDir string             // per-machine user-config dir; identity lives here, never committed
+	StdoutIsTTY   bool   // whether stdout is an interactive terminal
+	StdinIsTTY    bool   // whether stdin is interactive; gates human identity setup
+	UserConfigDir string // per-machine user-config dir; identity lives here, never committed
 }
 
 // Run dispatches one command and returns its exit code. It never calls os.Exit;
@@ -66,22 +65,10 @@ func Run(env Env) int {
 		return cmdCancel(env, args)
 	case "reopen":
 		return cmdReopen(env, args)
-	case "claim":
-		return cmdClaim(env, args)
-	case "assign":
-		return cmdAssign(env, args)
-	case "release":
-		return cmdRelease(env, args)
 	case "start":
 		return cmdStart(env, args)
-	case "priority":
-		return cmdPriority(env, args)
-	case "label":
-		return cmdLabel(env, args)
 	case "update":
 		return cmdUpdate(env, args)
-	case "edit":
-		return cmdEdit(env, args)
 	case "delete":
 		return cmdDelete(env, args)
 	case "note":
@@ -108,19 +95,13 @@ usage:
   beaver create "<title>"     create a new issue
   beaver list                 list issues (default: all)
   beaver show <ref>           show an issue by ID or slug
+  beaver start <ref>          start an issue (in-progress; auto-claims if unowned)
   beaver done <ref>           mark an issue done
   beaver cancel <ref>         cancel an issue (deliberately abandon it)
   beaver reopen <ref>         return a done or cancelled issue to todo
-  beaver claim <ref>          claim an issue (make yourself its assignee)
-  beaver assign <ref> <actor> assign an issue to a named actor
-  beaver release <ref>        clear an issue's assignee
-  beaver start <ref>          start an issue (in-progress; auto-claims if unowned)
-  beaver priority <ref> <lvl> set or clear priority (urgent|high|medium|low|none)
-  beaver label <ref> <label>  add labels (or remove them with --remove)
   beaver update <ref>         change an issue's fields (title, body, labels, ...)
-  beaver edit <ref>           open an issue in $EDITOR for freeform hand-editing
-  beaver delete <ref>         delete an issue's file (for junk; the VCS keeps history)
   beaver note <ref> "<text>"  append a note to an issue's coordination log
+  beaver delete <ref>         delete an issue's file (for junk; the VCS keeps history)
   beaver doctor               check store health (repair lint with --fix)
   beaver whoami               print the actor Beaver Backlog resolves you as
 
@@ -145,9 +126,6 @@ list flags:
   --assignee <actor>          only issues assigned to this actor
   issues are ordered by priority (urgent first), then oldest first
 
-label flags:
-  --remove <label>            remove a label instead of adding (repeatable, comma-separated)
-
 update flags (at least one is required; a change that nets out to nothing writes nothing):
   --title <text>              set the title, renaming the file to the new slug
   --body <markdown>           replace the description, keeping the notes section
@@ -158,7 +136,7 @@ update flags (at least one is required; a change that nets out to nothing writes
   --depends-on <spec>         add a dependency, or -<ref> to remove one (repeatable, comma-separated)
   --parent <ref>              set the parent issue; --no-parent detaches it
 
-claim / start flags:
+start flags:
   --as <actor>                act as this actor (overrides identity detection)
   --force                     steal an issue already claimed by another actor
 
@@ -175,8 +153,8 @@ doctor flags:
 a <ref> is a full issue ID, its slug, or an <id>-<slug> file name — even a
 stale one whose slug half has drifted; the ID part decides.
 show reports what an issue is waiting on and whether it is ready or blocked.
-run "beaver create" with no title in a terminal to author the issue in $EDITOR;
-a non-interactive create still requires a title argument.
+issue files are plain Markdown: hand-edit one in any editor and run
+"beaver doctor" afterwards to catch anything the edit left behind.
 
 exit codes:
   0  success
