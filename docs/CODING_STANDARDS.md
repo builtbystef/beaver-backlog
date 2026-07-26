@@ -10,11 +10,19 @@ Conventions this project holds beyond what linters and formatters enforce. Revie
 
 ## Tests
 
-- Command-level behavior is tested end-to-end through `internal/beavertest`;
-  follow the pattern in any existing `_test.go` in `internal/cli`.
-- Tests substitute the world through the `Env` struct (args, stdio, editor, and
-  the core options carrying the clock and ID source) — never with global state or
-  real user config.
+- **The core seam is the primary behavior suite.** A rule about what an
+  operation means — what it writes, what it refuses, what it leaves alone —
+  is tested against `internal/core`, where the rule lives, once.
+- **CLI tests cover the surface, not the rules.** Through the end-to-end
+  harness in `internal/beavertest`: flag parsing, arity and usage errors,
+  flag-exclusivity errors, human and JSON rendering, exit-code mapping, and one
+  happy path per command. A test that re-asserts a core rule through the CLI
+  belongs at the core seam instead. Follow the pattern in any existing
+  `_test.go` in `internal/cli`.
+- Tests substitute the world through the `Env` struct (args, stdio and their
+  TTY-ness, working directory, environment lookup, user-config dir) and the core
+  options it forwards (clock, ID source) — never with global state or real user
+  config.
 
 ## Error handling
 

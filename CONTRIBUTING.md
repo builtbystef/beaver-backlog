@@ -22,20 +22,25 @@ mergeable only when all of them pass.
 ## Project layout
 
 ```
+internal/core/       the application: the rules every interface shares — the
+                     lifecycle, creation, the multi-field update, the log,
+                     deletion, and doctor's health engine — free of flags,
+                     terminals, and exit codes
 cmd/beaver/          the binary: wires the real process to the CLI engine
-internal/cli/        one file per command, plus shared plumbing; each handler
-                     parses, calls the core, renders, and maps errors to exit
-                     codes, taking everything (args, stdio, editor) through an
-                     Env struct so tests can substitute all of it
-internal/core/       the application layer over a store: the rules every
-                     interface shares, free of flags and exit codes
+internal/cli/        the command-line interface over the core: one file per
+                     command, plus shared plumbing; each handler parses, calls
+                     the core, renders, and maps errors to exit codes, taking
+                     everything (args, stdio, TTY-ness, working directory,
+                     environment, user-config dir) through an Env struct so
+                     tests can substitute all of it
 internal/issue/      the issue model: parsing, serializing, validation,
                      relationships
 internal/store/      the .beaver store: discovery, scanning, writing, config
 internal/output/     human vs JSON rendering and format auto-detection
 internal/userconfig/ per-machine user config (actor identity)
 internal/clock/      injectable time source
-internal/beavertest/ the end-to-end test harness commands are tested through
+internal/beavertest/ the end-to-end test harness the command surface is tested
+                     through
 ```
 
 ## Before you write code
@@ -53,9 +58,12 @@ internal/beavertest/ the end-to-end test harness commands are tested through
 ## Making changes
 
 1. Fork and create a branch from `main`.
-2. Keep the test suite green and add tests for what you change. Command-level
-   behavior is tested end-to-end through `internal/beavertest`; look at any
-   existing `_test.go` in `internal/cli` for the pattern.
+2. Keep the test suite green and add tests for what you change, at the seam the
+   change belongs to: a rule is tested against `internal/core`, and the command
+   surface — parsing, usage errors, rendering, exit codes — end-to-end through
+   `internal/beavertest`. See the test policy in
+   [`docs/CODING_STANDARDS.md`](docs/CODING_STANDARDS.md); look at any existing
+   `_test.go` in `internal/core` or `internal/cli` for the pattern.
 3. Match the existing style: comments explain _why_, not _what_; exported
    identifiers carry concise godoc starting with the identifier's name.
 4. Open a pull request that explains the motivation, not just the mechanics.

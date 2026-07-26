@@ -31,15 +31,18 @@ the generic `agent`, not an error.
 
 **Assignment coordinates; it does not lock.** A local-first tool with no
 server cannot make a claim globally atomic — two clones can both claim an
-issue. So `claim` and `start` refuse an issue already assigned to a
-*different* actor (`--force` to steal; re-claiming one's own is a no-op), but
-that guard is only as fresh as the working tree; the backstop for a true race
-is the VCS merge conflict on the `assignee:` line, which is exactly the right
-signal. Semantics:
+issue. So `start`, the verb an actor takes work with, refuses an issue already
+assigned to a *different* actor (`--force` to steal; re-claiming one's own is a
+no-op), but that guard is only as fresh as the working tree; the backstop for a
+true race is the VCS merge conflict on the `assignee:` line, which is exactly
+the right signal. Semantics:
 
-- `state` and `assignee` are orthogonal: `claim` reserves without changing
-  state; `start` sets `in-progress` and auto-claims an unowned issue — the
-  only implicit assignment.
+- `state` and `assignee` are orthogonal: `update --assignee` sets the assignee
+  without changing state, and `--unassign` clears it; `start` sets
+  `in-progress` and auto-claims an unowned issue — the only implicit
+  assignment.
+- Assigning through `update` is an unguarded overwrite: naming another actor
+  is a routine act of coordination, so `start` carries the only steal guard.
 - On `done`, the assignee is retained as the record of who completed the work.
 
 The same interactivity/agent detection picks the **output format**: human

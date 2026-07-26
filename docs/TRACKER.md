@@ -9,9 +9,11 @@ How this project translates tracker verbs. When a skill says the verb on the lef
 - **Claim an issue** → `beaver start {{ref}}` — moves it in-progress and assigns it to you.
 - **Note an issue** → `beaver note {{ref}} "{{text}}"`.
 - **Close an issue** → `beaver done {{ref}}`.
-- **Release an issue** → `beaver release {{ref}}` — note why first, so the next taker starts informed.
+- **Release an issue** → `beaver update {{ref}} --unassign` — note why first, so the next taker starts informed.
 - **List ready work** → `beaver list --ready` — dependency-aware and sorted priority-first: an issue is ready when it's todo and every dependency is done. Drop any result labelled `needs-review`.
-- **Record a blocking edge** → at creation, `--depends-on {{blocker-ref}}`; on an existing issue, add the blocker's id under `depends_on:` in the issue file's frontmatter (the files are hand-editable).
+- **Record a blocking edge** → at creation, `--depends-on {{blocker-ref}}`; on an existing issue, `beaver update {{ref}} --depends-on {{blocker-ref}}` (`--depends-on -{{blocker-ref}}` removes one).
+
+Every other field change is `beaver update {{ref}}` too — `--title`, `--body` / `--body-file` (the description, leaving the notes log alone), `--priority`, `--label`, `--parent` — and it takes as many as you like in one invocation. Never hand-edit frontmatter to make a structured change; hand-editing is for prose, and `beaver doctor` is the check afterwards.
 
 ## Roadmap operations
 
@@ -21,7 +23,7 @@ How this project translates tracker verbs. When a skill says the verb on the lef
 
 ## Labels
 
-Labels are free-form; the canonical names are used as-is: `bug`, `spec`, `maintenance`, `review`, `research`, `needs-review`, `roadmap`, `roadmap:{{id}}`, `session:research` / `session:prototype` / `session:grill` / `session:task`. A spec issue carries `spec` — build its sub-issues, never it.
+Labels are free-form; the canonical names are used as-is: `bug`, `spec`, `maintenance`, `review`, `research`, `needs-review`, `roadmap`, `roadmap:{{id}}`, `session:research` / `session:prototype` / `session:grill` / `session:task`. A spec issue carries `spec` — build its sub-issues, never it. Apply one to an existing issue with `beaver update {{ref}} --label {{name}}`, and remove it with `beaver update {{ref}} --label -{{name}}`.
 
 ## Closed issues
 

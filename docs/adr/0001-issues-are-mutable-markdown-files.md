@@ -27,7 +27,7 @@ The file has two ownership zones:
   Beaver Backlog only ever appends to it (notes).
 
 The frontmatter schema is **open**: unknown keys are preserved verbatim through
-every read-modify-write (a hand-added `sprint: 7` survives `done`, `claim`,
+every read-modify-write (a hand-added `sprint: 7` survives `done`, `update`,
 etc.) but never interpreted — they don't affect state, queries, or validation.
 Silent dropping would be data loss dressed as a rewrite. The cost is that a
 typo'd key (`assigne:`) is inert rather than an error; `doctor` flags near

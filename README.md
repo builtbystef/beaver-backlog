@@ -66,12 +66,16 @@ Started ix2guj (claimed for stefan)
 $ beaver note ix2guj "root cause: form strips ! before hashing"
 Added note to ix2guj as stefan
 
+$ beaver update ix2guj --priority urgent --label regression
+Updated ix2guj
+
 $ beaver done ix2guj
 Marked ix2guj done
 ```
 
-Running `beaver create` with no title in a terminal opens your `$EDITOR` to
-author the issue interactively (a `--body` passed alongside seeds the draft).
+State changes are verbs of their own (`start`, `done`, `cancel`, `reopen`);
+every other field — title, description, assignee, priority, labels,
+relationships — changes through `beaver update`.
 
 ## The issue file
 
@@ -110,24 +114,36 @@ abandoned, kept visible so nobody re-files it.
 
 ## Commands
 
-| Command                           | What it does                                                                                   |
-| --------------------------------- | ---------------------------------------------------------------------------------------------- |
-| `beaver init`                     | Initialize a store in the current project                                                      |
-| `beaver create "<title>"`         | Create an issue (`--body`, `--body-file`, `--label`, `--priority`, `--depends-on`, `--parent`) |
-| `beaver list`                     | List issues (`--state`, `--ready`, `--blocked`, `--label`, `--priority`, `--assignee`)         |
-| `beaver show <ref>`               | Show an issue, including what it waits on and whether it is ready                              |
-| `beaver start <ref>`              | Move to in-progress, auto-claiming if unowned                                                  |
-| `beaver done <ref>`               | Mark done                                                                                      |
-| `beaver cancel <ref>`             | Deliberately abandon (terminal, but not completed)                                             |
-| `beaver reopen <ref>`             | Return a done or cancelled issue to todo                                                       |
-| `beaver claim / assign / release` | Set or clear the assignee                                                                      |
-| `beaver priority <ref> <level>`   | Set or clear priority (`urgent`–`low`, `none`)                                                 |
-| `beaver label <ref> <label>`      | Add labels (`--remove` to take them off)                                                       |
-| `beaver note <ref> "<text>"`      | Append an attributed, timestamped note                                                         |
-| `beaver edit <ref>`               | Open the issue file in `$EDITOR`                                                               |
-| `beaver delete <ref>`             | Delete the file (for junk; the VCS keeps history)                                              |
-| `beaver doctor`                   | Check store health; `--fix` repairs what is safe to repair                                     |
-| `beaver whoami`                   | Print the actor you resolve as                                                                 |
+Thirteen of them, and they fit on one screen:
+
+| Command                      | What it does                                                                                   |
+| ---------------------------- | ---------------------------------------------------------------------------------------------- |
+| `beaver init`                | Initialize a store in the current project                                                      |
+| `beaver create "<title>"`    | Create an issue (`--body`, `--body-file`, `--label`, `--priority`, `--depends-on`, `--parent`) |
+| `beaver list`                | List issues (`--state`, `--ready`, `--blocked`, `--label`, `--priority`, `--assignee`)         |
+| `beaver show <ref>`          | Show an issue, including what it waits on and whether it is ready                              |
+| `beaver start <ref>`         | Move to in-progress, auto-claiming if unowned                                                  |
+| `beaver done <ref>`          | Mark done                                                                                      |
+| `beaver cancel <ref>`        | Deliberately abandon (terminal, but not completed)                                             |
+| `beaver reopen <ref>`        | Return a done or cancelled issue to todo                                                       |
+| `beaver update <ref>`        | Change any non-state field (see below)                                                         |
+| `beaver note <ref> "<text>"` | Append an attributed, timestamped note                                                         |
+| `beaver delete <ref>`        | Delete the file (for junk; the VCS keeps history)                                              |
+| `beaver doctor`              | Check store health; `--fix` repairs what is safe to repair                                     |
+| `beaver whoami`              | Print the actor you resolve as                                                                 |
+
+`update` takes as many fields as you like in one invocation, and writes
+nothing at all if they net out to no change:
+
+| Flag                                   | What it changes                                                  |
+| -------------------------------------- | ---------------------------------------------------------------- |
+| `--title <text>`                       | The title, renaming the file to the fresh slug (the ID is fixed) |
+| `--body <text>` / `--body-file <path>` | The description, leaving the `## Notes` section untouched        |
+| `--assignee <actor>` / `--unassign`    | The assignee                                                     |
+| `--priority <level>`                   | Priority (`urgent`–`low`, or `none` to clear)                    |
+| `--label <spec>`                       | Labels: `bug` or `+bug` adds, `-bug` removes; repeatable, CSV    |
+| `--depends-on <spec>`                  | Blocking edges, by ref, with the same `+`/`-` syntax             |
+| `--parent <ref>` / `--no-parent`       | The parent issue                                                 |
 
 A `<ref>` is an issue's ID, its slug, or its file name — resolved by exact
 match only, never by prefix or fuzzy match. Run `beaver help` for full usage.
@@ -157,12 +173,34 @@ Created t4y1gv  Login form rejects valid passwords
   .beaver/issues/t4y1gv-login-form-rejects-valid-passwords.md
 ```
 
+Routine upkeep is likewise one command rather than a sequence — `update` takes
+every field it changes at once, and reports the result in the same single-issue
+JSON shape the lifecycle verbs use:
+
+```console
+$ beaver update t4y1gv --priority urgent --label regression,-needs-triage --assignee agent-7
+Updated t4y1gv
+```
+
 ### Editing an issue's description
 
-`beaver edit` needs a terminal and `$EDITOR`, but agents don't need it: to
-revise a description later, **edit the issue file directly** — the files are
-the source of truth and hand-editing is first-class. Three rules keep a hand
-edit safe:
+Nothing here needs a terminal or an `$EDITOR`. To rewrite a description,
+`beaver update <ref> --body "<markdown>"` replaces it and leaves the
+`## Notes` section byte-identical; `--body-file <path>` reads it from a file,
+and `--body-file -` from stdin, which is the way to send multi-line Markdown
+without shell quoting:
+
+```console
+$ beaver update t4y1gv --body-file - <<'EOF'
+Submitting a correct password containing a `!` clears the form and shows
+"invalid credentials". Expected: the login succeeds.
+EOF
+Updated t4y1gv
+```
+
+**Editing the issue file directly is equally first-class** — the files are the
+source of truth, and that is the interactive path this tool deliberately does
+not wrap in a command. Three rules keep a hand edit safe:
 
 - **Leave the `## Notes` section alone.** It is the append-only coordination
   journal; rewriting or dropping another actor's entries breaks the contract.
@@ -170,12 +208,14 @@ edit safe:
   `beaver note`.
 - **Never change the `id` field** — it is the issue's identity, and the
   filename merely mirrors it.
-- **Follow up with `beaver note <ref> "<what you changed>"**. A hand edit
+- **Follow up with `beaver note <ref> "<what you changed>"`.** A hand edit
   alone does not bump the `updated` timestamp; a note both journals the change
   for other actors and bumps it.
 
-Anything that drifts anyway — say a filename gone stale after a hand-retitle —
-is lint, not corruption: `beaver doctor --fix` repairs it.
+`beaver doctor` is the net under all of it: run it after a hand edit and it
+reports anything the edit left behind. Whatever drifts anyway — say a filename
+gone stale after a hand-retitle — is lint, not corruption, and
+`doctor --fix` repairs it.
 
 ## Coordinating parallel work
 
@@ -201,9 +241,7 @@ Beaver Backlog only ever reads and writes files — it never runs a
 version-control system, so committing your issue files stays entirely yours to
 do (and stays free to bundle with the code the issue produced).
 
-Your identity lives in per-machine user config, never in the repository. If an
-interactive `create` ends with a file that isn't a usable issue, your words
-are stashed under `.beaver/drafts/` instead of being deleted.
+Your identity lives in per-machine user config, never in the repository.
 
 ## Keeping the store healthy
 
