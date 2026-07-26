@@ -4,21 +4,22 @@ import (
 	"errors"
 	"fmt"
 	"strings"
-	"time"
 
 	"github.com/builtbystef/beaver-backlog/internal/core"
 	"github.com/builtbystef/beaver-backlog/internal/issue"
 	"github.com/builtbystef/beaver-backlog/internal/output"
-	"github.com/builtbystef/beaver-backlog/internal/store"
 )
 
 // Ownership is advisory coordination, not a lock: claim reserves an issue for the
 // current actor, assign delegates it, release clears it, and start begins work,
 // auto-claiming an unowned issue. The guard behind claim and start refuses an issue
 // held by a different actor unless --force, but is best-effort only — concurrent
-// claims on two branches surface as a VCS merge conflict on the `assignee:` line
+// claims on two branches surface as a merge conflict on the `assignee:` line
 // rather than silent double-ownership. Start's guard is the core's; claim keeps
 // its own until the command surface consolidates.
+//
+// Claim, assign, and release are each one core update of the assignee field; all
+// three carry only their own wording and the rule claim's guard adds.
 
 // claimDecision is the ownership guard's ruling on an issue's current assignee
 // against the acting actor.
@@ -68,14 +69,20 @@ func cmdClaim(env Env, args []string) int {
 		return exitUsage
 	}
 
-	st, err := discover(env)
+	svc, err := open(env)
 	if err != nil {
-		return storeError(env, err)
+		return coreError(env, err)
 	}
-	iss, path, code := resolveRef(env, st, pos[0])
-	if code != exitOK {
-		return code
+	warn := warnOnce(env)
+
+	// The guard is claim's own, so claim reads the current assignee before it
+	// decides whether to write at all.
+	detail, err := svc.Get(pos[0])
+	warn(detail.Warnings)
+	if err != nil {
+		return coreError(env, err)
 	}
+	iss := detail.Issue
 
 	// Resolve the actor only after the reference is known good, so a typo'd ref
 	// fails fast without triggering an interactive identity prompt.
@@ -94,13 +101,17 @@ func cmdClaim(env Env, args []string) int {
 		return reportIssue(env, format, iss, fmt.Sprintf("%s is already yours", iss.ID))
 	}
 
-	prev := iss.Assignee // "" for a fresh claim; the previous owner for a --force steal
-	iss.Assignee = me.name
-	line := fmt.Sprintf("Claimed %s for %s", iss.ID, me.name)
-	if prev != "" {
-		line = fmt.Sprintf("Claimed %s for %s (taken from %s)", iss.ID, me.name, prev)
+	out, err := svc.Update(pos[0], core.Changes{Assignee: &me.name})
+	warn(out.Warnings)
+	if err != nil {
+		return coreError(env, err)
 	}
-	return writeAndReport(env, st, path, iss, format, line)
+	// "" for a fresh claim; the previous owner for a --force steal.
+	line := fmt.Sprintf("Claimed %s for %s", out.Issue.ID, me.name)
+	if prev := out.Previous.Assignee; prev != "" {
+		line = fmt.Sprintf("Claimed %s for %s (taken from %s)", out.Issue.ID, me.name, prev)
+	}
+	return reportIssue(env, format, out.Issue, line)
 }
 
 // cmdAssign delegates an issue to a named actor. It carries no ownership guard —
@@ -127,20 +138,19 @@ func cmdAssign(env Env, args []string) int {
 		return exitUsage
 	}
 
-	st, err := discover(env)
+	svc, err := open(env)
 	if err != nil {
-		return storeError(env, err)
+		return coreError(env, err)
 	}
-	iss, path, code := resolveRef(env, st, pos[0])
-	if code != exitOK {
-		return code
+	out, err := svc.Update(pos[0], core.Changes{Assignee: &assignee})
+	warnSkipped(env, out.Warnings)
+	if err != nil {
+		return coreError(env, err)
 	}
-
-	if iss.Assignee == assignee {
-		return reportIssue(env, format, iss, fmt.Sprintf("%s is already assigned to %s", iss.ID, assignee))
+	if !out.Changed {
+		return reportIssue(env, format, out.Issue, fmt.Sprintf("%s is already assigned to %s", out.Issue.ID, assignee))
 	}
-	iss.Assignee = assignee
-	return writeAndReport(env, st, path, iss, format, fmt.Sprintf("Assigned %s to %s", iss.ID, assignee))
+	return reportIssue(env, format, out.Issue, fmt.Sprintf("Assigned %s to %s", out.Issue.ID, assignee))
 }
 
 // cmdRelease clears an issue's assignee, returning it to unowned. No guard, no
@@ -161,21 +171,21 @@ func cmdRelease(env Env, args []string) int {
 		return exitUsage
 	}
 
-	st, err := discover(env)
+	svc, err := open(env)
 	if err != nil {
-		return storeError(env, err)
+		return coreError(env, err)
 	}
-	iss, path, code := resolveRef(env, st, pos[0])
-	if code != exitOK {
-		return code
+	unowned := ""
+	out, err := svc.Update(pos[0], core.Changes{Assignee: &unowned})
+	warnSkipped(env, out.Warnings)
+	if err != nil {
+		return coreError(env, err)
 	}
-
-	if iss.Assignee == "" {
-		return reportIssue(env, format, iss, fmt.Sprintf("%s has no assignee", iss.ID))
+	if !out.Changed {
+		return reportIssue(env, format, out.Issue, fmt.Sprintf("%s has no assignee", out.Issue.ID))
 	}
-	prev := iss.Assignee
-	iss.Assignee = ""
-	return writeAndReport(env, st, path, iss, format, fmt.Sprintf("Released %s (was %s)", iss.ID, prev))
+	return reportIssue(env, format, out.Issue,
+		fmt.Sprintf("Released %s (was %s)", out.Issue.ID, out.Previous.Assignee))
 }
 
 // cmdStart moves an issue to in-progress, auto-claiming an unowned one for the
@@ -259,18 +269,6 @@ func startError(env Env, err error) int {
 	default:
 		return coreError(env, err)
 	}
-}
-
-// writeAndReport bumps `updated`, writes the modified issue back, and renders the
-// result. No-op paths report without calling it, so `updated` is churned only on
-// a real change.
-func writeAndReport(env Env, st *store.Store, path string, iss issue.Issue, format output.Format, humanLine string) int {
-	iss.Updated = env.Clock.Now().UTC().Truncate(time.Second)
-	if _, err := st.Update(path, iss); err != nil {
-		errf(env, "%v", err)
-		return exitError
-	}
-	return reportIssue(env, format, iss, humanLine)
 }
 
 // startLine renders start's confirmation from what the core actually did: the

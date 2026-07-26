@@ -1,13 +1,13 @@
 ---
 id: u09zmf
 title: Add multi-field update to the core and wrap the setters
-state: todo
+state: done
 priority: medium
 depends_on:
     - pgp2z8
 parent: kn7wzs
 created: 2026-07-25T08:47:52Z
-updated: 2026-07-25T08:47:52Z
+updated: 2026-07-26T19:11:46Z
 ---
 
 ## What to build

@@ -67,6 +67,27 @@ func renderNote(n Note) string {
 		"\n\n" + strings.TrimRight(n.Text, " \t\r\n")
 }
 
+// SetDescription returns body with everything above the notes section replaced
+// by description, leaving the notes section byte-identical. A body with no notes
+// section is description alone: the whole body was the description.
+//
+// The log is not the writer's to rewrite — an entry is another actor's words —
+// so a caller replacing what an issue says never touches what was said about it.
+func SetDescription(body, description string) string {
+	start, ok := notesStart(body)
+	if !ok {
+		return description
+	}
+	notes := body[start:]
+	// Trim only where the join happens, so the description meets the heading with
+	// the one blank line every other writer leaves.
+	desc := strings.TrimRight(description, " \t\r\n")
+	if desc == "" {
+		return notes
+	}
+	return desc + "\n\n" + notes
+}
+
 // ParseNotes extracts the structured entries from body's notes section, in file
 // order. It returns nil when the body has no notes section.
 //
@@ -115,11 +136,33 @@ func hasNotesSection(body string) bool {
 // notesRegion returns the text after the first "## Notes" header line, and
 // whether such a header was found.
 func notesRegion(body string) (string, bool) {
-	lines := strings.Split(body, "\n")
-	for i, line := range lines {
-		if strings.TrimSpace(line) == NotesHeading {
-			return strings.Join(lines[i+1:], "\n"), true
-		}
+	start, ok := notesStart(body)
+	if !ok {
+		return "", false
 	}
-	return "", false
+	// Everything after the header line is the section's entries.
+	_, entries, _ := strings.Cut(body[start:], "\n")
+	return entries, true
+}
+
+// notesStart returns the offset at which the notes section begins — the first
+// byte of its "## Notes" header line — and whether the body has one. It is an
+// offset rather than a line index so a caller can keep the section's bytes
+// exactly as they are.
+func notesStart(body string) (int, bool) {
+	for pos := 0; pos <= len(body); {
+		end := strings.IndexByte(body[pos:], '\n')
+		line := body[pos:]
+		if end >= 0 {
+			line = body[pos : pos+end]
+		}
+		if strings.TrimSpace(line) == NotesHeading {
+			return pos, true
+		}
+		if end < 0 {
+			break
+		}
+		pos += end + 1
+	}
+	return 0, false
 }

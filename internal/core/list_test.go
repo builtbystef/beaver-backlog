@@ -156,10 +156,10 @@ func TestListFiltersByAssignee(t *testing.T) {
 	seed(t, root, withAssignee(mkIssue("their2", "Theirs"), "grace"))
 	seed(t, root, mkIssue("free33", "Unassigned"))
 
-	if got := listIDs(t, root, core.Query{Assignee: ptr("ada")}); !slices.Equal(got, []string{"mine11"}) {
+	if got := listIDs(t, root, core.Query{Assignee: new("ada")}); !slices.Equal(got, []string{"mine11"}) {
 		t.Errorf("assignee ada = %v, want [mine11]", got)
 	}
-	if got := listIDs(t, root, core.Query{Assignee: ptr("")}); !slices.Equal(got, []string{"free33"}) {
+	if got := listIDs(t, root, core.Query{Assignee: new("")}); !slices.Equal(got, []string{"free33"}) {
 		t.Errorf("assignee \"\" = %v, want the unassigned issue", got)
 	}
 }
@@ -175,7 +175,7 @@ func TestListCombinesFilters(t *testing.T) {
 		States:     []issue.State{issue.StateTodo},
 		Labels:     []string{"bug"},
 		Priorities: []issue.Priority{issue.PriorityHigh},
-		Assignee:   ptr("ada"),
+		Assignee:   new("ada"),
 	}
 	if got := listIDs(t, root, q); !slices.Equal(got, []string{"hit111"}) {
 		t.Errorf("combined filters = %v, want [hit111]", got)
@@ -240,4 +240,6 @@ func atTime(iss issue.Issue, t time.Time) issue.Issue {
 	return iss
 }
 
-func ptr(s string) *string { return &s }
+// ptr returns a pointer to v, for the query and change fields whose nil means
+// "not named" rather than "empty".
+func ptr[T any](v T) *T { return &v }

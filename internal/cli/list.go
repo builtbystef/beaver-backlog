@@ -52,7 +52,7 @@ func cmdList(env Env, args []string) int {
 	// unprioritized; both parse to the empty Priority, so the flag's presence is
 	// what tells them apart.
 	if *priorityFilter != "" {
-		level, err := parsePriority(*priorityFilter)
+		level, err := core.ParsePriority(*priorityFilter)
 		if err != nil {
 			errf(env, "%v", err)
 			return exitUsage

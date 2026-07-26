@@ -119,3 +119,32 @@ func TestParseNotesFindsSectionAfterOtherHeaders(t *testing.T) {
 		t.Errorf("ParseNotes = %+v, want a single \"the only note\" entry", notes)
 	}
 }
+
+// Replacing a description leaves the log alone: the notes section comes through
+// byte-identical, however the new description is shaped.
+func TestSetDescriptionPreservesTheNotesSection(t *testing.T) {
+	notes := "## Notes\n\n**stefan** — 2026-06-27T18:30:00Z\n\nthe only note"
+	body := "## What to build\n\nOld stuff.\n\n" + notes
+
+	got := SetDescription(body, "New stuff.\n\n")
+	if want := "New stuff.\n\n" + notes; got != want {
+		t.Errorf("SetDescription =\n%q\nwant\n%q", got, want)
+	}
+}
+
+// With no notes section the whole body is the description, so it is replaced
+// outright — verbatim, since there is no join to tidy.
+func TestSetDescriptionReplacesABodyWithoutNotes(t *testing.T) {
+	if got := SetDescription("Old stuff.\n", "New stuff.\n"); got != "New stuff.\n" {
+		t.Errorf("SetDescription = %q, want the new description verbatim", got)
+	}
+}
+
+// An emptied description leaves the notes section as the whole body, with no
+// blank lines left where the description was.
+func TestSetDescriptionEmptyKeepsOnlyTheNotes(t *testing.T) {
+	notes := "## Notes\n\n**stefan** — 2026-06-27T18:30:00Z\n\nthe only note"
+	if got := SetDescription("Old stuff.\n\n"+notes, ""); got != notes {
+		t.Errorf("SetDescription = %q, want the notes section alone", got)
+	}
+}

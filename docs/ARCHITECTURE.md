@@ -26,7 +26,10 @@ invokes a version-control system; committing the files is the operator's job.
   the lifecycle writes (legal state transitions and starting work, with its
   ownership guard and dependency report), creation (a draft validated, its edges
   resolved to ids, an id minted collision-safe — plus the compose/finish/abandon
-  moves an interactive authoring is driven through), and the coordination log.
+  moves an interactive authoring is driven through), the coordination log, and
+  the multi-field update every other mutation goes through (set algebra for
+  labels and dependencies, the notes-preserving description replacement, and
+  refusal of a relationship change that would close a cycle).
   It knows nothing of flags, terminals, or exit codes — failures are typed
   errors, skipped files come back as data — so any interface can call the same
   rules. Every timestamp it stamps comes from one place, and an operation that

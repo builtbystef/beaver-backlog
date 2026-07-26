@@ -36,10 +36,11 @@ func (s *Service) Note(ref, actor, text string) (Outcome, error) {
 	}
 
 	now := s.now()
+	previous := iss
 	iss.Body = issue.AppendNote(iss.Body, issue.Note{Author: actor, Time: now, Text: text})
 	iss, err = s.writeAt(path, iss, now)
 	if err != nil {
 		return Outcome{Warnings: warnings}, err
 	}
-	return Outcome{Issue: iss, Changed: true, Warnings: warnings}, nil
+	return Outcome{Issue: iss, Previous: previous, Changed: true, Warnings: warnings}, nil
 }

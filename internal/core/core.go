@@ -130,11 +130,17 @@ func (s *Service) Get(ref string) (Detail, error) {
 }
 
 // Outcome is the result of an operation that may modify an issue: the issue as
-// it now stands, whether anything was written, and the files the scan skipped.
-// An operation whose net effect is nothing reports Changed false and leaves the
-// file — and with it the updated timestamp — exactly as it was.
+// it now stands, the issue as it stood before, whether anything was written, and
+// the files the scan skipped. An operation whose net effect is nothing reports
+// Changed false and leaves the file — and with it the updated timestamp —
+// exactly as it was.
+//
+// Previous is what a caller describing the change compares against: which field
+// actually moved, and what it held before, are facts only the pair carries. It
+// equals Issue when nothing was written.
 type Outcome struct {
 	Issue    issue.Issue
+	Previous issue.Issue
 	Changed  bool
 	Warnings []Warning
 }

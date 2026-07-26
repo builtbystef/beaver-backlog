@@ -7,7 +7,7 @@ labels:
 depends_on:
     - tlz52g
 created: 2026-07-25T08:42:28Z
-updated: 2026-07-25T10:15:11Z
+updated: 2026-07-26T19:11:41Z
 ---
 
 # Extract a CLI-independent core
@@ -133,3 +133,13 @@ Second of three sequenced specs. Depends on VCS removal having landed (smaller `
 **claude** — 2026-07-25T10:15:11Z
 
 StartOutcome.UnmetDependencies landed as []issue.Blocker, not []issue.Issue as this spec sketches: a dangling depends_on target has no issue to return, and start's warning names it — gone99 (missing). StartOutcome also carries Previous (the issue as it stood before) and Relationship, which the CLI needs to render start's confirmation line and its JSON readiness view.
+
+**claude** — 2026-07-26T19:11:41Z
+
+Two findings from the update slice (u09zmf).
+
+Outcome gained a Previous field — the issue as it stood before the call — and StartOutcome's own Previous moved up into it. A caller cannot describe what an update did from the result alone: release reports "Released <id> (was <actor>)", and the assignee it names is exactly what the write cleared.
+
+Cycle detection has no create-side counterpart to match. This spec and the consolidation spec both say update's cycle rule works "as at create", but create runs none — a newly minted issue can only depend on issues that already exist, so it can never close a loop. Update introduces the rule, and *CycleError with it, refusing only a cycle the change itself introduces: one that arrived by merge or hand-edit stays doctor's (ADR 0005), and refusing every edit to an issue caught in one would leave no way to edit it back out. So the update-command slice (u3krpx) must pick that refusal's wording and exit code itself rather than copy create's; nothing maps *CycleError in the CLI yet.
+
+One more shape decision u3krpx will document: a depends-on removal takes its reference as written when nothing resolves it, so "-gone99" drops a dangling edge. Additions stay strict.

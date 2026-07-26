@@ -32,7 +32,7 @@ func cmdCreate(env Env, args []string) int {
 		return exitUsage
 	}
 	// Validate the priority before any store work so a bad value fails fast.
-	priority, err := parsePriority(*priorityFlag)
+	priority, err := core.ParsePriority(*priorityFlag)
 	if err != nil {
 		errf(env, "%v", err)
 		return exitUsage

@@ -104,11 +104,24 @@ func reportAmbiguous(env Env, e *core.AmbiguousRefError) {
 	}
 }
 
-// warnSkipped reports the files a core read skipped as invalid. They go to
-// stderr, never stdout, so a warning cannot corrupt the JSON an agent parses.
-func warnSkipped(env Env, warnings []core.Warning) {
-	for _, w := range warnings {
-		errf(env, "skipping invalid issue %s: %v", relPath(env.WorkDir, w.Path), w.Err)
+// warnSkipped reports the files a core read skipped as invalid, for a command
+// that reads once.
+func warnSkipped(env Env, warnings []core.Warning) { warnOnce(env)(warnings) }
+
+// warnOnce builds the warning reporter for one command run. Warnings go to
+// stderr, never stdout, so one cannot corrupt the JSON an agent parses, and the
+// reporter dedupes by path so a command that goes to the core twice — claim
+// reads before it writes — still names a broken file once.
+func warnOnce(env Env) func([]core.Warning) {
+	reported := make(map[string]bool)
+	return func(warnings []core.Warning) {
+		for _, w := range warnings {
+			if reported[w.Path] {
+				continue
+			}
+			reported[w.Path] = true
+			errf(env, "skipping invalid issue %s: %v", relPath(env.WorkDir, w.Path), w.Err)
+		}
 	}
 }
 

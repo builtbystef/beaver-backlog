@@ -59,18 +59,19 @@ func (s *Service) Transition(ref string, to issue.State) (Outcome, error) {
 	}
 
 	if iss.State == to {
-		return Outcome{Issue: iss, Warnings: warnings}, nil
+		return Outcome{Issue: iss, Previous: iss, Warnings: warnings}, nil
 	}
 	if !slices.Contains(sources, iss.State) {
 		return Outcome{Warnings: warnings}, &IllegalTransitionError{ID: iss.ID, From: iss.State, To: to}
 	}
 
+	previous := iss
 	iss.State = to
 	iss, err = s.write(path, iss)
 	if err != nil {
 		return Outcome{Warnings: warnings}, err
 	}
-	return Outcome{Issue: iss, Changed: true, Warnings: warnings}, nil
+	return Outcome{Issue: iss, Previous: previous, Changed: true, Warnings: warnings}, nil
 }
 
 // ClaimedError reports that the ownership guard refused an issue another actor
@@ -86,13 +87,11 @@ func (e *ClaimedError) Error() string {
 	return fmt.Sprintf("%s is claimed by %s", e.ID, e.By)
 }
 
-// StartOutcome is Start's result. Beyond the write itself it carries the issue
-// as it stood before — the state and assignee the caller compares against to
-// describe what actually happened — the relationship view of the issue now in
-// progress, and the dependencies work began in spite of.
+// StartOutcome is Start's result. Beyond the write itself — and the before-and-
+// after pair every outcome carries — it holds the relationship view of the issue
+// now in progress and the dependencies work began in spite of.
 type StartOutcome struct {
 	Outcome
-	Previous          issue.Issue        // the issue before the call; equal to Issue on a no-op
 	Relationship      issue.Relationship // the derived view of the started issue
 	UnmetDependencies []issue.Blocker    // dependencies unmet when work began; empty unless this call began it
 }
@@ -145,8 +144,7 @@ func (s *Service) Start(ref, actor string, force bool) (StartOutcome, error) {
 		}
 	}
 	return StartOutcome{
-		Outcome:           Outcome{Issue: iss, Changed: changed, Warnings: warnings},
-		Previous:          previous,
+		Outcome:           Outcome{Issue: iss, Previous: previous, Changed: changed, Warnings: warnings},
 		Relationship:      rel.For(iss),
 		UnmetDependencies: unmet,
 	}, nil

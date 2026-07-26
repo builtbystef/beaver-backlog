@@ -2,31 +2,17 @@ package cli
 
 import (
 	"fmt"
-	"slices"
 	"strings"
 
+	"github.com/builtbystef/beaver-backlog/internal/core"
 	"github.com/builtbystef/beaver-backlog/internal/issue"
 )
 
 // This file holds the classification verbs — priority and label — that mutate
-// the two triage fields after creation. Both change only their own field and
-// skip the write entirely when nothing changes, so `updated` is churned only on
-// a real edit.
-
-// parsePriority interprets a priority argument from the command line. The four
-// levels map to themselves; "none" and the empty string map to the empty
-// Priority meaning unprioritized; anything else is an error naming the accepted
-// values.
-func parsePriority(s string) (issue.Priority, error) {
-	switch p := issue.Priority(strings.TrimSpace(s)); p {
-	case issue.PriorityUrgent, issue.PriorityHigh, issue.PriorityMedium, issue.PriorityLow:
-		return p, nil
-	case "", "none":
-		return "", nil
-	default:
-		return "", fmt.Errorf("invalid priority %q (want one of: urgent, high, medium, low, none)", s)
-	}
-}
+// the two triage fields after creation. Each is one core update of its own
+// field, so the rules that decide the result (the level a word names, which
+// labels survive an add and a remove, and whether anything changed at all) are
+// the core's; what stays here is the wording.
 
 // cmdPriority sets or clears an issue's priority: `priority <ref> <level>` sets
 // one of urgent|high|medium|low, `priority <ref> none` clears it. Setting the
@@ -42,7 +28,7 @@ func cmdPriority(env Env, args []string) int {
 		errf(env, "priority requires an issue reference and a level: beaver priority <ref> <urgent|high|medium|low|none>")
 		return exitUsage
 	}
-	level, err := parsePriority(pos[1])
+	level, err := core.ParsePriority(pos[1])
 	if err != nil {
 		errf(env, "%v", err)
 		return exitUsage
@@ -53,24 +39,23 @@ func cmdPriority(env Env, args []string) int {
 		return exitUsage
 	}
 
-	st, err := discover(env)
+	svc, err := open(env)
 	if err != nil {
-		return storeError(env, err)
+		return coreError(env, err)
 	}
-	iss, path, code := resolveRef(env, st, pos[0])
-	if code != exitOK {
-		return code
+	out, err := svc.Update(pos[0], core.Changes{Priority: &level})
+	warnSkipped(env, out.Warnings)
+	if err != nil {
+		return coreError(env, err)
 	}
-
-	if iss.Priority == level {
-		return reportIssue(env, format, iss, fmt.Sprintf("%s is already %s", iss.ID, priorityWord(level)))
+	if !out.Changed {
+		return reportIssue(env, format, out.Issue, fmt.Sprintf("%s is already %s", out.Issue.ID, priorityWord(level)))
 	}
-	iss.Priority = level
-	line := fmt.Sprintf("Set %s priority to %s", iss.ID, level)
+	line := fmt.Sprintf("Set %s priority to %s", out.Issue.ID, level)
 	if level == "" {
-		line = fmt.Sprintf("Cleared %s priority", iss.ID)
+		line = fmt.Sprintf("Cleared %s priority", out.Issue.ID)
 	}
-	return writeAndReport(env, st, path, iss, format, line)
+	return reportIssue(env, format, out.Issue, line)
 }
 
 // priorityWord names a priority for a human line, rendering the empty value as
@@ -99,8 +84,8 @@ func cmdLabel(env Env, args []string) int {
 	}
 	// Positional adds are split on commas too, so `label ref a,b` matches
 	// create's --label a,b.
-	adds := dedupe(splitList(pos[1:]))
-	removes := dedupe(remove.values)
+	adds := splitList(pos[1:])
+	removes := remove.values
 	if len(adds) == 0 && len(removes) == 0 {
 		errf(env, "label requires at least one label to add or remove")
 		return exitUsage
@@ -111,21 +96,20 @@ func cmdLabel(env Env, args []string) int {
 		return exitUsage
 	}
 
-	st, err := discover(env)
+	svc, err := open(env)
 	if err != nil {
-		return storeError(env, err)
+		return coreError(env, err)
 	}
-	iss, path, code := resolveRef(env, st, pos[0])
-	if code != exitOK {
-		return code
+	out, err := svc.Update(pos[0], core.Changes{AddLabels: adds, RemoveLabels: removes})
+	warnSkipped(env, out.Warnings)
+	if err != nil {
+		return coreError(env, err)
 	}
-
-	next := applyLabels(iss.Labels, adds, removes)
-	if slices.Equal(next, iss.Labels) {
-		return reportIssue(env, format, iss, fmt.Sprintf("%s labels unchanged", iss.ID))
+	if !out.Changed {
+		return reportIssue(env, format, out.Issue, fmt.Sprintf("%s labels unchanged", out.Issue.ID))
 	}
-	iss.Labels = next
-	return writeAndReport(env, st, path, iss, format, fmt.Sprintf("Updated %s labels: %s", iss.ID, labelSummary(next)))
+	return reportIssue(env, format, out.Issue,
+		fmt.Sprintf("Updated %s labels: %s", out.Issue.ID, labelSummary(out.Issue.Labels)))
 }
 
 // splitList flattens raw arguments (each possibly a comma-separated group) into
@@ -134,33 +118,6 @@ func splitList(items []string) []string {
 	var out []string
 	for _, it := range items {
 		out = append(out, splitCSV(it)...)
-	}
-	return out
-}
-
-// applyLabels returns current with removes deleted and adds appended, treating
-// labels as an ordered set: removal wins over a simultaneous add, pre-existing
-// duplicates collapse, and the result is nil when empty so the field marshals
-// away.
-func applyLabels(current, adds, removes []string) []string {
-	drop := make(map[string]bool, len(removes))
-	for _, r := range removes {
-		drop[r] = true
-	}
-	seen := make(map[string]bool, len(current)+len(adds))
-	var out []string
-	keep := func(l string) {
-		if drop[l] || seen[l] {
-			return
-		}
-		seen[l] = true
-		out = append(out, l)
-	}
-	for _, l := range current {
-		keep(l)
-	}
-	for _, l := range adds {
-		keep(l)
 	}
 	return out
 }
