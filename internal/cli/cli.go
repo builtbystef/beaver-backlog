@@ -78,6 +78,8 @@ func Run(env Env) int {
 		return cmdPriority(env, args)
 	case "label":
 		return cmdLabel(env, args)
+	case "update":
+		return cmdUpdate(env, args)
 	case "edit":
 		return cmdEdit(env, args)
 	case "delete":
@@ -115,6 +117,7 @@ usage:
   beaver start <ref>          start an issue (in-progress; auto-claims if unowned)
   beaver priority <ref> <lvl> set or clear priority (urgent|high|medium|low|none)
   beaver label <ref> <label>  add labels (or remove them with --remove)
+  beaver update <ref>         change an issue's fields (title, body, labels, ...)
   beaver edit <ref>           open an issue in $EDITOR for freeform hand-editing
   beaver delete <ref>         delete an issue's file (for junk; the VCS keeps history)
   beaver note <ref> "<text>"  append a note to an issue's coordination log
@@ -144,6 +147,16 @@ list flags:
 
 label flags:
   --remove <label>            remove a label instead of adding (repeatable, comma-separated)
+
+update flags (at least one is required; a change that nets out to nothing writes nothing):
+  --title <text>              set the title, renaming the file to the new slug
+  --body <markdown>           replace the description, keeping the notes section
+  --body-file <path>          read the replacement description from a file, or - for stdin
+  --assignee <actor>          assign to an actor; --unassign clears the assignee
+  --priority <level>          set priority: urgent|high|medium|low|none (none clears)
+  --label <spec>              add a label, or -<label> to remove one (repeatable, comma-separated)
+  --depends-on <spec>         add a dependency, or -<ref> to remove one (repeatable, comma-separated)
+  --parent <ref>              set the parent issue; --no-parent detaches it
 
 claim / start flags:
   --as <actor>                act as this actor (overrides identity detection)

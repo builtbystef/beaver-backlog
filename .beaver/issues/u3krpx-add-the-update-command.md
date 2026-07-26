@@ -1,13 +1,13 @@
 ---
 id: u3krpx
 title: Add the update command
-state: todo
+state: done
 priority: medium
 depends_on:
     - u09zmf
 parent: gevz8m
 created: 2026-07-25T08:47:52Z
-updated: 2026-07-25T08:47:52Z
+updated: 2026-07-26T22:29:17Z
 ---
 
 ## What to build
