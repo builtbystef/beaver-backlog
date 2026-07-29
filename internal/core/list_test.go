@@ -239,7 +239,3 @@ func atTime(iss issue.Issue, t time.Time) issue.Issue {
 	iss.Created, iss.Updated = t, t
 	return iss
 }
-
-// ptr returns a pointer to v, for the query and change fields whose nil means
-// "not named" rather than "empty".
-func ptr[T any](v T) *T { return &v }

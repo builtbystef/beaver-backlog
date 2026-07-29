@@ -8,7 +8,7 @@ tracker — project work is tracked in the `.beaver/` store right here.
 Run whichever check the change touches as you go, and all of them before ending a session that changed code — every one must pass:
 
 - Format: `gofmt -l .` (must print nothing; fix with `gofmt -w .`)
-- Lint: `go vet ./...`
+- Lint: `golangci-lint run ./...`
 - Typecheck: `go build ./...`
 - Test: `go test ./...`
 

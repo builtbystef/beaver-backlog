@@ -1,0 +1,11 @@
+version: "2"
+
+linters:
+  # The standard set: errcheck, govet, ineffassign, staticcheck, unused.
+  default: standard
+  exclusions:
+    # Unchecked errors from fmt.Fprint* to stdout/stderr and friends are
+    # deliberate on human-facing confirmation lines; errcheck still applies
+    # everywhere else (Close, Commit, file writes, ...).
+    presets:
+      - std-error-handling
