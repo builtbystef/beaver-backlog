@@ -8,7 +8,7 @@
 # Local recovery drafts (per-machine, never shared)
 .beaver/drafts/
 
-# Claude Code skills and agents (per-machine, never shared)
+# Agent skill files (per-machine, never shared)
 .claude/skills/
 .agents/skills/
 
