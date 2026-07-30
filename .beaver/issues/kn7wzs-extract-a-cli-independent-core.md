@@ -1,13 +1,13 @@
 ---
 id: kn7wzs
 title: Extract a CLI-independent core
-state: todo
+state: done
 labels:
     - spec
 depends_on:
     - tlz52g
 created: 2026-07-25T08:42:28Z
-updated: 2026-07-26T20:24:42Z
+updated: 2026-07-30T03:40:11Z
 ---
 
 # Extract a CLI-independent core

@@ -1,13 +1,13 @@
 ---
 id: gevz8m
 title: Consolidate the CLI around update
-state: todo
+state: done
 labels:
     - spec
 depends_on:
     - kn7wzs
 created: 2026-07-25T08:42:32Z
-updated: 2026-07-25T08:42:32Z
+updated: 2026-07-30T03:40:11Z
 ---
 
 # Consolidate the CLI around update

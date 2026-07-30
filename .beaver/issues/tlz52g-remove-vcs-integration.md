@@ -1,11 +1,11 @@
 ---
 id: tlz52g
 title: Remove VCS integration
-state: todo
+state: done
 labels:
     - spec
 created: 2026-07-25T08:42:22Z
-updated: 2026-07-25T08:42:22Z
+updated: 2026-07-30T03:40:11Z
 ---
 
 # Remove VCS integration
