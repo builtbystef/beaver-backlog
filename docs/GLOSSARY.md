@@ -86,6 +86,12 @@ issue that has sub-issues is informally an "epic," but Beaver Backlog has no dis
 type — it is just an issue with sub-issues.
 _Avoid_: Subtask, Child
 
+**Board**:
+The web UI's primary view: one column per state, each issue a draggable card.
+A presentation of the store, not stored data — column membership is just the
+issue's state, and card order is the same fixed ordering every list uses.
+_Avoid_: Kanban view, Dashboard
+
 **Note**:
 A flat, append-only, attributed and timestamped entry appended to an issue's body
 — a coordination journal for humans and agents ("tried X, see commit abc; handing
