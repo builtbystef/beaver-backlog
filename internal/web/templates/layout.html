@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{{.Title}} · Beaver Backlog</title>
+<link rel="stylesheet" href="/assets/app.css">
+<script src="/assets/htmx.min.js" defer></script>
+</head>
+<body>
+<header class="topbar">
+  <a class="brand" href="/">Beaver Backlog</a>
+</header>
+<main>
+{{with .Warnings}}
+<section class="banner" role="status">
+  <p>{{len .}} file(s) skipped — not usable issues. Run <code>beaver doctor</code>.</p>
+  <ul>
+    {{range .}}<li><code>{{.Path}}</code> — {{.Reason}}</li>{{end}}
+  </ul>
+</section>
+{{end}}
+{{template "content" .}}
+</main>
+</body>
+</html>

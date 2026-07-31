@@ -1,0 +1,24 @@
+{{define "content"}}
+<h1>Issues</h1>
+{{if .Issues}}
+<table class="issues">
+  <thead>
+    <tr><th>ID</th><th>Title</th><th>State</th><th>Priority</th><th>Labels</th><th>Assignee</th></tr>
+  </thead>
+  <tbody>
+    {{range .Issues}}
+    <tr>
+      <td class="id">{{.ID}}</td>
+      <td>{{.Title}}</td>
+      <td><span class="state state-{{.State}}">{{.State}}</span></td>
+      <td>{{with .Priority}}<span class="priority priority-{{.}}">{{.}}</span>{{else}}<span class="none">—</span>{{end}}</td>
+      <td>{{range .Labels}}<span class="label">{{.}}</span> {{else}}<span class="none">—</span>{{end}}</td>
+      <td>{{with .Assignee}}{{.}}{{else}}<span class="none">—</span>{{end}}</td>
+    </tr>
+    {{end}}
+  </tbody>
+</table>
+{{else}}
+<p class="empty">No issues yet — create one with <code>beaver create</code>.</p>
+{{end}}
+{{end}}

@@ -1,8 +1,11 @@
 package main
 
 import (
+	"context"
 	"os"
+	"os/signal"
 	"path/filepath"
+	"syscall"
 
 	"golang.org/x/term"
 
@@ -10,10 +13,17 @@ import (
 )
 
 func main() {
+	// Interrupt reaches the engine as a cancelled context, so a foreground
+	// command (serve) can shut itself down cleanly instead of being killed
+	// mid-response. A second signal is left to the runtime's default handler.
+	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
+	defer stop()
+
 	// No core options: the real process wants the real clock and ID generator,
 	// which the core defaults to.
 	os.Exit(cli.Run(cli.Env{
 		Args:          os.Args[1:],
+		Ctx:           ctx,
 		Stdin:         os.Stdin,
 		Stdout:        os.Stdout,
 		Stderr:        os.Stderr,

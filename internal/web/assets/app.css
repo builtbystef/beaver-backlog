@@ -1,0 +1,102 @@
+/* The web UI's whole stylesheet: one embedded file, no build step (ADR 0006). */
+
+:root {
+  color-scheme: dark;
+  --bg: #1e1e1e;
+  --panel: #262626;
+  --line: #383838;
+  --text: #dcddde;
+  --muted: #888;
+  --accent: #a882ff;
+  --warn-bg: #3a2f1c;
+  --warn-line: #a5822f;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font: 15px/1.5 ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+
+.topbar {
+  border-bottom: 1px solid var(--line);
+  padding: 0.75rem 1.5rem;
+}
+
+.brand {
+  color: var(--accent);
+  font-weight: 600;
+  text-decoration: none;
+}
+
+main { padding: 1.5rem; }
+
+h1 { font-size: 1.25rem; margin: 0 0 1rem; }
+
+.banner {
+  background: var(--warn-bg);
+  border: 1px solid var(--warn-line);
+  border-radius: 6px;
+  margin-bottom: 1.5rem;
+  padding: 0.75rem 1rem;
+}
+
+.banner p { margin: 0 0 0.5rem; }
+.banner ul { margin: 0; padding-left: 1.25rem; }
+
+table.issues {
+  border-collapse: collapse;
+  width: 100%;
+}
+
+.issues th, .issues td {
+  border-bottom: 1px solid var(--line);
+  padding: 0.5rem 0.75rem;
+  text-align: left;
+  vertical-align: top;
+}
+
+.issues th {
+  color: var(--muted);
+  font-size: 0.8rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.issues tbody tr:hover { background: var(--panel); }
+
+.id { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
+
+.state, .label, .priority {
+  border-radius: 999px;
+  display: inline-block;
+  font-size: 0.78rem;
+  padding: 0.1rem 0.55rem;
+  white-space: nowrap;
+}
+
+.state { background: #33373d; }
+.state-in-progress { background: #2f4f78; }
+.state-done { background: #2f5d3a; }
+.state-cancelled { background: #4a3a3a; color: var(--muted); }
+
+.priority { background: #33373d; }
+.priority-urgent { background: #6b2b2b; }
+.priority-high { background: #6b4a2b; }
+
+.label { background: var(--panel); border: 1px solid var(--line); }
+
+.none, .empty { color: var(--muted); }
+
+code {
+  background: var(--panel);
+  border-radius: 4px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  padding: 0.05rem 0.3rem;
+}
+
+a { color: var(--accent); }

@@ -6,6 +6,7 @@ package beavertest
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"os"
 	"path/filepath"
@@ -53,6 +54,7 @@ type Harness struct {
 	StdinIsTTY    bool              // the interactivity signal that gates human identity setup (default false)
 	StdinText     string            // interactive input fed to prompts (the identity prompt)
 	NewID         func() string     // ID generator override; nil uses the real one
+	Ctx           context.Context   // stands in for the interrupt a long-running command stops on; nil never fires
 }
 
 // New returns a harness backed by a fresh temp directory. The store is not yet
@@ -84,6 +86,7 @@ func (h *Harness) Run(args ...string) Result {
 		Stdout:  &stdout,
 		Stderr:  &stderr,
 		WorkDir: h.Dir,
+		Ctx:     h.Ctx,
 		Getenv:  func(k string) string { return h.Env[k] },
 		// The clock and the ID source belong to the application, so the fakes
 		// reach it as core options rather than as fields of the CLI's own env.

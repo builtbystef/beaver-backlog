@@ -10,7 +10,7 @@ every module below either reads/writes them or renders them.
 
 The application is `internal/core`: every rule about what an operation means
 lives there, stated once. The CLI is **one interface over it** — the first
-one, and not privileged; the planned web UI is another. An interface parses an
+one, and not privileged; the web UI is the second. An interface parses an
 invocation, calls the core, and words the result; it decides nothing about the
 rules.
 
@@ -42,9 +42,20 @@ invokes a version-control system; committing the files is the operator's job.
   command, plus shared plumbing. Each handler parses its invocation, calls the
   core, renders the result, and maps typed failures to exit codes; the wording
   of a message, a path shown relative to where the command ran, and the choice
-  of human or JSON are its own. Thirteen commands — the lifecycle verbs are the
+  of human or JSON are its own. Fourteen commands — the lifecycle verbs are the
   only path to a state change, and `update` is the only path to every other
   field. The engine takes everything it touches through an `Env` struct.
+- `internal/web/` — the local web interface over the core: `beaver serve`'s
+  handler, built from a `Config` naming the directory the store is resolved
+  from, the launch-resolved actor every write is attributed to, and the core
+  options that carry the clock and ID source. It opens a core service **per
+  request** — a scan is cheap, and the files change underneath the browser — so
+  no issue data outlives a response and nothing is ever reconciled. Pages are
+  server-rendered `html/template`, with every template and static asset (the
+  stylesheet and a vendored, pinned htmx) embedded by `go:embed`: serving needs
+  no build step and no network (ADR 0006). Like the CLI it decides no rules; it
+  words a core failure as a status and a skipped file as a banner rather than an
+  error page (ADR 0003).
 - `internal/issue/` — the issue model: parsing, serializing, validation, and
   relationships (`depends_on`, `parent`), including the derived
   blocked/ready/stuck conditions.
@@ -64,8 +75,9 @@ invokes a version-control system; committing the files is the operator's job.
 - **`Env` struct** (`internal/cli`): the dependency-injection boundary between
   the engine and the world, and it carries only what an *interface* owns — the
   args, the three streams plus whether stdin and stdout are terminals, the
-  working directory the store is resolved from, an environment lookup, and the
-  user-config directory. New external effects of that kind go through it, never
+  working directory the store is resolved from, an environment lookup, the
+  user-config directory, and the cancellation an interrupt arrives as (what
+  `serve` shuts down on). New external effects of that kind go through it, never
   around it. Effects the application owns instead — time, the identity of new
   issues — are not fields here at all: they travel as the core options `Env`
   forwards, so a test substituting a clock reaches the application rather than
@@ -75,11 +87,10 @@ invokes a version-control system; committing the files is the operator's job.
   file; the CLI package does not import `internal/store` at all, and no core
   read hands out a path to write through — the interactive path is hand-editing
   the file itself, with `doctor` as the check afterwards.
+- **`Config` struct** (`internal/web`): the web interface's counterpart to
+  `Env` — the launch decisions (where the store is, who the writes belong to)
+  handed in once, with the application's own seams travelling through as core
+  options, exactly as `Env` forwards them.
 - **The files themselves**: hand-editing an issue file is a first-class
   operation, so every module must tolerate files it didn't write — everyday
   commands skip-and-warn on invalid files, `doctor` repairs drift (ADR 0003).
-
-## Planned
-
-A web UI over the same files (no service, no database) is planned but not
-started.

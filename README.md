@@ -114,7 +114,7 @@ abandoned, kept visible so nobody re-files it.
 
 ## Commands
 
-Thirteen of them, and they fit on one screen:
+Fourteen of them, and they fit on one screen:
 
 | Command                      | What it does                                                                                   |
 | ---------------------------- | ---------------------------------------------------------------------------------------------- |
@@ -130,6 +130,7 @@ Thirteen of them, and they fit on one screen:
 | `beaver note <ref> "<text>"` | Append an attributed, timestamped note                                                         |
 | `beaver delete <ref>`        | Delete the file (for junk; the VCS keeps history)                                              |
 | `beaver doctor`              | Check store health; `--fix` repairs what is safe to repair                                     |
+| `beaver serve`               | Serve the local web UI on loopback until interrupted (`--port`, `--as`)                        |
 | `beaver whoami`              | Print the actor you resolve as                                                                 |
 
 `update` takes as many fields as you like in one invocation, and writes
@@ -264,8 +265,9 @@ never removes data.
 ## Status
 
 Beaver Backlog is pre-1.0. The CLI works and is well tested, but the file format
-and command surface may still change without a deprecation cycle. A web UI
-over the same files is planned.
+and command surface may still change without a deprecation cycle. The web UI
+over the same files has started: `beaver serve` reads the backlog in a
+browser today, and gains the board, the graph, and the write views next.
 
 ## Contributing
 

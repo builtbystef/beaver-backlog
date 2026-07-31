@@ -6,6 +6,7 @@
 package cli
 
 import (
+	"context"
 	"flag"
 	"fmt"
 	"io"
@@ -32,6 +33,10 @@ type Env struct {
 	Stderr  io.Writer           // diagnostics, errors, and interactive prompts
 	WorkDir string              // directory the store is resolved from
 	Getenv  func(string) string // environment lookup
+	// Ctx is cancelled when the process is asked to stop. Only a command that
+	// runs until interrupted — serve — waits on it; a nil Ctx never fires, which
+	// is what every one-shot command wants.
+	Ctx context.Context
 	// CoreOptions configure the core service the handlers work through. Time and
 	// the identity of new issues are the application's seams, not this
 	// interface's, so they travel here rather than as fields of their own; an
@@ -75,6 +80,8 @@ func Run(env Env) int {
 		return cmdNote(env, args)
 	case "doctor":
 		return cmdDoctor(env, args)
+	case "serve":
+		return cmdServe(env, args)
 	case "whoami":
 		return cmdWhoami(env, args)
 	case "help", "-h", "--help":
@@ -103,6 +110,7 @@ usage:
   beaver note <ref> "<text>"  append a note to an issue's coordination log
   beaver delete <ref>         delete an issue's file (for junk; the VCS keeps history)
   beaver doctor               check store health (repair lint with --fix)
+  beaver serve                serve the local web UI until interrupted
   beaver whoami               print the actor Beaver Backlog resolves you as
 
 common flags (after the command):
@@ -147,6 +155,10 @@ whoami flags:
 
 note flags:
   --as <actor>                attribute the note to this actor (overrides detection)
+
+serve flags:
+  --port <n>                  port to listen on (default 2328; 0 picks a free one)
+  --as <actor>                attribute web writes to this actor (overrides detection)
 
 doctor flags:
   --fix                       repair lint-class problems (e.g. drifted filenames);
