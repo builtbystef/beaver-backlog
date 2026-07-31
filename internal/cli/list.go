@@ -10,8 +10,8 @@ import (
 
 // cmdList enumerates issues. By default (or with --state) it filters by state;
 // --ready and --blocked instead select the two halves of the unstarted work over
-// the dependency graph. The label, priority, and assignee filters refine any base
-// selector. Selection and ordering belong to the core; this handler only turns
+// the dependency graph. The label, priority, assignee, parent, and search
+// filters refine any base selector. Selection and ordering belong to the core; this handler only turns
 // flags into a query.
 func cmdList(env Env, args []string) int {
 	fs, formatFlag := newFlagSet(env, "list")
@@ -22,6 +22,8 @@ func cmdList(env Env, args []string) int {
 	fs.Var(&labelFilter, "label", "only issues carrying every named label (repeatable, comma-separated)")
 	priorityFilter := fs.String("priority", "", "only issues at this priority: urgent|high|medium|low|none")
 	assigneeFilter := fs.String("assignee", "", "only issues assigned to this actor")
+	parentFilter := fs.String("parent", "", "only the direct children of this issue (a ref)")
+	searchFilter := fs.String("search", "", "only issues whose title or body contains this text")
 	pos, ok := parseArgs(fs, args)
 	if !ok {
 		return exitUsage
@@ -62,6 +64,10 @@ func cmdList(env Env, args []string) int {
 	if *assigneeFilter != "" {
 		q.Assignee = assigneeFilter
 	}
+	if *parentFilter != "" {
+		q.Parent = parentFilter
+	}
+	q.Text = *searchFilter
 	format, err := resolveFormat(env, *formatFlag)
 	if err != nil {
 		errf(env, "%v", err)

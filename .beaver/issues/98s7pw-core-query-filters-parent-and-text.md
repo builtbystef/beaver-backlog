@@ -1,11 +1,12 @@
 ---
 id: 98s7pw
 title: 'Core query filters: parent and text'
-state: todo
+state: done
+assignee: claude
 priority: high
 parent: eavbgy
 created: 2026-07-30T03:33:37Z
-updated: 2026-07-30T03:33:37Z
+updated: 2026-07-31T01:07:41Z
 ---
 
 ## What to build
@@ -36,3 +37,13 @@ The CLI `list` command gains `--parent <ref>` and `--search <text>` mapping onto
   - `Query{Parent: &A, Text: "web"}` → `[B]`.
 - [ ] `beaver list --parent <ref>` and `--search <text>` map onto the new fields; flag mapping and one happy path tested at the CLI surface seam; rule behaviour tested only at the core seam.
 - [ ] An unresolvable `--parent` ref exits with the not-found exit code and a clear message.
+
+## Notes
+
+**claude** — 2026-07-31T01:07:41Z
+
+Landed. Core: Query gains Parent *string and Text string. List resolves the parent ref once, before the walk, through the same resolve() every other operation uses — so a slug, an <id>-<slug> name, and a full ID all work, an unresolvable ref returns *UnknownRefError instead of an empty listing, and an ambiguous one still returns *AmbiguousRefError. The resolved ID rides in an unexported 'selection' wrapper (Query + parentID) that owns matches(), keeping Query a pure value. Parent matches the stored parent field only, so a grandchild never matches. Text is a case-insensitive substring over title and body; "" is off. Both are refinements like the others, so composition and the fixed ordering are untouched.
+
+CLI: list gains --parent <ref> and --search <text>, mapped straight onto the fields; an unresolvable --parent falls through the existing coreError mapping to exit 3. Usage text in cli.go and the README command table updated.
+
+Tests: rules at the core seam (the spec's A/B/C/D worked examples, plus a grandchild case for direct-children-only and a ref-form sweep); CLI seam covers only flag mapping, composition happy path, and the not-found exit code. All four checks pass.

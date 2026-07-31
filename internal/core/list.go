@@ -6,6 +6,7 @@ package core
 import (
 	"slices"
 	"sort"
+	"strings"
 
 	"github.com/builtbystef/beaver-backlog/internal/issue"
 )
@@ -21,6 +22,17 @@ type Query struct {
 	Labels     []string         // only issues carrying every one of these labels
 	Priorities []issue.Priority // match any of these; the empty Priority matches the unprioritized, an empty slice matches every priority
 	Assignee   *string          // only issues assigned to this actor; the empty string matches the unassigned, nil matches every issue
+	Parent     *string          // only the direct children of the referenced issue, never its deeper descendants; the ref resolves as Get's does, and an unresolvable one is an *UnknownRefError; nil matches every issue
+	Text       string           // only issues whose title or body contains this text, case-insensitively; the empty string matches every issue
+}
+
+// selection is a Query with the one question it cannot answer from an issue
+// alone already settled: which ID its parent reference names. Resolving once,
+// before the walk, also means an unresolvable reference fails the whole listing
+// rather than quietly matching nothing.
+type selection struct {
+	Query
+	parentID string
 }
 
 // Listing is a query's result: the matching issues in display order, and the
@@ -38,11 +50,19 @@ func (s *Service) List(q Query) (Listing, error) {
 	if err != nil {
 		return Listing{Warnings: warnings}, err
 	}
+	sel := selection{Query: q}
+	if q.Parent != nil {
+		parent, _, err := resolve(snap, *q.Parent)
+		if err != nil {
+			return Listing{Warnings: warnings}, err
+		}
+		sel.parentID = parent.ID
+	}
 	all := snap.Issues()
 	rel := issue.NewRelations(all)
 	issues := make([]issue.Issue, 0, len(all))
 	for _, iss := range all {
-		if q.matches(iss, rel) {
+		if sel.matches(iss, rel) {
 			issues = append(issues, iss)
 		}
 	}
@@ -50,9 +70,9 @@ func (s *Service) List(q Query) (Listing, error) {
 	return Listing{Issues: issues, Warnings: warnings}, nil
 }
 
-// matches reports whether iss satisfies every active dimension of q, with rel
-// answering the derived questions the issue file does not store.
-func (q Query) matches(iss issue.Issue, rel *issue.Relations) bool {
+// matches reports whether iss satisfies every active dimension of the query,
+// with rel answering the derived questions the issue file does not store.
+func (q selection) matches(iss issue.Issue, rel *issue.Relations) bool {
 	if len(q.States) > 0 && !slices.Contains(q.States, iss.State) {
 		return false
 	}
@@ -70,7 +90,24 @@ func (q Query) matches(iss issue.Issue, rel *issue.Relations) bool {
 	if q.Assignee != nil && iss.Assignee != *q.Assignee {
 		return false
 	}
+	if q.Parent != nil && iss.Parent != q.parentID {
+		return false
+	}
+	if !containsText(iss, q.Text) {
+		return false
+	}
 	return hasAllLabels(iss.Labels, q.Labels)
+}
+
+// containsText reports whether the issue's prose — its title or its body —
+// holds text, ignoring case. An empty text constrains nothing.
+func containsText(iss issue.Issue, text string) bool {
+	if text == "" {
+		return true
+	}
+	want := strings.ToLower(text)
+	return strings.Contains(strings.ToLower(iss.Title), want) ||
+		strings.Contains(strings.ToLower(iss.Body), want)
 }
 
 // hasAllLabels reports whether have carries every label in want (AND semantics).

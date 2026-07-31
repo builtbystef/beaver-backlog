@@ -120,7 +120,7 @@ Thirteen of them, and they fit on one screen:
 | ---------------------------- | ---------------------------------------------------------------------------------------------- |
 | `beaver init`                | Initialize a store in the current project                                                      |
 | `beaver create "<title>"`    | Create an issue (`--body`, `--body-file`, `--label`, `--priority`, `--depends-on`, `--parent`) |
-| `beaver list`                | List issues (`--state`, `--ready`, `--blocked`, `--label`, `--priority`, `--assignee`)         |
+| `beaver list`                | List issues (`--state`, `--ready`, `--blocked`, `--label`, `--priority`, `--assignee`, `--parent`, `--search`)         |
 | `beaver show <ref>`          | Show an issue, including what it waits on and whether it is ready                              |
 | `beaver start <ref>`         | Move to in-progress, auto-claiming if unowned                                                  |
 | `beaver done <ref>`          | Mark done                                                                                      |

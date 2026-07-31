@@ -1,6 +1,7 @@
 package core_test
 
 import (
+	"errors"
 	"slices"
 	"testing"
 	"time"
@@ -238,4 +239,86 @@ func withAssignee(iss issue.Issue, actor string) issue.Issue {
 func atTime(iss issue.Issue, t time.Time) issue.Issue {
 	iss.Created, iss.Updated = t, t
 	return iss
+}
+
+// The parent filter is a containment question the query cannot answer from an
+// issue alone: only the referenced issue's direct children match, and a
+// grandchild is not a child.
+func TestListParentSelectsDirectChildrenOnly(t *testing.T) {
+	root := newStore(t)
+	seedFamily(t, root)
+	seed(t, root, withParent(mkIssue("gnd555", "Grandchild"), "bbb222"))
+
+	got := listIDs(t, root, core.Query{Parent: new("aaa111")})
+	if want := []string{"bbb222", "ccc333"}; !slices.Equal(got, want) {
+		t.Errorf("parent=aaa111 = %v, want its direct children %v", got, want)
+	}
+}
+
+// The parent ref resolves like every other reference, so a slug or a file name
+// works — and a reference that names nothing is an error, not an empty listing
+// that reads as "this parent has no children".
+func TestListParentResolvesRefsAndRejectsUnknownOnes(t *testing.T) {
+	root := newStore(t)
+	seedFamily(t, root)
+
+	for _, ref := range []string{"aaa111", "extract-core", "aaa111-extract-core"} {
+		got := listIDs(t, root, core.Query{Parent: &ref})
+		if want := []string{"bbb222", "ccc333"}; !slices.Equal(got, want) {
+			t.Errorf("parent=%q = %v, want %v", ref, got, want)
+		}
+	}
+
+	_, err := open(t, root).List(core.Query{Parent: new("nope")})
+	var unknown *core.UnknownRefError
+	if !errors.As(err, &unknown) {
+		t.Fatalf("parent=nope error = %v, want *UnknownRefError", err)
+	}
+	if unknown.Ref != "nope" {
+		t.Errorf("UnknownRefError.Ref = %q, want the reference as given", unknown.Ref)
+	}
+}
+
+// Text is one substring test over the whole of an issue's prose — title and
+// body alike — and case never decides a match.
+func TestListTextMatchesTitleOrBodyCaseInsensitively(t *testing.T) {
+	root := newStore(t)
+	seedFamily(t, root)
+
+	if got := listIDs(t, root, core.Query{Text: "FLAG"}); !slices.Equal(got, []string{"ccc333"}) {
+		t.Errorf("text=FLAG = %v, want [ccc333] (matched in the body)", got)
+	}
+	if got := listIDs(t, root, core.Query{Text: "board"}); !slices.Equal(got, []string{"bbb222"}) {
+		t.Errorf("text=board = %v, want [bbb222] (matched in the title)", got)
+	}
+	if got := listIDs(t, root, core.Query{Text: ""}); len(got) != 4 {
+		t.Errorf("text=\"\" = %v, want no text filtering at all", got)
+	}
+}
+
+// The new filters are refinements like every other, so they stack with each
+// other and leave the fixed ordering alone.
+func TestListParentAndTextCompose(t *testing.T) {
+	root := newStore(t)
+	seedFamily(t, root)
+
+	q := core.Query{Parent: new("aaa111"), Text: "web"}
+	if got := listIDs(t, root, q); !slices.Equal(got, []string{"bbb222"}) {
+		t.Errorf("parent=aaa111 text=web = %v, want [bbb222]", got)
+	}
+
+	q = core.Query{Parent: new("aaa111"), States: []issue.State{issue.StateTodo}}
+	if got := listIDs(t, root, q); !slices.Equal(got, []string{"bbb222"}) {
+		t.Errorf("parent=aaa111 state=todo = %v, want [bbb222]", got)
+	}
+}
+
+// seedFamily writes the spec's worked example: a parent, two children of it (one
+// done, with prose only in its body), and an unrelated standalone issue.
+func seedFamily(t *testing.T, root string) {
+	t.Helper()
+	seed(t, root, atTime(mkIssue("aaa111", "Extract core"), fixedTime))
+	seed(t, root, atTime(withParent(mkIssue("bbb222", "Web board"), "aaa111"), fixedTime.Add(time.Minute)))
+	seed(t, root, atTime(withState(withBody(withParent(mkIssue("ccc333", "CLI polish"), "aaa111"), "rework flag parsing"), issue.StateDone), fixedTime.Add(2*time.Minute)))
+	seed(t, root, atTime(mkIssue("ddd444", "Standalone"), fixedTime.Add(3*time.Minute)))
 }

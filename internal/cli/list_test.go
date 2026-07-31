@@ -185,6 +185,41 @@ func TestListSkipsInvalidFiles(t *testing.T) {
 	}
 }
 
+// The two new filters map onto the core query's Parent and Text fields; the
+// rules themselves are asserted at the core seam.
+func TestListParentAndSearchFlags(t *testing.T) {
+	h := beavertest.New(t).Init()
+	base := beavertest.DefaultNow
+	seed(t, h, "aaa111", "Extract core", issue.StateTodo, base)
+	seedChild(t, h, "bbb222", "Web board", "aaa111", base.Add(time.Minute))
+	seedChild(t, h, "ccc333", "CLI polish", "aaa111", base.Add(2*time.Minute))
+
+	if got := listIDs(t, h, "--parent", "aaa111"); !slices.Equal(got, []string{"bbb222", "ccc333"}) {
+		t.Errorf("--parent aaa111 = %v, want the two children", got)
+	}
+	if got := listIDs(t, h, "--search", "WEB"); !slices.Equal(got, []string{"bbb222"}) {
+		t.Errorf("--search WEB = %v, want [bbb222]", got)
+	}
+	if got := listIDs(t, h, "--parent", "aaa111", "--search", "polish"); !slices.Equal(got, []string{"ccc333"}) {
+		t.Errorf("--parent with --search = %v, want [ccc333]", got)
+	}
+}
+
+// A --parent ref naming no issue is a not-found, the same as any other bad
+// reference — never an empty listing.
+func TestListUnknownParentIsNotFound(t *testing.T) {
+	h := beavertest.New(t).Init()
+	seed(t, h, "aaa111", "Extract core", issue.StateTodo, beavertest.DefaultNow)
+
+	r := h.Run("list", "--parent", "nope")
+	if r.Code != 3 {
+		t.Errorf("--parent with an unknown ref exit = %d, want 3 (not-found)", r.Code)
+	}
+	if !strings.Contains(r.Stderr, "nope") {
+		t.Errorf("error should name the reference:\n%s", r.Stderr)
+	}
+}
+
 // --- helpers ---
 
 // seeded holds the ID chosen for each state by seedAllStates.
@@ -210,6 +245,18 @@ func seed(t *testing.T, h *beavertest.Harness, id, title string, state issue.Sta
 	t.Helper()
 	data, err := issue.Marshal(issue.Issue{
 		ID: id, Title: title, State: state, Created: created, Updated: created,
+	})
+	if err != nil {
+		t.Fatalf("marshal seed %s: %v", id, err)
+	}
+	h.WriteFile("issues/"+issue.FileName(id, issue.Slug(title)), string(data))
+}
+
+// seedChild writes a todo issue that hangs off a parent.
+func seedChild(t *testing.T, h *beavertest.Harness, id, title, parent string, created time.Time) {
+	t.Helper()
+	data, err := issue.Marshal(issue.Issue{
+		ID: id, Title: title, State: issue.StateTodo, Parent: parent, Created: created, Updated: created,
 	})
 	if err != nil {
 		t.Fatalf("marshal seed %s: %v", id, err)

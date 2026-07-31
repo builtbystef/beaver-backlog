@@ -124,6 +124,8 @@ list flags:
   --label <label>             only issues carrying every named label (repeatable)
   --priority <level>          only issues at this priority (none = unprioritized)
   --assignee <actor>          only issues assigned to this actor
+  --parent <ref>              only the direct children of this issue
+  --search <text>             only issues whose title or body contains this text
   issues are ordered by priority (urgent first), then oldest first
 
 update flags (at least one is required; a change that nets out to nothing writes nothing):
