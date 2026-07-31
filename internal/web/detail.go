@@ -6,7 +6,6 @@ package web
 
 import (
 	"encoding/json"
-	"errors"
 	"fmt"
 	"net/http"
 
@@ -25,6 +24,9 @@ type detailPage struct {
 	Notes       []issue.Note
 	Rel         issue.Relationship
 	Custom      []customField
+	// Note is the box for appending to the log: empty on a page being read,
+	// holding the rejected text and the core's words when a note was refused.
+	Note noteForm
 }
 
 // customField is one user-defined frontmatter key rendered for a reader.
@@ -52,26 +54,25 @@ func (s *server) detail(w http.ResponseWriter, r *http.Request) {
 	}
 	ref := r.PathValue("ref")
 	got, err := svc.Get(ref)
-	var ambiguous *core.AmbiguousRefError
-	switch {
-	case errors.As(err, &ambiguous):
-		s.render(w, r, "matches.html", http.StatusOK, matchesPage{
-			page:    s.page(ref, got.Warnings),
-			Ref:     ref,
-			Matches: ambiguous.Matches,
-		})
-		return
-	case err != nil:
-		s.fail(w, r, err)
+	if err != nil {
+		s.failRef(w, r, ref, got.Warnings, err)
 		return
 	}
-	s.render(w, r, "detail.html", http.StatusOK, detailPage{
+	s.renderDetail(w, r, got, noteForm{}, http.StatusOK)
+}
+
+// renderDetail draws one issue's page. The note box travels in because a
+// refused note is this same page again — the log the reader was writing to, with
+// their words still in the box.
+func (s *server) renderDetail(w http.ResponseWriter, r *http.Request, got core.Detail, note noteForm, status int) {
+	s.render(w, r, "detail.html", status, detailPage{
 		page:        s.page(got.Issue.Title, got.Warnings),
 		Issue:       got.Issue,
 		Description: issue.Description(got.Issue.Body),
 		Notes:       issue.ParseNotes(got.Issue.Body),
 		Rel:         got.Relationship,
 		Custom:      customFields(got.Issue.Custom),
+		Note:        note,
 	})
 }
 

@@ -2,6 +2,22 @@
 {{$iss := .Issue}}
 <article class="detail">
   <h1>{{$iss.Title}}</h1>
+  <div class="actions">
+    <a href="/issues/{{$iss.ID}}/edit">Edit</a>
+    <form method="post" action="/issues/{{$iss.ID}}/delete" data-confirm="confirm-delete">
+      <button type="submit" class="danger">Delete</button>
+    </form>
+  </div>
+  <dialog id="confirm-delete">
+    <form method="dialog">
+      <p>Delete <span class="id">{{$iss.ID}}</span> — {{$iss.Title}}?</p>
+      <p class="hint">The file is removed outright; version control is the only undo.</p>
+      <p class="actions">
+        <button value="cancel">Cancel</button>
+        <button value="confirm" class="danger">Delete</button>
+      </p>
+    </form>
+  </dialog>
   <dl class="fields">
     <dt>ID</dt><dd class="id">{{$iss.ID}}</dd>
     <dt>State</dt><dd><span class="state state-{{$iss.State}}">{{$iss.State}}</span></dd>
@@ -54,6 +70,12 @@
     {{else}}
     <p class="empty">No notes yet.</p>
     {{end}}
+    <form class="note-form" method="post" action="/issues/{{$iss.ID}}/notes">
+      <label for="note-text">Add a note</label>
+      <textarea id="note-text" name="text" rows="4">{{.Note.Text}}</textarea>
+      {{with .Note.Error}}<p class="error" role="alert">{{.}}</p>{{end}}
+      <p class="actions"><button type="submit">Add note</button></p>
+    </form>
   </section>
 </article>
 {{end}}

@@ -6,6 +6,7 @@
 <title>{{.Title}} · Beaver Backlog</title>
 <link rel="stylesheet" href="/assets/app.css">
 <script src="/assets/htmx.min.js" defer></script>
+<script src="/assets/confirm.js" defer></script>
 </head>
 <body>
 <header class="topbar">
@@ -13,12 +14,14 @@
   <nav>
     <a href="/">Board</a>
     <a href="/issues">Issues</a>
+    <a href="/issues/new">New issue</a>
   </nav>
   <form class="search" action="/search" method="get" role="search">
     <input type="search" name="q" value="{{.Search}}" placeholder="Reference or text…" aria-label="Search issues">
   </form>
 </header>
 <main>
+{{with .Notice}}<p class="notice" role="status">{{.}}</p>{{end}}
 {{with .Warnings}}
 <section class="banner" role="status">
   <p>{{len .}} file(s) skipped — not usable issues. Run <code>beaver doctor</code>.</p>

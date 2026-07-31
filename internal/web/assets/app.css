@@ -230,3 +230,106 @@ a { color: var(--accent); }
 .note-meta .author { color: var(--text); font-weight: 600; }
 
 .matches { line-height: 2; }
+
+/* Write surface: the create and edit forms, the note box, and the delete
+   confirmation. One set of field styles serves all three. */
+
+.notice {
+  background: var(--panel);
+  border: 1px solid var(--accent);
+  border-radius: 6px;
+  margin: 0 0 1.5rem;
+  padding: 0.6rem 1rem;
+}
+
+.error {
+  background: #3a2222;
+  border: 1px solid #6b2b2b;
+  border-radius: 6px;
+  margin: 0 0 1rem;
+  padding: 0.6rem 1rem;
+}
+
+.issue-form { max-width: 48rem; }
+
+.issue-form p, .note-form { margin: 0 0 1rem; }
+
+.issue-form label, .note-form label {
+  color: var(--muted);
+  display: block;
+  font-size: 0.8rem;
+  letter-spacing: 0.04em;
+  margin-bottom: 0.3rem;
+  text-transform: uppercase;
+}
+
+.issue-form input, .issue-form select, .issue-form textarea,
+.note-form textarea {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  color: var(--text);
+  font: inherit;
+  padding: 0.4rem 0.6rem;
+  width: 100%;
+}
+
+.issue-form input:focus, .issue-form select:focus, .issue-form textarea:focus,
+.note-form textarea:focus { border-color: var(--accent); outline: none; }
+
+.issue-form fieldset {
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  margin: 0 0 1rem;
+  padding: 0.75rem 1rem;
+}
+
+.issue-form legend {
+  color: var(--muted);
+  font-size: 0.8rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.issue-form label.check {
+  display: inline-block;
+  margin: 0 1rem 0.5rem 0;
+  text-transform: none;
+}
+
+.issue-form label.check input { width: auto; }
+
+.actions {
+  align-items: center;
+  display: flex;
+  gap: 1rem;
+  margin: 0 0 1rem;
+}
+
+button {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  color: var(--text);
+  cursor: pointer;
+  font: inherit;
+  padding: 0.4rem 0.9rem;
+}
+
+button:hover { border-color: var(--accent); }
+
+button.danger { border-color: #6b2b2b; }
+button.danger:hover { background: #3a2222; }
+
+dialog {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  color: var(--text);
+  max-width: 32rem;
+  padding: 1rem 1.25rem;
+}
+
+dialog::backdrop { background: rgba(0, 0, 0, 0.6); }
+
+.hint { color: var(--muted); font-size: 0.85rem; }

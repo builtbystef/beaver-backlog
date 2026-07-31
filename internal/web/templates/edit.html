@@ -1,0 +1,51 @@
+{{define "content"}}
+{{$iss := .Issue}}
+<h1>Edit <span class="id">{{$iss.ID}}</span></h1>
+{{with .Error}}<p class="error" role="alert">{{.}}</p>{{end}}
+<form class="issue-form" method="post" action="/issues/{{$iss.ID}}">
+  <p>
+    <label for="title">Title</label>
+    <input id="title" name="title" value="{{.Form.Title}}">
+  </p>
+  <p>
+    <label for="description">Description</label>
+    <textarea id="description" name="description" rows="10">{{.Form.Description}}</textarea>
+  </p>
+  <p>
+    <label for="assignee">Assignee</label>
+    <input id="assignee" name="assignee" value="{{.Form.Assignee}}" placeholder="empty to unassign">
+  </p>
+  <p>
+    <label for="priority">Priority</label>
+    <select id="priority" name="priority">
+      {{range .Priorities}}<option value="{{.Value}}"{{if .Selected}} selected{{end}}>{{.Label}}</option>{{end}}
+    </select>
+  </p>
+  <fieldset>
+    <legend>Labels</legend>
+    <input type="hidden" name="labels_form" value="1">
+    {{range .Form.Labels}}
+    <label class="check"><input type="checkbox" name="keep_labels" value="{{.Value}}"{{if .Keep}} checked{{end}}> {{.Value}}</label>
+    {{else}}<span class="none">none yet</span>{{end}}
+    <label for="add_labels">Add</label>
+    <input id="add_labels" name="add_labels" value="{{.Form.AddLabels}}" placeholder="bug, cli">
+  </fieldset>
+  <fieldset>
+    <legend>Depends on</legend>
+    <input type="hidden" name="depends_on_form" value="1">
+    {{range .Form.DependsOn}}
+    <label class="check"><input type="checkbox" name="keep_depends_on" value="{{.Value}}"{{if .Keep}} checked{{end}}> <span class="id">{{.Value}}</span></label>
+    {{else}}<span class="none">none yet</span>{{end}}
+    <label for="add_depends_on">Add</label>
+    <input id="add_depends_on" name="add_depends_on" value="{{.Form.AddDependsOn}}" placeholder="references, comma separated">
+  </fieldset>
+  <p>
+    <label for="parent">Parent</label>
+    <input id="parent" name="parent" value="{{.Form.Parent}}" placeholder="empty to detach">
+  </p>
+  <p class="actions">
+    <button type="submit">Save changes</button>
+    <a href="/issues/{{$iss.ID}}">Cancel</a>
+  </p>
+</form>
+{{end}}

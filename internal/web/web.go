@@ -54,7 +54,13 @@ func New(cfg Config) (http.Handler, error) {
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /{$}", s.board)
 	mux.HandleFunc("GET /issues", s.list)
+	mux.HandleFunc("GET /issues/new", s.createFormPage)
+	mux.HandleFunc("POST /issues", s.create)
 	mux.HandleFunc("GET /issues/{ref}", s.detail)
+	mux.HandleFunc("GET /issues/{ref}/edit", s.editFormPage)
+	mux.HandleFunc("POST /issues/{ref}", s.update)
+	mux.HandleFunc("POST /issues/{ref}/notes", s.addNote)
+	mux.HandleFunc("POST /issues/{ref}/delete", s.remove)
 	mux.HandleFunc("GET /search", s.search)
 	mux.HandleFunc("GET /assets/{path...}", s.asset)
 	// ServeMux's bare "/" is the fallback for everything no other pattern
@@ -88,8 +94,12 @@ func (s *server) board(w http.ResponseWriter, r *http.Request) {
 		s.fail(w, r, err)
 		return
 	}
+	p := s.page("Board", listing.Warnings)
+	if id := r.URL.Query().Get("deleted"); id != "" {
+		p.Notice = "Deleted issue " + id + "."
+	}
 	s.render(w, r, "board.html", http.StatusOK, boardPage{
-		page:    s.page("Board", listing.Warnings),
+		page:    p,
 		Columns: columns(listing.Issues, svc.Now(), r.URL),
 	})
 }
@@ -162,7 +172,11 @@ type page struct {
 	Title string
 	// Search is what the header's box shows, so a filtered list still says what
 	// it was filtered by; empty everywhere the reader has not searched.
-	Search   string
+	Search string
+	// Notice is a one-line confirmation of something that already happened —
+	// what a redirect after a write has to say once the page it wrote about is
+	// gone. Empty on a page that is simply being read.
+	Notice   string
 	Warnings []skipped
 }
 
@@ -221,6 +235,8 @@ func path(r *http.Request) string { return strings.TrimPrefix(r.URL.Path, "/") }
 // startup means a broken template fails the build's tests, never one request.
 var pages = map[string]*template.Template{
 	"board.html":   mustParse("board.html"),
+	"new.html":     mustParse("new.html"),
+	"edit.html":    mustParse("edit.html"),
 	"list.html":    mustParse("list.html"),
 	"detail.html":  mustParse("detail.html"),
 	"matches.html": mustParse("matches.html"),
