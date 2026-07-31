@@ -61,6 +61,7 @@ func New(cfg Config) (http.Handler, error) {
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /{$}", s.board)
 	mux.HandleFunc("GET /issues", s.list)
+	mux.HandleFunc("GET /graph", s.graph)
 	mux.HandleFunc("GET /issues/new", s.createFormPage)
 	mux.HandleFunc("POST /issues", s.create)
 	mux.HandleFunc("GET /issues/{ref}", s.detail)
@@ -308,6 +309,7 @@ var pages = map[string]*template.Template{
 	"new.html":     mustParse("new.html"),
 	"edit.html":    mustParse("edit.html"),
 	"list.html":    mustParse("list.html"),
+	"graph.html":   mustParse("graph.html"),
 	"detail.html":  mustParse("detail.html"),
 	"doctor.html":  mustParse("doctor.html"),
 	"matches.html": mustParse("matches.html"),

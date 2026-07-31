@@ -462,3 +462,48 @@ dialog::backdrop { background: rgba(0, 0, 0, 0.6); }
   border-radius: 6px;
   padding: 0.6rem 1rem;
 }
+
+/* The graph: the whole backlog as one picture. The frame scrolls, because the
+   picture is drawn at its natural size — panning and zooming it is the next
+   slice's work. A node's fill is the board's state colour, so a card and a node
+   read the same; the conditions the core derives ride on the border and the
+   ready dot. */
+
+.graph-frame {
+  background: var(--bg);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  max-height: 78vh;
+  overflow: auto;
+}
+
+.graph { display: block; }
+
+.graph .cluster-box {
+  fill: rgba(255, 255, 255, 0.02);
+  stroke: var(--line);
+  stroke-dasharray: 4 4;
+}
+
+.graph .cluster-label { fill: var(--muted); font-size: 13px; }
+
+.graph .node { text-decoration: none; }
+.graph .node-box { fill: #33373d; stroke: var(--line); }
+.graph .state-in-progress .node-box { fill: #2f4f78; }
+.graph .state-done .node-box { fill: #2f5d3a; }
+.graph .state-cancelled .node-box { fill: #4a3a3a; }
+
+.graph .blocked .node-box { stroke: #c65b5b; stroke-width: 2; }
+.graph .stuck .node-box { stroke-dasharray: 5 3; }
+.graph .node:hover .node-box { stroke: var(--accent); }
+
+.graph .ready-mark { fill: #6bbf7b; }
+.graph .node-badge { fill: var(--panel); stroke: var(--line); }
+.graph .node-badge-text { fill: var(--text); font-size: 10px; }
+.graph .node-title { fill: var(--text); font-size: 14px; }
+.graph .node-meta { fill: var(--muted); font-size: 11px; }
+
+.graph .edge { fill: none; stroke: #6a6f78; stroke-width: 1.5; }
+.graph .edge-back { stroke: #c65b5b; stroke-dasharray: 6 4; }
+.graph .arrowhead { fill: #6a6f78; }
+.graph .arrowhead-back { fill: #c65b5b; }
