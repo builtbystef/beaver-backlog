@@ -96,6 +96,25 @@ h1 { font-size: 1.25rem; margin: 0 0 1rem; }
 
 .card:hover { border-color: var(--accent); }
 
+/* Dragging: the card in hand fades, the column under the cursor lights up, and
+   a card waiting on the server dims until the board is redrawn. */
+
+.card[draggable] { cursor: grab; }
+
+.card.dragging { opacity: 0.4; }
+
+.card.pending { opacity: 0.6; }
+
+.column.over { border-color: var(--accent); }
+
+.drop-error {
+  background: var(--warn-bg);
+  border: 1px solid var(--warn-line);
+  border-radius: 6px;
+  margin: 0 0 1rem;
+  padding: 0.5rem 0.75rem;
+}
+
 .card-title { display: block; margin-bottom: 0.4rem; }
 
 .card-meta {

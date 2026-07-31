@@ -52,8 +52,9 @@ invokes a version-control system; committing the files is the operator's job.
   request** — a scan is cheap, and the files change underneath the browser — so
   no issue data outlives a response and nothing is ever reconciled. Pages are
   server-rendered `html/template`, with every template and static asset (the
-  stylesheet and a vendored, pinned htmx) embedded by `go:embed`: serving needs
-  no build step and no network (ADR 0006). Like the CLI it decides no rules; it
+  stylesheet, a vendored, pinned htmx, and hand-written scripts such as the
+  board's drag-and-drop) embedded by `go:embed`: serving needs no build step and
+  no network (ADR 0006). Like the CLI it decides no rules; it
   words a core failure as a status and a skipped file as a banner rather than an
   error page (ADR 0003).
 - `internal/issue/` — the issue model: parsing, serializing, validation, and

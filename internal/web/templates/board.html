@@ -1,11 +1,14 @@
 {{define "content"}}
 <h1>Board</h1>
+<p class="drop-error" role="alert" hidden></p>
 <div class="board">
   {{range .Columns}}
   <section class="column" data-column="{{.State}}">
     <h2><span class="state state-{{.State}}">{{.State}}</span> <span class="count">{{len .Cards}}</span></h2>
     {{range .Cards}}
-    <a class="card" data-issue="{{.ID}}" href="/issues/{{.ID}}">
+    <a class="card" draggable="true" data-issue="{{.ID}}" data-state="{{.State}}"
+       data-state-url="/issues/{{.ID}}/state" data-start-url="/issues/{{.ID}}/start"
+       href="/issues/{{.ID}}">
       <span class="card-title">{{.Title}}</span>
       <span class="card-meta">
         <span class="id">{{.ID}}</span>
@@ -22,3 +25,5 @@
   {{end}}
 </div>
 {{end}}
+
+{{define "scripts"}}<script src="/assets/drag.js" defer></script>{{end}}

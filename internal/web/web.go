@@ -59,6 +59,8 @@ func New(cfg Config) (http.Handler, error) {
 	mux.HandleFunc("GET /issues/{ref}", s.detail)
 	mux.HandleFunc("GET /issues/{ref}/edit", s.editFormPage)
 	mux.HandleFunc("POST /issues/{ref}", s.update)
+	mux.HandleFunc("POST /issues/{ref}/state", s.setState)
+	mux.HandleFunc("POST /issues/{ref}/start", s.start)
 	mux.HandleFunc("POST /issues/{ref}/notes", s.addNote)
 	mux.HandleFunc("POST /issues/{ref}/delete", s.remove)
 	mux.HandleFunc("GET /search", s.search)
@@ -81,8 +83,8 @@ func (s *server) open() (*core.Service, error) {
 	return core.Open(s.cfg.WorkDir, s.cfg.CoreOptions...)
 }
 
-// board renders the whole backlog as four columns of cards — the home view, and
-// read-only here: the cards are links, not yet handles to drag.
+// board renders the whole backlog as four columns of cards — the home view,
+// where a card is both a link to its issue and a handle to drag between states.
 func (s *server) board(w http.ResponseWriter, r *http.Request) {
 	svc, err := s.open()
 	if err != nil {
