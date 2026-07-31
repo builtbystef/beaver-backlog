@@ -1,5 +1,7 @@
 {{define "content"}}
 <h1>Issues</h1>
+{{template "filters" .Filters}}
+<div id="issues">
 {{if .Issues}}
 <table class="issues">
   <thead>
@@ -18,7 +20,10 @@
     {{end}}
   </tbody>
 </table>
+{{else if .Filters.Active}}
+<p class="empty">No issue matches these filters.</p>
 {{else}}
 <p class="empty">No issues yet — create one with <code>beaver create</code>.</p>
 {{end}}
+</div>
 {{end}}

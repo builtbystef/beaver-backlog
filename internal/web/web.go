@@ -91,7 +91,8 @@ func (s *server) board(w http.ResponseWriter, r *http.Request) {
 		s.fail(w, r, err)
 		return
 	}
-	listing, err := svc.List(core.Query{})
+	f := parseFilters(r.URL.Query())
+	listing, refused, err := s.filtered(svc, f)
 	if err != nil {
 		s.fail(w, r, err)
 		return
@@ -102,30 +103,53 @@ func (s *server) board(w http.ResponseWriter, r *http.Request) {
 	}
 	s.render(w, r, "board.html", http.StatusOK, boardPage{
 		page:    p,
+		Filters: f.bar("/", r.URL.Query(), refused),
 		Columns: columns(listing.Issues, svc.Now(), r.URL),
 	})
 }
 
-// list renders every issue in the core's ordering — the skeleton's one real
-// read view, unfiltered.
+// list renders the issues the address selects, in the core's ordering — the
+// same filters the board reads, over a table instead of columns.
 func (s *server) list(w http.ResponseWriter, r *http.Request) {
 	svc, err := s.open()
 	if err != nil {
 		s.fail(w, r, err)
 		return
 	}
-	// The text filter is the only one the list reads today — it is where the
-	// search box lands. The rest of the query string becomes filters with the
-	// shared filter bar.
-	text := strings.TrimSpace(r.URL.Query().Get("search"))
-	listing, err := svc.List(core.Query{Text: text})
+	f := parseFilters(r.URL.Query())
+	listing, refused, err := s.filtered(svc, f)
 	if err != nil {
 		s.fail(w, r, err)
 		return
 	}
 	p := s.page("Issues", listing.Warnings)
-	p.Search = text
-	s.render(w, r, "list.html", http.StatusOK, listPage{page: p, Issues: listing.Issues})
+	// The header's box and the bar's text field are one filter, so a list
+	// reached by searching says what it was searched for in both places.
+	p.Search = f.Search
+	s.render(w, r, "list.html", http.StatusOK, listPage{
+		page:    p,
+		Filters: f.bar("/issues", r.URL.Query(), refused),
+		Issues:  listing.Issues,
+	})
+}
+
+// filtered runs an address's query, telling a reference that names no issue
+// apart from a failure of the request. A typo in the parent box is the reader's
+// to fix where they typed it, so the core's words come back for the bar over an
+// empty view rather than as an error page.
+func (s *server) filtered(svc *core.Service, f filters) (core.Listing, string, error) {
+	listing, err := svc.List(f.query())
+	if err == nil {
+		return listing, "", nil
+	}
+	var (
+		unknown   *core.UnknownRefError
+		ambiguous *core.AmbiguousRefError
+	)
+	if errors.As(err, &unknown) || errors.As(err, &ambiguous) {
+		return listing, err.Error(), nil
+	}
+	return listing, "", err
 }
 
 // asset serves an embedded static file. A missing one is an unknown path like
@@ -191,7 +215,8 @@ type skipped struct {
 
 type listPage struct {
 	page
-	Issues []issue.Issue
+	Filters filterBar
+	Issues  []issue.Issue
 }
 
 type errorPage struct {
@@ -220,13 +245,23 @@ func (s *server) relPath(p string) string {
 // browser so a template failure cannot leave a half-drawn page behind a 200.
 func (s *server) render(w http.ResponseWriter, r *http.Request, name string, status int, data any) {
 	var buf bytes.Buffer
-	if err := pages[name].ExecuteTemplate(&buf, "layout.html", data); err != nil {
+	if err := pages[name].ExecuteTemplate(&buf, entry(r), data); err != nil {
 		http.Error(w, "rendering "+name+": "+err.Error(), http.StatusInternalServerError)
 		return
 	}
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 	w.WriteHeader(status)
 	_, _ = buf.WriteTo(w)
+}
+
+// entry is the template a request enters the page through: htmx asks for the
+// view's own markup and swaps it into a page it already has, so answering with
+// the chrome around it would nest a second copy of the whole document.
+func entry(r *http.Request) string {
+	if r.Header.Get("HX-Request") == "true" {
+		return "content"
+	}
+	return "layout.html"
 }
 
 // path is the request's path without its leading slash — the form the embedded
@@ -246,5 +281,6 @@ var pages = map[string]*template.Template{
 }
 
 func mustParse(name string) *template.Template {
-	return template.Must(template.ParseFS(templateFS, "templates/layout.html", "templates/"+name))
+	return template.Must(template.ParseFS(templateFS,
+		"templates/layout.html", "templates/filters.html", "templates/"+name))
 }

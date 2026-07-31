@@ -1,0 +1,51 @@
+{{define "filters"}}
+{{/* The bar the board and the list share. It is a plain GET form first — every
+     control posts a query parameter and submitting reloads the filtered page —
+     and htmx only makes that same request without the reload, so the view works
+     the same with the script absent. */}}
+<form class="filters" method="get" action="{{.Action}}"
+      hx-get="{{.Action}}" hx-target="#issues" hx-select="#issues" hx-swap="outerHTML"
+      hx-push-url="true"
+      hx-trigger="submit, change, input changed delay:300ms from:.filter-text"
+      aria-label="Filter issues">
+  {{range .Keep}}<input type="hidden" name="{{.Name}}" value="{{.Value}}">{{end}}
+  <fieldset class="filter-group">
+    <legend>State</legend>
+    {{range .States}}
+    <label><input type="checkbox" name="state" value="{{.Value}}"{{if .On}} checked{{end}}> {{.Label}}</label>
+    {{end}}
+    <label><input type="checkbox" name="ready" value="1"{{if .Ready}} checked{{end}}> ready</label>
+    <label><input type="checkbox" name="blocked" value="1"{{if .Blocked}} checked{{end}}> blocked</label>
+  </fieldset>
+  <fieldset class="filter-group">
+    <legend>Priority</legend>
+    {{range .Priorities}}
+    <label><input type="checkbox" name="priority" value="{{.Value}}"{{if .On}} checked{{end}}> {{.Label}}</label>
+    {{end}}
+  </fieldset>
+  <fieldset class="filter-group">
+    <legend>Assignee</legend>
+    <select name="assignee" aria-label="Assignee">
+      {{range .Assignees}}<option value="{{.Value}}"{{if .Selected}} selected{{end}}>{{.Label}}</option>{{end}}
+    </select>
+    <input class="filter-text" type="text" name="actor" value="{{.Actor}}" placeholder="who" aria-label="Actor">
+  </fieldset>
+  <fieldset class="filter-group">
+    <legend>Labels</legend>
+    <input class="filter-text" type="text" name="label" value="{{.Labels}}" placeholder="all of these" aria-label="Labels">
+  </fieldset>
+  <fieldset class="filter-group">
+    <legend>Parent</legend>
+    <input class="filter-text" type="text" name="parent" value="{{.Parent}}" placeholder="a reference" aria-label="Parent">
+  </fieldset>
+  <fieldset class="filter-group">
+    <legend>Text</legend>
+    <input class="filter-text" type="search" name="search" value="{{.Search}}" placeholder="title or body" aria-label="Text">
+  </fieldset>
+  <div class="filter-actions">
+    <button type="submit">Filter</button>
+    {{if .Active}}<a class="clear" href="{{.Action}}">Clear filters</a>{{end}}
+  </div>
+  {{with .Refused}}<p class="filter-error" role="alert">{{.}}</p>{{end}}
+</form>
+{{end}}

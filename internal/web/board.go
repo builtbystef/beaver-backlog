@@ -25,6 +25,7 @@ const boardWindow = 14 * 24 * time.Hour
 // boardPage is the board view's data: the columns, left to right.
 type boardPage struct {
 	page
+	Filters filterBar
 	Columns []column
 }
 
