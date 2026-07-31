@@ -159,6 +159,41 @@ func (s *Store) List() ([]string, error) {
 	return files, nil
 }
 
+// Fingerprint summarises the issues directory without opening a single file:
+// every issue file's name, size, and modification time, in the directory's
+// sorted order. Two fingerprints that differ mean something about the files
+// changed; two that match mean a reader can be left alone. It is deliberately
+// cheap enough to repeat on a timer, which is what a watcher-free live view
+// needs — no file is parsed and no issue is built.
+//
+// A missing issues directory fingerprints as an empty store, like every other
+// read, and a file that vanishes mid-scan is simply one the next scan will
+// agree is gone.
+func (s *Store) Fingerprint() (string, error) {
+	entries, err := os.ReadDir(s.IssuesDir())
+	if err != nil {
+		if errors.Is(err, os.ErrNotExist) {
+			return "", nil
+		}
+		return "", err
+	}
+	var b strings.Builder
+	for _, e := range entries {
+		if e.IsDir() || !strings.HasSuffix(e.Name(), ".md") {
+			continue
+		}
+		info, err := e.Info()
+		if err != nil {
+			if errors.Is(err, os.ErrNotExist) {
+				continue
+			}
+			return "", err
+		}
+		fmt.Fprintf(&b, "%s\x00%d\x00%d\n", e.Name(), info.Size(), info.ModTime().UnixNano())
+	}
+	return b.String(), nil
+}
+
 // ReadAll reads and validates every issue in the store, in stable path order.
 // Invalid files are skipped rather than failing the whole read, and reported
 // through the store's warning handler. A missing issues directory yields no issues.

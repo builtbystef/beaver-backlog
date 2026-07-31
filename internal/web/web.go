@@ -19,6 +19,7 @@ import (
 	"net/http"
 	"path/filepath"
 	"strings"
+	"time"
 
 	"github.com/builtbystef/beaver-backlog/internal/core"
 	"github.com/builtbystef/beaver-backlog/internal/issue"
@@ -41,6 +42,11 @@ type Config struct {
 	WorkDir     string        // the store is resolved from here, walking up, via the core
 	Actor       string        // launch-resolved; attributed to every write
 	CoreOptions []core.Option // clock and ID source travel to the core, not as Config fields
+	// PollInterval is how often the store is fingerprinted for the live view.
+	// It belongs to the interface rather than to the core — how often a browser
+	// is told to look again is a property of this UI — and zero means the
+	// default second. Tests shorten it.
+	PollInterval time.Duration
 }
 
 // New builds the handler serving the store above cfg.WorkDir. It returns
@@ -51,6 +57,7 @@ func New(cfg Config) (http.Handler, error) {
 		return nil, err
 	}
 	s := &server{cfg: cfg}
+	s.changes = newChanges(cfg.PollInterval, s.fingerprint)
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /{$}", s.board)
 	mux.HandleFunc("GET /issues", s.list)
@@ -64,6 +71,7 @@ func New(cfg Config) (http.Handler, error) {
 	mux.HandleFunc("POST /issues/{ref}/notes", s.addNote)
 	mux.HandleFunc("POST /issues/{ref}/delete", s.remove)
 	mux.HandleFunc("GET /search", s.search)
+	mux.HandleFunc("GET /events", s.events)
 	mux.HandleFunc("GET /assets/{path...}", s.asset)
 	// ServeMux's bare "/" is the fallback for everything no other pattern
 	// claimed, which is what makes an unknown path this interface's own 404 page
@@ -74,7 +82,23 @@ func New(cfg Config) (http.Handler, error) {
 
 // server holds only what every request needs to open the application afresh —
 // deliberately no issue data, which would be stale the moment a file changed.
-type server struct{ cfg Config }
+// The one long-lived piece is the change feed, which holds no issue data
+// either: only whether the files still look the way they did.
+type server struct {
+	cfg     Config
+	changes *changes
+}
+
+// fingerprint is what the poller compares between ticks. It opens the store
+// afresh like every other read, so a store that vanished and came back is
+// simply a change like any other.
+func (s *server) fingerprint() (string, error) {
+	svc, err := s.open()
+	if err != nil {
+		return "", err
+	}
+	return svc.Fingerprint()
+}
 
 // open builds the core service one request works through. Every handler starts
 // here, so a store that appeared, vanished, or changed since the last request is
@@ -98,6 +122,7 @@ func (s *server) board(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	p := s.page("Board", listing.Warnings)
+	p.Live = true
 	if id := r.URL.Query().Get("deleted"); id != "" {
 		p.Notice = "Deleted issue " + id + "."
 	}
@@ -123,6 +148,7 @@ func (s *server) list(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	p := s.page("Issues", listing.Warnings)
+	p.Live = true
 	// The header's box and the bar's text field are one filter, so a list
 	// reached by searching says what it was searched for in both places.
 	p.Search = f.Search
@@ -202,7 +228,11 @@ type page struct {
 	// Notice is a one-line confirmation of something that already happened —
 	// what a redirect after a write has to say once the page it wrote about is
 	// gone. Empty on a page that is simply being read.
-	Notice   string
+	Notice string
+	// Live marks a page the change feed may redraw: a view being read, never a
+	// form being filled in. A page the reader is typing into is theirs until
+	// they submit it, whatever the store does meanwhile.
+	Live     bool
 	Warnings []skipped
 }
 
@@ -254,12 +284,13 @@ func (s *server) render(w http.ResponseWriter, r *http.Request, name string, sta
 	_, _ = buf.WriteTo(w)
 }
 
-// entry is the template a request enters the page through: htmx asks for the
-// view's own markup and swaps it into a page it already has, so answering with
-// the chrome around it would nest a second copy of the whole document.
+// entry is the template a request enters the page through: a fragment request —
+// htmx's swap, or the live listener's redraw — asks for the view's own markup
+// and puts it into a page it already has, so answering with the chrome around it
+// would nest a second copy of the whole document.
 func entry(r *http.Request) string {
 	if r.Header.Get("HX-Request") == "true" {
-		return "content"
+		return "view"
 	}
 	return "layout.html"
 }

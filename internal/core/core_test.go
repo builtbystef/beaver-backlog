@@ -141,6 +141,61 @@ func TestReadsReportSkippedFilesAsWarnings(t *testing.T) {
 	assertWarnsAbout(t, "Get", detail.Warnings)
 }
 
+// A fingerprint answers one question — has anything about the files changed
+// since last time — so it must move for a written, edited, or deleted issue and
+// hold still for a store nobody touched.
+func TestFingerprintMovesOnlyWhenTheFilesDo(t *testing.T) {
+	root := newStore(t)
+	seed(t, root, mkIssue("aaa111", "Groundwork"))
+	svc := open(t, root)
+
+	first := fingerprint(t, svc)
+	if again := fingerprint(t, svc); again != first {
+		t.Errorf("fingerprint of an untouched store moved: %q then %q", first, again)
+	}
+
+	seed(t, root, mkIssue("bbb222", "Something new"))
+	added := fingerprint(t, svc)
+	if added == first {
+		t.Error("fingerprint did not move for an added issue")
+	}
+
+	seed(t, root, withDeps(mkIssue("aaa111", "Groundwork"), "bbb222"))
+	edited := fingerprint(t, svc)
+	if edited == added {
+		t.Error("fingerprint did not move for an edited issue")
+	}
+
+	if _, err := svc.Delete("bbb222"); err != nil {
+		t.Fatalf("Delete: %v", err)
+	}
+	if deleted := fingerprint(t, svc); deleted == edited {
+		t.Error("fingerprint did not move for a deleted issue")
+	}
+}
+
+// A store whose issues directory is gone is an empty store, not a failure — the
+// same forgiveness every other read gives it.
+func TestFingerprintOfAStoreWithoutIssues(t *testing.T) {
+	root := newStore(t)
+	svc := open(t, root)
+	if err := os.RemoveAll(filepath.Join(root, ".beaver", "issues")); err != nil {
+		t.Fatalf("remove issues dir: %v", err)
+	}
+	if _, err := svc.Fingerprint(); err != nil {
+		t.Errorf("Fingerprint without an issues directory = %v, want no error", err)
+	}
+}
+
+func fingerprint(t *testing.T, svc *core.Service) string {
+	t.Helper()
+	fp, err := svc.Fingerprint()
+	if err != nil {
+		t.Fatalf("Fingerprint: %v", err)
+	}
+	return fp
+}
+
 // The warnings belong to the scan, not to the answer, so a lookup that fails
 // still tells the caller which files it skipped.
 func TestFailedGetStillReportsWarnings(t *testing.T) {

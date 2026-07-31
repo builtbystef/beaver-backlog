@@ -65,8 +65,10 @@ func (s *server) detail(w http.ResponseWriter, r *http.Request) {
 // refused note is this same page again — the log the reader was writing to, with
 // their words still in the box.
 func (s *server) renderDetail(w http.ResponseWriter, r *http.Request, got core.Detail, note noteForm, status int) {
+	p := s.page(got.Issue.Title, got.Warnings)
+	p.Live = true
 	s.render(w, r, "detail.html", status, detailPage{
-		page:        s.page(got.Issue.Title, got.Warnings),
+		page:        p,
 		Issue:       got.Issue,
 		Description: issue.Description(got.Issue.Body),
 		Notes:       issue.ParseNotes(got.Issue.Body),

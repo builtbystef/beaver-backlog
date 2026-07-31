@@ -7,6 +7,7 @@
 <link rel="stylesheet" href="/assets/app.css">
 <script src="/assets/htmx.min.js" defer></script>
 <script src="/assets/confirm.js" defer></script>
+<script src="/assets/live.js" defer></script>
 </head>
 <body>
 <header class="topbar">
@@ -20,7 +21,19 @@
     <input type="search" name="q" value="{{.Search}}" placeholder="Reference or text…" aria-label="Search issues">
   </form>
 </header>
-<main>
+{{/* The view is one element so the live listener can replace it whole with a
+     freshly rendered fragment of the same address — banner and all, since a
+     file repaired outside the browser should stop being complained about. */}}
+<main id="view"{{if .Live}} data-live{{end}}>
+{{template "view" .}}
+</main>
+{{block "scripts" .}}{{end}}
+</body>
+</html>
+
+{{/* view is everything a page redraws when the store changes: what the reader
+     is looking at, and whatever the scan has to say about the files behind it. */}}
+{{define "view"}}
 {{with .Notice}}<p class="notice" role="status">{{.}}</p>{{end}}
 {{with .Warnings}}
 <section class="banner" role="status">
@@ -31,7 +44,4 @@
 </section>
 {{end}}
 {{template "content" .}}
-</main>
-{{block "scripts" .}}{{end}}
-</body>
-</html>
+{{end}}

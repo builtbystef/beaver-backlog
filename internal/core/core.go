@@ -109,6 +109,14 @@ func Open(dir string, opts ...Option) (*Service, error) {
 	return s, nil
 }
 
+// Fingerprint reports a cheap summary of the store's files — their names,
+// sizes, and modification times — that changes whenever an issue is written,
+// edited, or deleted, whoever did it. An interface watching for changes polls
+// it and compares: equal fingerprints mean nothing has happened worth
+// redrawing. It parses nothing, so it is not a read of the issues themselves
+// and reports no warnings.
+func (s *Service) Fingerprint() (string, error) { return s.store.Fingerprint() }
+
 // Detail is one issue together with the relationship facts derived from the
 // rest of the store — what it waits on, whether it is ready, blocked, or stuck,
 // and the inverse edges that are never stored.
