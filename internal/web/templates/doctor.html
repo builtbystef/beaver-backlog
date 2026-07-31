@@ -1,0 +1,31 @@
+{{define "content"}}
+<h1>Doctor</h1>
+{{if .Findings}}
+<p class="summary">
+  {{if .Repaired}}Repaired {{.Fixed}}; {{.Problems}} problem(s) still need a human — checked {{.Checked}} issue(s).
+  {{else}}{{.Problems}} problem(s) and {{.Advisories}} advisory note(s) — checked {{.Checked}} issue(s).{{end}}
+</p>
+<ul class="findings">
+  {{range .Findings}}
+  <li class="finding {{.Class}}" data-category="{{.Category}}">
+    <span class="class-badge {{.Class}}">{{.Label}}</span>
+    <span class="detail">{{.Detail}}</span>
+    <span class="anchors">
+      {{range .Paths}}<code>{{.}}</code> {{end}}
+      {{range .IDs}}<a class="id" href="/issues/{{.}}">{{.}}</a> {{end}}
+    </span>
+  </li>
+  {{end}}
+</ul>
+{{if .Fixable}}
+<form class="repair" method="post" action="/doctor/fix">
+  <p class="hint">{{.Fixable}} of these can be repaired mechanically — a drifted file is renamed to the name its frontmatter implies. No repair ever removes data.</p>
+  <p class="actions"><button type="submit">Repair what is safe</button></p>
+</form>
+{{else}}
+<p class="hint">Nothing here can be repaired mechanically; each needs a human.</p>
+{{end}}
+{{else}}
+<p class="all-clear" role="status">All clear — no problems found in {{.Checked}} issue(s).</p>
+{{end}}
+{{end}}

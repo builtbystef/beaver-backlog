@@ -70,6 +70,8 @@ func New(cfg Config) (http.Handler, error) {
 	mux.HandleFunc("POST /issues/{ref}/start", s.start)
 	mux.HandleFunc("POST /issues/{ref}/notes", s.addNote)
 	mux.HandleFunc("POST /issues/{ref}/delete", s.remove)
+	mux.HandleFunc("GET /doctor", s.doctor)
+	mux.HandleFunc("POST /doctor/fix", s.fix)
 	mux.HandleFunc("GET /search", s.search)
 	mux.HandleFunc("GET /events", s.events)
 	mux.HandleFunc("GET /assets/{path...}", s.asset)
@@ -307,6 +309,7 @@ var pages = map[string]*template.Template{
 	"edit.html":    mustParse("edit.html"),
 	"list.html":    mustParse("list.html"),
 	"detail.html":  mustParse("detail.html"),
+	"doctor.html":  mustParse("doctor.html"),
 	"matches.html": mustParse("matches.html"),
 	"error.html":   mustParse("error.html"),
 }

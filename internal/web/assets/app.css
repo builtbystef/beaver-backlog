@@ -416,3 +416,49 @@ dialog::backdrop { background: rgba(0, 0, 0, 0.6); }
   flex-basis: 100%;
   margin: 0;
 }
+
+/* Doctor: the health report. A problem and an advisory note must be told apart
+   at a glance, since only the first says the store is unhealthy. */
+
+.findings { list-style: none; margin: 0 0 1.5rem; padding: 0; }
+
+.finding {
+  align-items: baseline;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-left-width: 4px;
+  border-radius: 6px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+  margin-bottom: 0.5rem;
+  padding: 0.6rem 0.9rem;
+}
+
+.finding.problem { border-left-color: #6b2b2b; }
+.finding.advisory { border-left-color: var(--warn-line); }
+.finding.fixed { border-left-color: #2f5d3a; }
+
+.class-badge {
+  border-radius: 4px;
+  font-size: 0.75rem;
+  letter-spacing: 0.04em;
+  padding: 0.1rem 0.45rem;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.class-badge.problem { background: #6b2b2b; }
+.class-badge.advisory { background: var(--warn-bg); border: 1px solid var(--warn-line); }
+.class-badge.fixed { background: #2f5d3a; }
+
+.finding .anchors { color: var(--muted); margin-left: auto; }
+
+.summary { color: var(--muted); }
+
+.all-clear {
+  background: var(--panel);
+  border: 1px solid #2f5d3a;
+  border-radius: 6px;
+  padding: 0.6rem 1rem;
+}
