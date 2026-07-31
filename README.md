@@ -267,7 +267,8 @@ never removes data.
 Beaver Backlog is pre-1.0. The CLI works and is well tested, but the file format
 and command surface may still change without a deprecation cycle. The web UI
 over the same files has started: `beaver serve` reads the backlog in a
-browser today, and gains the board, the graph, and the write views next.
+browser today — the board and the list — and gains the graph and the write
+views next.
 
 ## Contributing
 

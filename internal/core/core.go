@@ -191,6 +191,12 @@ func resolve(snap *store.Snapshot, ref string) (issue.Issue, string, error) {
 // a note's time — comes from here, so the policy lives in exactly one place.
 func (s *Service) now() time.Time { return s.clock.Now().UTC().Truncate(time.Second) }
 
+// Now is the instant the service's clock reports, in the same form the stamps
+// it writes take. An interface that reasons about recency — the web board's
+// recently-updated window — reads the present from here, so it compares
+// timestamps against the same clock that wrote them rather than one of its own.
+func (s *Service) Now() time.Time { return s.now() }
+
 // write records a modified issue, stamping `updated` with the current instant
 // and returning the issue as it was written. Every modification goes through it
 // or writeAt, so no path that decides nothing changed can bump the stamp by

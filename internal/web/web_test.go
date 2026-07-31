@@ -6,8 +6,11 @@ import (
 	"net/http/httptest"
 	"os"
 	"path/filepath"
+	"regexp"
+	"slices"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/builtbystef/beaver-backlog/internal/core"
 	"github.com/builtbystef/beaver-backlog/internal/issue"
@@ -29,6 +32,7 @@ func TestRouteStatuses(t *testing.T) {
 		want int
 	}{
 		{"/", http.StatusOK},
+		{"/issues", http.StatusOK},
 		{"/assets/htmx.min.js", http.StatusOK},
 		{"/assets/app.css", http.StatusOK},
 		{"/nope", http.StatusNotFound},
@@ -51,7 +55,7 @@ func TestListRendersEveryIssueInCoreOrder(t *testing.T) {
 		t.Fatalf("start: %v", err)
 	}
 
-	body := get(newHandler(t, dir), "/").Body.String()
+	body := get(newHandler(t, dir), "/issues").Body.String()
 
 	want, err := svc.List(core.Query{})
 	if err != nil {
@@ -88,17 +92,142 @@ func TestListRendersEveryIssueInCoreOrder(t *testing.T) {
 func TestListReflectsWritesAfterTheHandlerWasBuilt(t *testing.T) {
 	dir := newStore(t)
 	h := newHandler(t, dir)
-	if body := get(h, "/").Body.String(); strings.Contains(body, "Written later") {
+	if body := get(h, "/issues").Body.String(); strings.Contains(body, "Written later") {
 		t.Fatal("empty store already renders the later issue")
 	}
 
 	later := create(t, open(t, dir), core.Draft{Title: "Written later"})
 
-	if body := get(h, "/").Body.String(); !strings.Contains(body, later.ID) {
+	if body := get(h, "/issues").Body.String(); !strings.Contains(body, later.ID) {
 		t.Error("issue created after the handler was built is missing from the list")
 	}
 }
 
+func TestBoardColumnsSpanTheLifecycleAndHoldTheirOwnIssues(t *testing.T) {
+	dir := newStore(t)
+	svc := open(t, dir)
+	waiting := create(t, svc, core.Draft{Title: "Waiting to start", Priority: issue.PriorityLow, Labels: []string{"chore"}})
+	started := create(t, svc, core.Draft{Title: "Under way"})
+	finished := create(t, svc, core.Draft{Title: "All finished"})
+	dropped := create(t, svc, core.Draft{Title: "Never mind"})
+	start(t, svc, started.ID)
+	transition(t, svc, finished.ID, issue.StateDone)
+	transition(t, svc, dropped.ID, issue.StateCancelled)
+
+	body := get(newHandler(t, dir), "/").Body.String()
+
+	order, cards := board(t, body)
+	wantOrder := []string{"todo", "in-progress", "done", "cancelled"}
+	if !slices.Equal(order, wantOrder) {
+		t.Errorf("columns = %v, want %v", order, wantOrder)
+	}
+	for _, c := range []struct {
+		state string
+		want  []string
+	}{
+		{"todo", []string{waiting.ID}},
+		{"in-progress", []string{started.ID}},
+		{"done", []string{finished.ID}},
+		{"cancelled", []string{dropped.ID}},
+	} {
+		if !slices.Equal(cards[c.state], c.want) {
+			t.Errorf("%s column holds %v, want %v", c.state, cards[c.state], c.want)
+		}
+	}
+	// A card carries what triage reads off it, and is a link to its issue.
+	for _, field := range []string{"Waiting to start", waiting.ID, "low", "chore", "tester"} {
+		if !strings.Contains(body, field) {
+			t.Errorf("board missing %q", field)
+		}
+	}
+	for _, iss := range []issue.Issue{waiting, started, finished, dropped} {
+		if link := `href="/issues/` + iss.ID + `"`; !strings.Contains(body, link) {
+			t.Errorf("card for %s is not a link to its detail page (%s)", iss.ID, link)
+		}
+	}
+}
+
+func TestBoardOrdersCardsWithinAColumnTheCoreWay(t *testing.T) {
+	dir := newStore(t)
+	svc := open(t, dir)
+	create(t, svc, core.Draft{Title: "Low rider", Priority: issue.PriorityLow})
+	create(t, svc, core.Draft{Title: "Urgent thing", Priority: issue.PriorityUrgent})
+	create(t, svc, core.Draft{Title: "No priority at all"})
+
+	_, cards := board(t, get(newHandler(t, dir), "/").Body.String())
+
+	listing, err := svc.List(core.Query{States: []issue.State{issue.StateTodo}})
+	if err != nil {
+		t.Fatalf("list: %v", err)
+	}
+	want := make([]string, len(listing.Issues))
+	for i, iss := range listing.Issues {
+		want[i] = iss.ID
+	}
+	if !slices.Equal(cards["todo"], want) {
+		t.Errorf("todo column = %v, want the core's ordering %v", cards["todo"], want)
+	}
+}
+
+// Only the two terminal columns are windowed, and only until the reader asks
+// for the rest.
+func TestBoardWindowsTheTerminalColumnsToRecentUpdates(t *testing.T) {
+	dir := newStore(t)
+	now := time.Date(2026, 7, 1, 12, 0, 0, 0, time.UTC)
+	clk := &testClock{now: now.AddDate(0, 0, -15)}
+	svc := open(t, dir, core.WithClock(clk))
+	staleTodo := create(t, svc, core.Draft{Title: "Long ignored"})
+	staleDone := create(t, svc, core.Draft{Title: "Long finished"})
+	staleCancelled := create(t, svc, core.Draft{Title: "Long dropped"})
+	transition(t, svc, staleDone.ID, issue.StateDone)
+	transition(t, svc, staleCancelled.ID, issue.StateCancelled)
+	clk.now = now.AddDate(0, 0, -1)
+	freshDone := create(t, svc, core.Draft{Title: "Just finished"})
+	transition(t, svc, freshDone.ID, issue.StateDone)
+	clk.now = now
+	h := newHandler(t, dir, core.WithClock(clk))
+
+	body := get(h, "/").Body.String()
+
+	_, cards := board(t, body)
+	if want := []string{staleTodo.ID}; !slices.Equal(cards["todo"], want) {
+		t.Errorf("todo column = %v, want %v — open columns are never windowed", cards["todo"], want)
+	}
+	if want := []string{freshDone.ID}; !slices.Equal(cards["done"], want) {
+		t.Errorf("done column = %v, want only the recent %v", cards["done"], want)
+	}
+	if len(cards["cancelled"]) != 0 {
+		t.Errorf("cancelled column = %v, want nothing within the window", cards["cancelled"])
+	}
+	if !strings.Contains(body, `href="/?all=done"`) {
+		t.Errorf("done column offers no way to show all:\n%s", body)
+	}
+
+	_, cards = board(t, get(h, "/?all=done&all=cancelled").Body.String())
+	if want := []string{staleDone.ID, freshDone.ID}; !slices.Equal(cards["done"], want) {
+		t.Errorf("done column shown in full = %v, want %v", cards["done"], want)
+	}
+	if want := []string{staleCancelled.ID}; !slices.Equal(cards["cancelled"], want) {
+		t.Errorf("cancelled column shown in full = %v, want %v", cards["cancelled"], want)
+	}
+}
+
+// Every page reaches the other views.
+func TestEveryPageNavigatesToBoardAndList(t *testing.T) {
+	dir := newStore(t)
+	h := newHandler(t, dir)
+	for _, page := range []string{"/", "/issues", "/nope"} {
+		body := get(h, page).Body.String()
+		for _, link := range []string{`href="/"`, `href="/issues"`} {
+			if !strings.Contains(body, link) {
+				t.Errorf("%s has no navigation to %s", page, link)
+			}
+		}
+	}
+}
+
+// The board is a view like any other: a broken file costs a banner, not a page
+// (ADR 0003).
 func TestInvalidFileBecomesABannerNotAnError(t *testing.T) {
 	dir := newStore(t)
 	create(t, open(t, dir), core.Draft{Title: "Perfectly fine"})
@@ -131,14 +260,20 @@ func newStore(t *testing.T) string {
 	return dir
 }
 
-func open(t *testing.T, dir string) *core.Service {
+func open(t *testing.T, dir string, opts ...core.Option) *core.Service {
 	t.Helper()
-	svc, err := core.Open(dir)
+	svc, err := core.Open(dir, opts...)
 	if err != nil {
 		t.Fatalf("open store: %v", err)
 	}
 	return svc
 }
+
+// testClock is a clock a test moves by hand, so an issue can be written at any
+// instant the board's window has to reason about.
+type testClock struct{ now time.Time }
+
+func (c *testClock) Now() time.Time { return c.now }
 
 func create(t *testing.T, svc *core.Service, d core.Draft) issue.Issue {
 	t.Helper()
@@ -149,13 +284,55 @@ func create(t *testing.T, svc *core.Service, d core.Draft) issue.Issue {
 	return created.Issue
 }
 
-func newHandler(t *testing.T, dir string) http.Handler {
+func start(t *testing.T, svc *core.Service, ref string) {
 	t.Helper()
-	h, err := web.New(web.Config{WorkDir: dir, Actor: "tester"})
+	if _, err := svc.Start(ref, "tester", false); err != nil {
+		t.Fatalf("start %s: %v", ref, err)
+	}
+}
+
+func transition(t *testing.T, svc *core.Service, ref string, to issue.State) {
+	t.Helper()
+	if _, err := svc.Transition(ref, to); err != nil {
+		t.Fatalf("move %s to %s: %v", ref, to, err)
+	}
+}
+
+func newHandler(t *testing.T, dir string, opts ...core.Option) http.Handler {
+	t.Helper()
+	h, err := web.New(web.Config{WorkDir: dir, Actor: "tester", CoreOptions: opts})
 	if err != nil {
 		t.Fatalf("web.New: %v", err)
 	}
 	return h
+}
+
+var (
+	columnMark = regexp.MustCompile(`data-column="([a-z-]+)"`)
+	cardMark   = regexp.MustCompile(`data-issue="([a-z0-9]+)"`)
+)
+
+// board reads the rendered page back as the structure it depicts: the columns
+// in the order they appear, and the issue IDs carded in each.
+func board(t *testing.T, body string) (order []string, cards map[string][]string) {
+	t.Helper()
+	marks := columnMark.FindAllStringSubmatchIndex(body, -1)
+	if len(marks) == 0 {
+		t.Fatalf("no columns on the page:\n%s", body)
+	}
+	cards = map[string][]string{}
+	for i, m := range marks {
+		state := body[m[2]:m[3]]
+		end := len(body)
+		if i+1 < len(marks) {
+			end = marks[i+1][0]
+		}
+		order = append(order, state)
+		for _, c := range cardMark.FindAllStringSubmatch(body[m[1]:end], -1) {
+			cards[state] = append(cards[state], c[1])
+		}
+	}
+	return order, cards
 }
 
 func get(h http.Handler, path string) *httptest.ResponseRecorder {

@@ -52,7 +52,8 @@ func New(cfg Config) (http.Handler, error) {
 	}
 	s := &server{cfg: cfg}
 	mux := http.NewServeMux()
-	mux.HandleFunc("GET /{$}", s.list)
+	mux.HandleFunc("GET /{$}", s.board)
+	mux.HandleFunc("GET /issues", s.list)
 	mux.HandleFunc("GET /assets/{path...}", s.asset)
 	// ServeMux's bare "/" is the fallback for everything no other pattern
 	// claimed, which is what makes an unknown path this interface's own 404 page
@@ -70,6 +71,25 @@ type server struct{ cfg Config }
 // simply what this request sees.
 func (s *server) open() (*core.Service, error) {
 	return core.Open(s.cfg.WorkDir, s.cfg.CoreOptions...)
+}
+
+// board renders the whole backlog as four columns of cards — the home view, and
+// read-only here: the cards are links, not yet handles to drag.
+func (s *server) board(w http.ResponseWriter, r *http.Request) {
+	svc, err := s.open()
+	if err != nil {
+		s.fail(w, r, err)
+		return
+	}
+	listing, err := svc.List(core.Query{})
+	if err != nil {
+		s.fail(w, r, err)
+		return
+	}
+	s.render(w, r, "board.html", http.StatusOK, boardPage{
+		page:    s.page("Board", listing.Warnings),
+		Columns: columns(listing.Issues, svc.Now(), r.URL),
+	})
 }
 
 // list renders every issue in the core's ordering — the skeleton's one real
@@ -192,6 +212,7 @@ func path(r *http.Request) string { return strings.TrimPrefix(r.URL.Path, "/") }
 // pages holds each view already parsed with the shared layout. Parsing at
 // startup means a broken template fails the build's tests, never one request.
 var pages = map[string]*template.Template{
+	"board.html": mustParse("board.html"),
 	"list.html":  mustParse("list.html"),
 	"error.html": mustParse("error.html"),
 }
