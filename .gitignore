@@ -12,6 +12,9 @@
 .claude/skills/
 .agents/skills/
 
+# Implement-loop operator state (per-run, never shared)
+.implement-loop/
+
 # Environment and secrets (never committed)
 .env
 .env.*
