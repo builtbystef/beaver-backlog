@@ -20,7 +20,6 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/builtbystef/beaver-backlog/internal/core"
 	"github.com/builtbystef/beaver-backlog/internal/issue"
 )
 
@@ -111,25 +110,34 @@ type edge struct {
 // graphPage is the graph view's data.
 type graphPage struct {
 	page
-	Graph graph
+	Filters filterBar
+	Graph   graph
 }
 
-// graph renders the whole backlog as one picture. It reads like the board: one
-// listing from the core, laid out for the browser and nothing more.
+// graph renders the backlog the address selects as one picture. It reads like
+// the board: the same bar, the same query, one listing from the core — laid out
+// for the browser and nothing more. Filtering to a parent is therefore a cluster
+// on its own, because the core returns that parent's children and an arrow to
+// an issue off the page is no arrow at all.
 func (s *server) graph(w http.ResponseWriter, r *http.Request) {
 	svc, err := s.open()
 	if err != nil {
 		s.fail(w, r, err)
 		return
 	}
-	listing, err := svc.List(core.Query{})
+	f := parseFilters(r.URL.Query())
+	listing, refused, err := s.filtered(svc, f)
 	if err != nil {
 		s.fail(w, r, err)
 		return
 	}
 	p := s.page("Graph", listing.Warnings)
 	p.Live = true
-	s.render(w, r, "graph.html", http.StatusOK, graphPage{page: p, Graph: layout(listing.Issues)})
+	s.render(w, r, "graph.html", http.StatusOK, graphPage{
+		page:    p,
+		Filters: f.bar("/graph", r.URL.Query(), refused),
+		Graph:   layout(listing.Issues),
+	})
 }
 
 // layout turns a listing into a picture. The given order is the core's, so every

@@ -463,19 +463,42 @@ dialog::backdrop { background: rgba(0, 0, 0, 0.6); }
   padding: 0.6rem 1rem;
 }
 
-/* The graph: the whole backlog as one picture. The frame scrolls, because the
-   picture is drawn at its natural size — panning and zooming it is the next
-   slice's work. A node's fill is the board's state colour, so a card and a node
-   read the same; the conditions the core derives ride on the border and the
-   ready dot. */
+/* The graph: the whole backlog as one picture, on a dark field where the nodes
+   glow and the arrows keep quiet. A node's fill is the board's state colour, so
+   a card and a node read the same; the conditions the core derives ride on the
+   border and the ready dot.
+
+   The frame scrolls the picture at its natural size, which is what a reader
+   without the script gets. With it, the frame becomes a viewport the script pans
+   and zooms instead — hence the two shapes below. */
+
+.graph-controls {
+  align-items: baseline;
+  display: flex;
+  gap: 0.75rem;
+  margin-bottom: 0.5rem;
+}
+
+.graph-hint { color: var(--muted); font-size: 0.85rem; }
 
 .graph-frame {
-  background: var(--bg);
+  background: radial-gradient(circle at 50% 40%, #21242a, #17181b 70%);
   border: 1px solid var(--line);
   border-radius: 8px;
   max-height: 78vh;
   overflow: auto;
 }
+
+.graph-frame.interactive {
+  height: 78vh;
+  overflow: hidden;
+  cursor: grab;
+  touch-action: none;
+}
+
+.graph-frame.panning { cursor: grabbing; }
+
+.graph-frame.interactive .graph { height: 100%; width: 100%; }
 
 .graph { display: block; }
 
@@ -503,7 +526,26 @@ dialog::backdrop { background: rgba(0, 0, 0, 0.6); }
 .graph .node-title { fill: var(--text); font-size: 14px; }
 .graph .node-meta { fill: var(--muted); font-size: 11px; }
 
-.graph .edge { fill: none; stroke: #6a6f78; stroke-width: 1.5; }
+.graph .edge { fill: none; opacity: 0.7; stroke: #6a6f78; stroke-width: 1.5; }
 .graph .edge-back { stroke: #c65b5b; stroke-dasharray: 6 4; }
 .graph .arrowhead { fill: #6a6f78; }
 .graph .arrowhead-back { fill: #c65b5b; }
+
+/* Hovering a node lifts its neighbourhood — itself, the arrows at either end,
+   and the issues those reach — while the rest recedes rather than vanishing, so
+   the shape of the whole picture is still there behind it. */
+
+.graph .node, .graph .edge, .graph .cluster { transition: opacity 120ms ease-out; }
+
+.graph.dimmed .node,
+.graph.dimmed .edge,
+.graph.dimmed .cluster { opacity: 0.12; }
+
+.graph.dimmed .near { opacity: 1; }
+
+.graph .node.near .node-box, .graph .node:hover .node-box {
+  filter: drop-shadow(0 0 7px rgba(168, 130, 255, 0.55));
+  stroke: var(--accent);
+}
+
+.graph .edge.near { opacity: 1; stroke: var(--accent); stroke-width: 2.5; }

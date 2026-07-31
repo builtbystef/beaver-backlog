@@ -144,7 +144,7 @@ func TestUnresolvableParentIsSaidOnThePage(t *testing.T) {
 	create(t, open(t, dir), core.Draft{Title: "Fix flag parsing"})
 	h := newHandler(t, dir)
 
-	for _, path := range []string{"/?parent=no-such-issue", "/issues?parent=no-such-issue"} {
+	for _, path := range []string{"/?parent=no-such-issue", "/issues?parent=no-such-issue", "/graph?parent=no-such-issue"} {
 		res := get(h, path)
 		if res.Code != http.StatusOK {
 			t.Errorf("GET %s = %d, want 200 — the view still renders", path, res.Code)

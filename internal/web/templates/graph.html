@@ -1,45 +1,58 @@
 {{define "content"}}
 <h1>Graph</h1>
-{{/* The canvas is sized in user units and the frame scrolls, so a backlog wider
-     than the window is walked rather than shrunk into illegibility. */}}
-<div class="graph-frame">
-  <svg class="graph" width="{{.Graph.Width}}" height="{{.Graph.Height}}"
-       viewBox="0 0 {{.Graph.Width}} {{.Graph.Height}}" xmlns="http://www.w3.org/2000/svg">
-    <defs>
-      <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
-        <path class="arrowhead" d="M 0 0 L 10 5 L 0 10 z"/>
-      </marker>
-      <marker id="arrow-back" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
-        <path class="arrowhead arrowhead-back" d="M 0 0 L 10 5 L 0 10 z"/>
-      </marker>
-    </defs>
-    {{range .Graph.Clusters}}
-    <g class="cluster" data-cluster="{{.ID}}">
-      <rect class="cluster-box" x="{{.X}}" y="{{.Y}}" width="{{.W}}" height="{{.H}}" rx="10"/>
-      <text class="cluster-label" x="{{.LabelX}}" y="{{.LabelY}}">{{.Label}}</text>
-    </g>
-    {{end}}
-    {{range .Graph.Edges}}
-    <path class="{{.Class}}" data-edge="{{.From}}→{{.To}}" d="{{.Path}}"
-          marker-end="url(#{{if .Back}}arrow-back{{else}}arrow{{end}})"/>
-    {{end}}
-    {{range .Graph.Nodes}}
-    <a href="/issues/{{.Issue.ID}}" data-issue="{{.Issue.ID}}" data-layer="{{.Layer}}" data-row="{{.Row}}"
-       class="{{.Class}}">
-      <g transform="translate({{.X}},{{.Y}})">
-        <rect class="node-box" width="190" height="64" rx="8"/>
-        {{if .Ready}}<circle class="ready-mark" cx="176" cy="14" r="5"><title>ready</title></circle>{{end}}
-        <text class="node-title" x="12" y="23">{{.Title}}</text>
-        <text class="node-meta" x="12" y="40">{{.Issue.ID}} · {{.Issue.State}}{{with .Issue.Assignee}} · {{.}}{{end}}</text>
-        {{range .Badges}}
-        <rect class="node-badge" x="{{.X}}" y="45" width="{{.W}}" height="15" rx="7"/>
-        <text class="node-badge-text" x="{{.X}}" dx="5" y="57">{{.Text}}</text>
-        {{end}}
-        <title>{{.Issue.Title}}</title>
+{{template "filters" .Filters}}
+<div id="issues" class="graph-view">
+  <div class="graph-controls">
+    <button type="button" data-graph-reset>Reset view</button>
+    <span class="graph-hint">Drag the background to pan · scroll to zoom · hover a node for its neighbourhood</span>
+  </div>
+  {{/* The canvas is sized in user units and the frame scrolls, so the picture is
+       a picture with the script absent; graph.js turns the frame into a viewport
+       it pans and zooms instead (ADR 0006). */}}
+  <div class="graph-frame">
+    <svg class="graph" width="{{.Graph.Width}}" height="{{.Graph.Height}}"
+         viewBox="0 0 {{.Graph.Width}} {{.Graph.Height}}" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+          <path class="arrowhead" d="M 0 0 L 10 5 L 0 10 z"/>
+        </marker>
+        <marker id="arrow-back" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+          <path class="arrowhead arrowhead-back" d="M 0 0 L 10 5 L 0 10 z"/>
+        </marker>
+      </defs>
+      {{range .Graph.Clusters}}
+      <g class="cluster" data-cluster="{{.ID}}">
+        <rect class="cluster-box" x="{{.X}}" y="{{.Y}}" width="{{.W}}" height="{{.H}}" rx="10"/>
+        <text class="cluster-label" x="{{.LabelX}}" y="{{.LabelY}}">{{.Label}}</text>
       </g>
-    </a>
-    {{end}}
-  </svg>
+      {{end}}
+      {{range .Graph.Edges}}
+      <path class="{{.Class}}" data-edge="{{.From}}→{{.To}}" d="{{.Path}}"
+            marker-end="url(#{{if .Back}}arrow-back{{else}}arrow{{end}})"/>
+      {{end}}
+      {{range .Graph.Nodes}}
+      <a href="/issues/{{.Issue.ID}}" data-issue="{{.Issue.ID}}" data-layer="{{.Layer}}" data-row="{{.Row}}"
+         class="{{.Class}}">
+        <g transform="translate({{.X}},{{.Y}})">
+          <rect class="node-box" width="190" height="64" rx="8"/>
+          {{if .Ready}}<circle class="ready-mark" cx="176" cy="14" r="5"><title>ready</title></circle>{{end}}
+          <text class="node-title" x="12" y="23">{{.Title}}</text>
+          <text class="node-meta" x="12" y="40">{{.Issue.ID}} · {{.Issue.State}}{{with .Issue.Assignee}} · {{.}}{{end}}</text>
+          {{range .Badges}}
+          <rect class="node-badge" x="{{.X}}" y="45" width="{{.W}}" height="15" rx="7"/>
+          <text class="node-badge-text" x="{{.X}}" dx="5" y="57">{{.Text}}</text>
+          {{end}}
+          <title>{{.Issue.Title}}</title>
+        </g>
+      </a>
+      {{end}}
+    </svg>
+  </div>
+  {{if not .Graph.Nodes}}
+  {{if .Filters.Active}}<p class="empty">No issue matches these filters.</p>
+  {{else}}<p class="empty">Nothing to draw yet.</p>{{end}}
+  {{end}}
 </div>
-{{if not .Graph.Nodes}}<p class="empty">Nothing to draw yet.</p>{{end}}
 {{end}}
+
+{{define "scripts"}}<script src="/assets/graph.js" defer></script>{{end}}

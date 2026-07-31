@@ -179,6 +179,98 @@ func TestGraphRendersACycleWithADistinctBackEdge(t *testing.T) {
 	}
 }
 
+// Filtering to a parent cuts the picture down to that cluster: the members the
+// core returns for the query, and nothing else — no stray node, no arrow to
+// somewhere off the page.
+func TestGraphFiltersToOneCluster(t *testing.T) {
+	dir := newStore(t)
+	b := seedBacklog(t, dir)
+
+	res := get(newHandler(t, dir), "/graph?parent="+b.parent.ID)
+
+	if res.Code != http.StatusOK {
+		t.Fatalf("status = %d, want 200", res.Code)
+	}
+	body := res.Body.String()
+	nodes := graphNodes(t, body)
+	want := []string{b.child.ID, b.started.ID}
+	if len(nodes) != len(want) {
+		t.Errorf("filtered graph holds %d nodes, want the cluster's %d", len(nodes), len(want))
+	}
+	for _, id := range want {
+		if _, drawn := nodes[id]; !drawn {
+			t.Errorf("cluster member %s is missing from the filtered graph", id)
+		}
+	}
+	for _, iss := range []issue.Issue{b.free, b.base, b.blocked, b.cancelled, b.stuck} {
+		if _, drawn := nodes[iss.ID]; drawn {
+			t.Errorf("issue %s (%q) is outside the cluster but still drawn", iss.ID, iss.Title)
+		}
+	}
+	if edges := graphEdges(body); len(edges) != 0 {
+		t.Errorf("filtered graph draws %v, but every edge leads off the page", edges)
+	}
+}
+
+// The graph carries the same bar as the board and the list, over the same
+// fragment target, so one address encoding filters every view.
+func TestGraphCarriesTheSharedFilterBar(t *testing.T) {
+	dir := newStore(t)
+	seedBacklog(t, dir)
+
+	body := get(newHandler(t, dir), "/graph").Body.String()
+
+	if !strings.Contains(body, `method="get"`) || !strings.Contains(body, `action="/graph"`) {
+		t.Errorf("the graph has no plain filter form aimed at itself:\n%s", body)
+	}
+	for _, field := range []string{`name="state"`, `name="ready"`, `name="blocked"`, `name="label"`, `name="priority"`, `name="assignee"`, `name="actor"`, `name="parent"`, `name="search"`} {
+		if !strings.Contains(body, field) {
+			t.Errorf("the graph's filter bar is missing %s", field)
+		}
+	}
+	if !strings.Contains(body, `id="issues"`) {
+		t.Errorf("the graph has no fragment for the bar to swap:\n%s", body)
+	}
+	// Changing a control swaps that fragment, so the graph answers an htmx
+	// request with its own markup rather than a second whole document. The
+	// picture's own <title> elements are why this is checked here and not
+	// alongside the board's.
+	fragment := hxGet(newHandler(t, dir), "/graph").Body.String()
+	for _, chrome := range []string{"<!doctype", "<html", "</body>"} {
+		if strings.Contains(strings.ToLower(fragment), chrome) {
+			t.Errorf("GET /graph (htmx) returned %s — the fragment is the page's inside only", chrome)
+		}
+	}
+	if !strings.Contains(fragment, `id="issues"`) {
+		t.Errorf("GET /graph (htmx) has no fragment to swap:\n%s", fragment)
+	}
+}
+
+// Pan, zoom and hover are the script's; the page's part of the bargain is to
+// carry it and the reset control it drives.
+func TestGraphCarriesTheInteractionScript(t *testing.T) {
+	dir := newStore(t)
+	seedBacklog(t, dir)
+	h := newHandler(t, dir)
+
+	body := get(h, "/graph").Body.String()
+
+	if !strings.Contains(body, `/assets/graph.js`) {
+		t.Errorf("the graph page does not load the interaction script:\n%s", body)
+	}
+	if !strings.Contains(body, `data-graph-reset`) {
+		t.Errorf("the graph page has no reset control:\n%s", body)
+	}
+	if res := get(h, "/assets/graph.js"); res.Code != http.StatusOK {
+		t.Errorf("GET /assets/graph.js = %d, want 200", res.Code)
+	}
+	// Without the script the picture is still a picture: sized in user units
+	// inside a frame that scrolls (ADR 0006).
+	if !strings.Contains(body, "graph-frame") {
+		t.Errorf("the graph is not drawn in a scrollable frame:\n%s", body)
+	}
+}
+
 func TestGraphIsReachableFromEveryPage(t *testing.T) {
 	dir := newStore(t)
 	h := newHandler(t, dir)

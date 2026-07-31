@@ -19,7 +19,11 @@ new EventSource("/events").addEventListener("changed", refresh);
 // with it: the card in hand belongs to the DOM being replaced. The refresh
 // waits for the drop, which redraws the board itself anyway. The timeout lets
 // drag.js clear the mark first — both listeners answer the same event.
+// Dragging the graph's canvas is the same bargain by a different gesture: it
+// marks the body the same way and ends on a pointer release rather than a
+// dragend, so the redraw waits for the hand to come off the picture.
 document.addEventListener("dragend", () => setTimeout(retry, 0));
+document.addEventListener("pointerup", () => setTimeout(retry, 0));
 document.addEventListener("focusout", () => setTimeout(retry, 0));
 
 async function refresh() {
