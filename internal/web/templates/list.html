@@ -8,8 +8,8 @@
   <tbody>
     {{range .Issues}}
     <tr>
-      <td class="id">{{.ID}}</td>
-      <td>{{.Title}}</td>
+      <td><a class="id" href="/issues/{{.ID}}">{{.ID}}</a></td>
+      <td><a href="/issues/{{.ID}}">{{.Title}}</a></td>
       <td><span class="state state-{{.State}}">{{.State}}</span></td>
       <td>{{with .Priority}}<span class="priority priority-{{.}}">{{.}}</span>{{else}}<span class="none">—</span>{{end}}</td>
       <td>{{range .Labels}}<span class="label">{{.}}</span> {{else}}<span class="none">—</span>{{end}}</td>

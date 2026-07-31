@@ -88,6 +88,20 @@ func SetDescription(body, description string) string {
 	return desc + "\n\n" + notes
 }
 
+// Description returns what the body says about the issue itself: everything
+// above the notes section, with the blank line that separates them trimmed. A
+// body with no notes section is all description.
+//
+// It is SetDescription's reader — the half a renderer needs to show the
+// description and the parsed notes without printing the log's raw text twice.
+func Description(body string) string {
+	start, ok := notesStart(body)
+	if !ok {
+		return strings.TrimRight(body, " \t\r\n")
+	}
+	return strings.TrimRight(body[:start], " \t\r\n")
+}
+
 // ParseNotes extracts the structured entries from body's notes section, in file
 // order. It returns nil when the body has no notes section.
 //

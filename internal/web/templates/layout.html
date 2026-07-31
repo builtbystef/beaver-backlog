@@ -14,6 +14,9 @@
     <a href="/">Board</a>
     <a href="/issues">Issues</a>
   </nav>
+  <form class="search" action="/search" method="get" role="search">
+    <input type="search" name="q" value="{{.Search}}" placeholder="Reference or text…" aria-label="Search issues">
+  </form>
 </header>
 <main>
 {{with .Warnings}}

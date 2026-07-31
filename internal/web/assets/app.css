@@ -163,3 +163,70 @@ code {
 }
 
 a { color: var(--accent); }
+
+/* The search box sits at the far end of the topbar, on every page. */
+
+.topbar .search { margin-left: auto; }
+
+.topbar .search input {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  color: var(--text);
+  font: inherit;
+  padding: 0.3rem 0.6rem;
+  width: 18rem;
+}
+
+.topbar .search input:focus { border-color: var(--accent); outline: none; }
+
+/* Issue detail: a column of sections, each an aligned key/value block or prose. */
+
+.detail { max-width: 60rem; }
+
+.detail h2 {
+  border-bottom: 1px solid var(--line);
+  color: var(--muted);
+  font-size: 0.8rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  margin: 1.5rem 0 0.75rem;
+  padding-bottom: 0.35rem;
+  text-transform: uppercase;
+}
+
+.fields {
+  display: grid;
+  gap: 0.4rem 1rem;
+  grid-template-columns: max-content 1fr;
+  margin: 0;
+}
+
+.fields dt { color: var(--muted); }
+.fields dd { margin: 0; }
+
+.blocker { margin-right: 0.75rem; white-space: nowrap; }
+
+.state-missing { background: #6b2b2b; }
+
+.detail pre {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  margin: 0;
+  padding: 0.75rem 1rem;
+  white-space: pre-wrap;
+  word-wrap: break-word;
+}
+
+.note { margin-bottom: 0.75rem; }
+
+.note-meta {
+  color: var(--muted);
+  font-size: 0.8rem;
+  margin: 0 0 0.3rem;
+}
+
+.note-meta .author { color: var(--text); font-weight: 600; }
+
+.matches { line-height: 2; }

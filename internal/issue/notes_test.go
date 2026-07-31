@@ -148,3 +148,28 @@ func TestSetDescriptionEmptyKeepsOnlyTheNotes(t *testing.T) {
 		t.Errorf("SetDescription = %q, want the notes section alone", got)
 	}
 }
+
+// Description is the half of the body that is about the issue rather than about
+// the work on it: everything above the log, and none of it.
+func TestDescriptionStopsAtTheNotesSection(t *testing.T) {
+	body := "## What to build\n\nOld stuff.\n\n## Notes\n\n**stefan** — 2026-06-27T18:30:00Z\n\nthe only note"
+
+	if got, want := Description(body), "## What to build\n\nOld stuff."; got != want {
+		t.Errorf("Description =\n%q\nwant\n%q", got, want)
+	}
+}
+
+// A body with no log is all description.
+func TestDescriptionOfABodyWithoutNotes(t *testing.T) {
+	if got, want := Description("Just prose.\n"), "Just prose."; got != want {
+		t.Errorf("Description = %q, want %q", got, want)
+	}
+}
+
+// A body that is nothing but the log has no description.
+func TestDescriptionOfNotesAlone(t *testing.T) {
+	body := "## Notes\n\n**stefan** — 2026-06-27T18:30:00Z\n\nthe only note"
+	if got := Description(body); got != "" {
+		t.Errorf("Description = %q, want empty", got)
+	}
+}

@@ -54,6 +54,8 @@ func New(cfg Config) (http.Handler, error) {
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /{$}", s.board)
 	mux.HandleFunc("GET /issues", s.list)
+	mux.HandleFunc("GET /issues/{ref}", s.detail)
+	mux.HandleFunc("GET /search", s.search)
 	mux.HandleFunc("GET /assets/{path...}", s.asset)
 	// ServeMux's bare "/" is the fallback for everything no other pattern
 	// claimed, which is what makes an unknown path this interface's own 404 page
@@ -100,15 +102,18 @@ func (s *server) list(w http.ResponseWriter, r *http.Request) {
 		s.fail(w, r, err)
 		return
 	}
-	listing, err := svc.List(core.Query{})
+	// The text filter is the only one the list reads today — it is where the
+	// search box lands. The rest of the query string becomes filters with the
+	// shared filter bar.
+	text := strings.TrimSpace(r.URL.Query().Get("search"))
+	listing, err := svc.List(core.Query{Text: text})
 	if err != nil {
 		s.fail(w, r, err)
 		return
 	}
-	s.render(w, r, "list.html", http.StatusOK, listPage{
-		page:   s.page("Issues", listing.Warnings),
-		Issues: listing.Issues,
-	})
+	p := s.page("Issues", listing.Warnings)
+	p.Search = text
+	s.render(w, r, "list.html", http.StatusOK, listPage{page: p, Issues: listing.Issues})
 }
 
 // asset serves an embedded static file. A missing one is an unknown path like
@@ -154,7 +159,10 @@ func (s *server) fail(w http.ResponseWriter, r *http.Request, err error) {
 // files the scan skipped. Warnings ride on the page itself because a broken file
 // must never cost the reader the rest of the store (ADR 0003).
 type page struct {
-	Title    string
+	Title string
+	// Search is what the header's box shows, so a filtered list still says what
+	// it was filtered by; empty everywhere the reader has not searched.
+	Search   string
 	Warnings []skipped
 }
 
@@ -212,9 +220,11 @@ func path(r *http.Request) string { return strings.TrimPrefix(r.URL.Path, "/") }
 // pages holds each view already parsed with the shared layout. Parsing at
 // startup means a broken template fails the build's tests, never one request.
 var pages = map[string]*template.Template{
-	"board.html": mustParse("board.html"),
-	"list.html":  mustParse("list.html"),
-	"error.html": mustParse("error.html"),
+	"board.html":   mustParse("board.html"),
+	"list.html":    mustParse("list.html"),
+	"detail.html":  mustParse("detail.html"),
+	"matches.html": mustParse("matches.html"),
+	"error.html":   mustParse("error.html"),
 }
 
 func mustParse(name string) *template.Template {

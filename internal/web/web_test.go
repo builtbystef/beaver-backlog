@@ -250,6 +250,161 @@ func TestInvalidFileBecomesABannerNotAnError(t *testing.T) {
 	}
 }
 
+// The detail page is the whole file made readable: its own fields, its
+// description, its notes in order, and every relationship as somewhere to go.
+func TestDetailPageShowsEverythingTheFileHolds(t *testing.T) {
+	dir := newStore(t)
+	svc := open(t, dir)
+	settled := create(t, svc, core.Draft{Title: "Groundwork"})
+	transition(t, svc, settled.ID, issue.StateDone)
+	waiting := create(t, svc, core.Draft{Title: "Still going"})
+	parent := create(t, svc, core.Draft{Title: "The spec"})
+	target := create(t, svc, core.Draft{
+		Title:     "Fix flag parsing",
+		Body:      "The parser drops the last flag.",
+		Priority:  issue.PriorityHigh,
+		Labels:    []string{"bug"},
+		DependsOn: []string{settled.ID, waiting.ID},
+		Parent:    parent.ID,
+	})
+	child := create(t, svc, core.Draft{Title: "A slice of it", Parent: target.ID})
+	dependent := create(t, svc, core.Draft{Title: "Waits on the fix", DependsOn: []string{target.ID}})
+	start(t, svc, target.ID)
+	note(t, svc, target.ID, "Reproduced on an empty argv.")
+	note(t, svc, target.ID, "Cause is the loop bound.")
+	addCustomField(t, dir, target.ID, "epic", "Q3 cleanup")
+
+	res := get(newHandler(t, dir), "/issues/"+target.ID)
+
+	if res.Code != http.StatusOK {
+		t.Fatalf("status = %d, want 200", res.Code)
+	}
+	body := res.Body.String()
+	for _, want := range []string{
+		target.ID, "Fix flag parsing", "in-progress", "high", "bug", "tester",
+		"The parser drops the last flag.",
+		"Reproduced on an empty argv.", "Cause is the loop bound.",
+		string(issue.StateTodo), // the state of the dependency still unmet
+		"epic", "Q3 cleanup",
+	} {
+		if !strings.Contains(body, want) {
+			t.Errorf("detail page missing %q:\n%s", want, body)
+		}
+	}
+	if first, second := strings.Index(body, "Reproduced on"), strings.Index(body, "Cause is"); first > second {
+		t.Error("notes render out of the order they were written in")
+	}
+	// Every related issue is a way to get there.
+	for _, rel := range []issue.Issue{settled, waiting, parent, child, dependent} {
+		if link := `href="/issues/` + rel.ID + `"`; !strings.Contains(body, link) {
+			t.Errorf("relationship to %s (%q) is not a link (%s)", rel.ID, rel.Title, link)
+		}
+	}
+}
+
+// A URL takes any reference the CLI takes, and nothing else.
+func TestDetailResolvesEveryFormOfReference(t *testing.T) {
+	dir := newStore(t)
+	target := create(t, open(t, dir), core.Draft{Title: "Fix flag parsing"})
+	h := newHandler(t, dir)
+
+	for _, ref := range []string{target.ID, "fix-flag-parsing", target.ID + "-fix-flag-parsing"} {
+		res := get(h, "/issues/"+ref)
+		if res.Code != http.StatusOK {
+			t.Errorf("GET /issues/%s = %d, want 200", ref, res.Code)
+			continue
+		}
+		if !strings.Contains(res.Body.String(), target.ID) {
+			t.Errorf("GET /issues/%s renders some other issue", ref)
+		}
+	}
+	if res := get(h, "/issues/no-such-issue"); res.Code != http.StatusNotFound {
+		t.Errorf("GET /issues/no-such-issue = %d, want 404", res.Code)
+	}
+}
+
+// A slug two issues share names neither of them, so the page offers the choice
+// rather than guessing.
+func TestDetailOnASharedSlugOffersTheMatches(t *testing.T) {
+	dir := newStore(t)
+	svc := open(t, dir)
+	first := create(t, svc, core.Draft{Title: "Fix flag parsing"})
+	second := create(t, svc, core.Draft{Title: "Fix flag parsing"})
+
+	h := newHandler(t, dir)
+	res := get(h, "/issues/fix-flag-parsing")
+
+	body := res.Body.String()
+	for _, iss := range []issue.Issue{first, second} {
+		if link := `href="/issues/` + iss.ID + `"`; !strings.Contains(body, link) {
+			t.Errorf("shared slug page does not link %s by ID:\n%s", iss.ID, body)
+		}
+	}
+	// Searching the shared slug is still a reference, so it lands on the same
+	// choice rather than on a text filter.
+	if to := get(h, "/search?q=fix-flag-parsing").Header().Get("Location"); to != "/issues/fix-flag-parsing" {
+		t.Errorf("searching the shared slug went to %q, want the disambiguation page", to)
+	}
+}
+
+// The one search box: a reference goes to the issue, anything else filters the
+// list — the reader never picks a mode.
+func TestSearchJumpsToAnIssueForAReference(t *testing.T) {
+	dir := newStore(t)
+	target := create(t, open(t, dir), core.Draft{Title: "Fix flag parsing"})
+	h := newHandler(t, dir)
+
+	for _, q := range []string{target.ID, "fix-flag-parsing"} {
+		res := get(h, "/search?q="+q)
+		if res.Code != http.StatusSeeOther {
+			t.Errorf("GET /search?q=%s = %d, want 303", q, res.Code)
+			continue
+		}
+		if want := "/issues/" + target.ID; res.Header().Get("Location") != want {
+			t.Errorf("GET /search?q=%s went to %q, want %q", q, res.Header().Get("Location"), want)
+		}
+	}
+}
+
+func TestSearchWithoutAMatchFiltersTheList(t *testing.T) {
+	dir := newStore(t)
+	svc := open(t, dir)
+	target := create(t, svc, core.Draft{Title: "Fix flag parsing"})
+	other := create(t, svc, core.Draft{Title: "Something else entirely"})
+	h := newHandler(t, dir)
+
+	res := get(h, "/search?q=parsing")
+
+	if res.Code != http.StatusSeeOther {
+		t.Fatalf("status = %d, want 303 — an unmatched search is a filter, not an error", res.Code)
+	}
+	to := res.Header().Get("Location")
+	if want := "/issues?search=parsing"; to != want {
+		t.Fatalf("went to %q, want %q", to, want)
+	}
+	body := get(h, to).Body.String()
+	if !strings.Contains(body, target.ID) {
+		t.Errorf("filtered list is missing %s (%q):\n%s", target.ID, target.Title, body)
+	}
+	if strings.Contains(body, other.ID) {
+		t.Errorf("filtered list still holds %s (%q), which does not match", other.ID, other.Title)
+	}
+}
+
+// The search box is on every page, wherever the reader happens to be.
+func TestSearchBoxAppearsOnEveryPage(t *testing.T) {
+	dir := newStore(t)
+	target := create(t, open(t, dir), core.Draft{Title: "Fix flag parsing"})
+	h := newHandler(t, dir)
+
+	for _, path := range []string{"/", "/issues", "/issues/" + target.ID, "/nope"} {
+		body := get(h, path).Body.String()
+		if !strings.Contains(body, `action="/search"`) || !strings.Contains(body, `name="q"`) {
+			t.Errorf("%s has no search box:\n%s", path, body)
+		}
+	}
+}
+
 // newStore returns a project directory holding a fresh, empty store.
 func newStore(t *testing.T) string {
 	t.Helper()
@@ -295,6 +450,31 @@ func transition(t *testing.T, svc *core.Service, ref string, to issue.State) {
 	t.Helper()
 	if _, err := svc.Transition(ref, to); err != nil {
 		t.Fatalf("move %s to %s: %v", ref, to, err)
+	}
+}
+
+func note(t *testing.T, svc *core.Service, ref, text string) {
+	t.Helper()
+	if _, err := svc.Note(ref, "tester", text); err != nil {
+		t.Fatalf("note %s: %v", ref, err)
+	}
+}
+
+// addCustomField splices a user-defined frontmatter key into an issue file, the
+// way a hand-edit would — the core has no way to write one.
+func addCustomField(t *testing.T, dir, id, key, value string) {
+	t.Helper()
+	matches, err := filepath.Glob(filepath.Join(dir, ".beaver", "issues", id+"-*.md"))
+	if err != nil || len(matches) != 1 {
+		t.Fatalf("find file for %s: %v (matched %v)", id, err, matches)
+	}
+	raw, err := os.ReadFile(matches[0])
+	if err != nil {
+		t.Fatalf("read %s: %v", matches[0], err)
+	}
+	edited := strings.Replace(string(raw), "---\n", "---\n"+key+": "+value+"\n", 1)
+	if err := os.WriteFile(matches[0], []byte(edited), 0o644); err != nil {
+		t.Fatalf("write %s: %v", matches[0], err)
 	}
 }
 
