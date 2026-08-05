@@ -116,22 +116,22 @@ abandoned, kept visible so nobody re-files it.
 
 Fourteen of them, and they fit on one screen:
 
-| Command                      | What it does                                                                                   |
-| ---------------------------- | ---------------------------------------------------------------------------------------------- |
-| `beaver init`                | Initialize a store in the current project                                                      |
-| `beaver create "<title>"`    | Create an issue (`--body`, `--body-file`, `--label`, `--priority`, `--depends-on`, `--parent`) |
-| `beaver list`                | List issues (`--state`, `--ready`, `--blocked`, `--label`, `--priority`, `--assignee`, `--parent`, `--search`)         |
-| `beaver show <ref>`          | Show an issue, including what it waits on and whether it is ready                              |
-| `beaver start <ref>`         | Move to in-progress, auto-claiming if unowned                                                  |
-| `beaver done <ref>`          | Mark done                                                                                      |
-| `beaver cancel <ref>`        | Deliberately abandon (terminal, but not completed)                                             |
-| `beaver reopen <ref>`        | Return a done or cancelled issue to todo                                                       |
-| `beaver update <ref>`        | Change any non-state field (see below)                                                         |
-| `beaver note <ref> "<text>"` | Append an attributed, timestamped note                                                         |
-| `beaver delete <ref>`        | Delete the file (for junk; the VCS keeps history)                                              |
-| `beaver doctor`              | Check store health; `--fix` repairs what is safe to repair                                     |
-| `beaver serve`               | Serve the local web UI on loopback until interrupted (`--port`, `--as`)                        |
-| `beaver whoami`              | Print the actor you resolve as                                                                 |
+| Command                      | What it does                                                                                                   |
+| ---------------------------- | -------------------------------------------------------------------------------------------------------------- |
+| `beaver init`                | Initialize a store in the current project                                                                      |
+| `beaver create "<title>"`    | Create an issue (`--body`, `--body-file`, `--label`, `--priority`, `--depends-on`, `--parent`)                 |
+| `beaver list`                | List issues (`--state`, `--ready`, `--blocked`, `--label`, `--priority`, `--assignee`, `--parent`, `--search`) |
+| `beaver show <ref>`          | Show an issue, including what it waits on and whether it is ready                                              |
+| `beaver start <ref>`         | Move to in-progress, auto-claiming if unowned                                                                  |
+| `beaver done <ref>`          | Mark done                                                                                                      |
+| `beaver cancel <ref>`        | Deliberately abandon (terminal, but not completed)                                                             |
+| `beaver reopen <ref>`        | Return a done or cancelled issue to todo                                                                       |
+| `beaver update <ref>`        | Change any non-state field (see below)                                                                         |
+| `beaver note <ref> "<text>"` | Append an attributed, timestamped note                                                                         |
+| `beaver delete <ref>`        | Delete the file (for junk; the VCS keeps history)                                                              |
+| `beaver doctor`              | Check store health; `--fix` repairs what is safe to repair                                                     |
+| `beaver serve`               | Serve the local web UI on loopback until interrupted (`--port`, `--as`)                                        |
+| `beaver whoami`              | Print the actor you resolve as                                                                                 |
 
 `update` takes as many fields as you like in one invocation, and writes
 nothing at all if they net out to no change:
@@ -265,10 +265,7 @@ never removes data.
 ## Status
 
 Beaver Backlog is pre-1.0. The CLI works and is well tested, but the file format
-and command surface may still change without a deprecation cycle. The web UI
-over the same files has started: `beaver serve` reads the backlog in a
-browser today — the board and the list — and gains the graph and the write
-views next.
+and command surface may still change without a deprecation cycle.
 
 ## Contributing
 
