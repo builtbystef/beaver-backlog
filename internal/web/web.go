@@ -19,7 +19,6 @@ import (
 	"net/http"
 	"path/filepath"
 	"strings"
-	"time"
 
 	"github.com/builtbystef/beaver-backlog/internal/core"
 	"github.com/builtbystef/beaver-backlog/internal/issue"
@@ -32,9 +31,9 @@ import (
 var templateFS embed.FS
 
 // assets holds the stylesheet and htmx 2.0.4 (vendored, pinned, unmodified from
-// unpkg; BSD-0). htmx earns its place because fragment refresh, inline form
-// posts, and SSE-triggered updates become declarative attributes on
-// server-rendered HTML instead of hand-written fetch-and-swap JavaScript.
+// unpkg; BSD-0). htmx earns its place because fragment refresh and inline form
+// posts become declarative attributes on server-rendered HTML instead of
+// hand-written fetch-and-swap JavaScript.
 //
 //go:embed assets
 var assetFS embed.FS
@@ -45,11 +44,6 @@ type Config struct {
 	WorkDir     string        // the store is resolved from here, walking up, via the core
 	Actor       string        // launch-resolved; attributed to every write
 	CoreOptions []core.Option // clock and ID source travel to the core, not as Config fields
-	// PollInterval is how often the store is fingerprinted for the live view.
-	// It belongs to the interface rather than to the core — how often a browser
-	// is told to look again is a property of this UI — and zero means the
-	// default second. Tests shorten it.
-	PollInterval time.Duration
 }
 
 // New builds the handler serving the store above cfg.WorkDir. It returns
@@ -60,7 +54,6 @@ func New(cfg Config) (http.Handler, error) {
 		return nil, err
 	}
 	s := &server{cfg: cfg}
-	s.changes = newChanges(cfg.PollInterval, s.fingerprint)
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /{$}", s.board)
 	mux.HandleFunc("GET /issues", s.list)
@@ -77,7 +70,7 @@ func New(cfg Config) (http.Handler, error) {
 	mux.HandleFunc("GET /doctor", s.doctor)
 	mux.HandleFunc("POST /doctor/fix", s.fix)
 	mux.HandleFunc("GET /search", s.search)
-	mux.HandleFunc("GET /events", s.events)
+	mux.HandleFunc("GET /changed", s.changed)
 	mux.HandleFunc("GET /assets/{path...}", s.asset)
 	// ServeMux's bare "/" is the fallback for everything no other pattern
 	// claimed, which is what makes an unknown path this interface's own 404 page
@@ -88,22 +81,8 @@ func New(cfg Config) (http.Handler, error) {
 
 // server holds only what every request needs to open the application afresh —
 // deliberately no issue data, which would be stale the moment a file changed.
-// The one long-lived piece is the change feed, which holds no issue data
-// either: only whether the files still look the way they did.
 type server struct {
-	cfg     Config
-	changes *changes
-}
-
-// fingerprint is what the poller compares between ticks. It opens the store
-// afresh like every other read, so a store that vanished and came back is
-// simply a change like any other.
-func (s *server) fingerprint() (string, error) {
-	svc, err := s.open()
-	if err != nil {
-		return "", err
-	}
-	return svc.Fingerprint()
+	cfg Config
 }
 
 // open builds the core service one request works through. Every handler starts

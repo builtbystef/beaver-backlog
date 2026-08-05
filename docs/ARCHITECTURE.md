@@ -54,10 +54,14 @@ invokes a version-control system; committing the files is the operator's job.
   server-rendered `html/template`, with every template and static asset (the
   stylesheet, a vendored, pinned htmx, and hand-written scripts such as the
   board's drag-and-drop) embedded by `go:embed`: serving needs no build step and
-  no network (ADR 0006). Open pages stay live by polling: the handler
-  fingerprints the issues directory on the config's interval and broadcasts one
-  payload-free `changed` event to every connected page, which re-fetches its own
-  view — no filesystem watcher, and nothing cached to reconcile. Like the CLI it
+  no network (ADR 0006). Open pages stay live by polling: each page asks a tiny
+  endpoint about once a second whether the store fingerprint it last saw still
+  stands — the fingerprint travels as an ETag, and an unchanged store answers
+  304 — and re-fetches its own view when it does not. The polls are deliberately
+  short requests rather than a held stream, because a browser allows only a
+  handful of plain-HTTP connections per origin and a stream per tab starves
+  every other request once enough tabs are open; there is no filesystem
+  watcher, and nothing cached to reconcile. Like the CLI it
   decides no rules; it
   words a core failure as a status and a skipped file as a banner rather than an
   error page (ADR 0003).
@@ -95,10 +99,7 @@ invokes a version-control system; committing the files is the operator's job.
 - **`Config` struct** (`internal/web`): the web interface's counterpart to
   `Env` — the launch decisions (where the store is, who the writes belong to)
   handed in once, with the application's own seams travelling through as core
-  options, exactly as `Env` forwards them. Knobs that are the interface's own —
-  how often the live view polls the store — are fields here rather than core
-  options, because the core has no opinion about how often a browser looks
-  again.
+  options, exactly as `Env` forwards them.
 - **The files themselves**: hand-editing an issue file is a first-class
   operation, so every module must tolerate files it didn't write — everyday
   commands skip-and-warn on invalid files, `doctor` repairs drift (ADR 0003).

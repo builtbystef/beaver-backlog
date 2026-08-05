@@ -27,8 +27,8 @@
     <input type="search" name="q" value="{{.Search}}" placeholder="Reference or text…" aria-label="Search issues">
   </form>
 </header>
-{{/* What the live listener says when the server stops answering: hidden while
-     the feed is healthy, shown by live.js, never rendered without it. */}}
+{{/* What the live listener says when the store stops answering its polls:
+     hidden while they succeed, shown by live.js, never rendered without it. */}}
 <p id="live-status" hidden>Live updates disconnected — retrying…</p>
 {{/* The view is one element so the live listener can replace it whole with a
      freshly rendered fragment of the same address — banner and all, since a

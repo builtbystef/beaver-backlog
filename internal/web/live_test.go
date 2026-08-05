@@ -1,69 +1,70 @@
 package web_test
 
 import (
-	"bufio"
-	"context"
 	"net/http"
 	"net/http/httptest"
 	"strings"
 	"testing"
-	"time"
 
 	"github.com/builtbystef/beaver-backlog/internal/core"
-	"github.com/builtbystef/beaver-backlog/internal/web"
 )
 
-// pollInterval is short enough that a test waits milliseconds for a change the
-// reader would wait about a second for.
-const pollInterval = 10 * time.Millisecond
-
-// eventWait is how long a test gives a change to travel — many poll intervals,
-// so a loaded machine slows the test down rather than failing it.
-const eventWait = 5 * time.Second
-
 // The point of the whole slice: a write nobody in the browser made — the CLI,
-// an agent, a git pull — reaches the open page as one event.
-func TestAStoreWriteAnnouncesItselfAsAChangedEvent(t *testing.T) {
+// an agent, a git pull — changes the answer at /changed, which is how an open
+// page learns to re-fetch its view.
+func TestAStoreWriteChangesTheAnswerAtChanged(t *testing.T) {
 	dir := newStore(t)
-	srv := liveServer(t, dir)
-	events := subscribe(t, srv.URL)
+	h := newHandler(t, dir)
+	before := etag(t, get(h, "/changed"))
 
 	create(t, open(t, dir), core.Draft{Title: "Written by someone else"})
 
-	if got := next(t, events); got != "changed" {
-		t.Errorf("event = %q, want changed", got)
+	res := poll(h, before)
+	if res.Code != http.StatusOK {
+		t.Fatalf("GET /changed after a write = %d, want 200", res.Code)
+	}
+	if after := etag(t, res); after == before {
+		t.Errorf("ETag %q did not change with the store", after)
 	}
 }
 
-// One poll, one broadcast: every page open at the time hears about the change,
-// not just whichever connected first.
-func TestEveryConnectedClientHearsTheSameChange(t *testing.T) {
-	dir := newStore(t)
-	srv := liveServer(t, dir)
-	first := subscribe(t, srv.URL)
-	second := subscribe(t, srv.URL)
-
-	create(t, open(t, dir), core.Draft{Title: "Written by someone else"})
-
-	for i, events := range []<-chan string{first, second} {
-		if got := next(t, events); got != "changed" {
-			t.Errorf("subscriber %d got %q, want changed", i+1, got)
-		}
-	}
-}
-
-// A quiet store is silent: no heartbeat, no periodic re-render, nothing for a
-// page to redraw itself over.
-func TestAQuietStoreSendsNothing(t *testing.T) {
+// A quiet store answers 304: the page on screen is still the truth, and the
+// poll costs a validator comparison rather than a render.
+func TestAQuietStoreAnswersNotModified(t *testing.T) {
 	dir := newStore(t)
 	create(t, open(t, dir), core.Draft{Title: "Settled long ago"})
-	srv := liveServer(t, dir)
-	events := subscribe(t, srv.URL)
+	h := newHandler(t, dir)
 
-	select {
-	case got := <-events:
-		t.Errorf("an untouched store sent %q, want silence", got)
-	case <-time.After(20 * pollInterval):
+	res := poll(h, etag(t, get(h, "/changed")))
+	if res.Code != http.StatusNotModified {
+		t.Errorf("GET /changed on a quiet store = %d, want 304", res.Code)
+	}
+}
+
+// A poll with nothing to compare — the page just opened — is answered with the
+// current validator, never a redraw signal it would have no baseline for.
+func TestTheFirstPollEstablishesABaseline(t *testing.T) {
+	dir := newStore(t)
+	h := newHandler(t, dir)
+
+	res := get(h, "/changed")
+	if res.Code != http.StatusOK {
+		t.Fatalf("GET /changed = %d, want 200", res.Code)
+	}
+	if etag(t, res) == "" {
+		t.Error("the first poll carried no ETag to compare the next one against")
+	}
+}
+
+// The regression this file guards (rpliqf): liveness must not hold a
+// connection open. Browsers cap HTTP/1.1 at six connections per origin, so six
+// open tabs each holding an event stream starved every click and drag. There
+// is no stream to hold any more.
+func TestNoEventStreamRemainsToHoldAConnection(t *testing.T) {
+	dir := newStore(t)
+	h := newHandler(t, dir)
+	if res := get(h, "/events"); res.Code != http.StatusNotFound {
+		t.Errorf("GET /events = %d, want 404 — a held stream starves the browser's connection pool", res.Code)
 	}
 }
 
@@ -100,67 +101,25 @@ func TestEveryPageLoadsTheLiveListener(t *testing.T) {
 	}
 }
 
-// liveServer runs the handler over a real socket, since server-sent events are
-// a streaming response rather than a recorded one.
-func liveServer(t *testing.T, dir string) *httptest.Server {
-	t.Helper()
-	h, err := web.New(web.Config{WorkDir: dir, Actor: "tester", PollInterval: pollInterval})
-	if err != nil {
-		t.Fatalf("web.New: %v", err)
-	}
-	srv := httptest.NewServer(h)
-	t.Cleanup(srv.Close)
-	return srv
+// poll asks /changed the way live.js does: with the validator a previous
+// answer handed back.
+func poll(h http.Handler, validator string) *httptest.ResponseRecorder {
+	req := httptest.NewRequest(http.MethodGet, "/changed", nil)
+	req.Header.Set("If-None-Match", validator)
+	res := httptest.NewRecorder()
+	h.ServeHTTP(res, req)
+	return res
 }
 
-// subscribe opens the event stream and returns the event names arriving on it.
-// It waits for the server's opening line before returning, so a write made by
-// the test after this call is a change the poller has not already seen.
-func subscribe(t *testing.T, base string) <-chan string {
+// etag digs the validator out of an answer, failing the test over an answer
+// that carries none.
+func etag(t *testing.T, res *httptest.ResponseRecorder) string {
 	t.Helper()
-	ctx, cancel := context.WithCancel(context.Background())
-	t.Cleanup(cancel)
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, base+"/events", nil)
-	if err != nil {
-		t.Fatalf("build request: %v", err)
-	}
-	res, err := http.DefaultClient.Do(req)
-	if err != nil {
-		t.Fatalf("GET /events: %v", err)
-	}
-	t.Cleanup(func() { _ = res.Body.Close() })
-	if res.StatusCode != http.StatusOK {
-		t.Fatalf("GET /events = %d, want 200", res.StatusCode)
-	}
-	if got := res.Header.Get("Content-Type"); !strings.HasPrefix(got, "text/event-stream") {
-		t.Errorf("Content-Type = %q, want text/event-stream", got)
-	}
-	lines := bufio.NewScanner(res.Body)
-	if !lines.Scan() {
-		t.Fatalf("the stream said nothing to confirm it was open: %v", lines.Err())
-	}
-	events := make(chan string, 8)
-	go func() {
-		defer close(events)
-		for lines.Scan() {
-			if name, ok := strings.CutPrefix(lines.Text(), "event:"); ok {
-				events <- strings.TrimSpace(name)
-			}
+	if res.Code == http.StatusOK {
+		if got := res.Header().Get("ETag"); got != "" {
+			return got
 		}
-	}()
-	return events
-}
-
-func next(t *testing.T, events <-chan string) string {
-	t.Helper()
-	select {
-	case got, ok := <-events:
-		if !ok {
-			t.Fatal("the event stream closed before any event arrived")
-		}
-		return got
-	case <-time.After(eventWait):
-		t.Fatal("no event arrived before the timeout")
-		return ""
+		t.Fatal("a 200 from /changed carried no ETag")
 	}
+	return res.Header().Get("ETag")
 }

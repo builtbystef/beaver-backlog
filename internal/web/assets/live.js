@@ -1,8 +1,14 @@
-// Liveness on the page: the server says the store changed, and the view
-// re-fetches itself. No payload travels with the event, so what lands on screen
-// is a fresh render of the same address — the URL's filters, the column shown
-// in full, the issue being read — rather than a patch that could disagree with
-// the files.
+// Liveness on the page: about once a second the page asks /changed whether the
+// store still looks the way it did, and re-fetches its own view when it does
+// not. No payload travels with the answer, so what lands on screen is a fresh
+// render of the same address — the URL's filters, the column shown in full,
+// the issue being read — rather than a patch that could disagree with the
+// files.
+//
+// The asking is a short poll, deliberately not a held stream: a browser allows
+// only about six plain-HTTP connections per origin, and a per-tab event stream
+// starved every click and drag once six tabs were open (rpliqf). A poll is
+// over in a millisecond and holds nothing.
 //
 // Only a view marked data-live redraws. A form is never marked, because a page
 // somebody is typing into belongs to them until they submit it.
@@ -13,26 +19,64 @@ const view = () => document.getElementById("view");
 // so the redraw happens as soon as it can rather than being lost.
 let pending = false;
 
-const feed = new EventSource("/events");
-feed.addEventListener("changed", refresh);
+// pollMs matches the freshness the retired server-side poll already bounded:
+// about a second is under the threshold where a reader would reach for the
+// reload button, and cheap enough to leave running all day.
+const pollMs = 1000;
 
-// The feed's health, said only on a page the feed can redraw: a form is not
-// live, so "disconnected" would be a warning about nothing. dropped remembers
-// an outage so the reconnect can ask what was missed — the events themselves
-// carry no payload, so anything announced during the gap is simply gone.
-let dropped = false;
+// validator is the store as this page last saw it, in the form /changed hands
+// out (an ETag) — null until the first answer establishes the baseline, which
+// is the store as it stood when the page was opened. It survives an outage on
+// purpose: the comparison is against files, not against a connection, so the
+// first answer after a gap says precisely whether anything was missed.
+let validator = null;
 
-feed.addEventListener("error", () => {
-  dropped = true;
+// asking keeps the polls from overlapping when an answer is slow; the next
+// tick asks again anyway.
+let asking = false;
+
+async function ask() {
+  if (asking || document.hidden) return;
+  asking = true;
+  try {
+    const res = await fetch("/changed", {
+      cache: "no-store",
+      headers: validator === null ? {} : { "If-None-Match": validator },
+    });
+    if (res.status === 304) {
+      status(false);
+      return;
+    }
+    if (!res.ok) {
+      disconnected();
+      return;
+    }
+    const fresh = res.headers.get("ETag");
+    const behind = validator !== null && fresh !== validator;
+    validator = fresh;
+    status(false);
+    if (behind) refresh();
+  } catch {
+    disconnected();
+  } finally {
+    asking = false;
+  }
+}
+
+setInterval(ask, pollMs);
+ask();
+
+// A hidden tab does not poll — nobody is looking — so coming back asks
+// immediately rather than waiting out the tick.
+document.addEventListener("visibilitychange", () => {
+  if (!document.hidden) ask();
+});
+
+// The store's health, said only on a page the poll can redraw: a form is not
+// live, so "disconnected" would be a warning about nothing.
+function disconnected() {
   if (view()?.dataset.live !== undefined) status(true);
-});
-
-feed.addEventListener("open", () => {
-  status(false);
-  if (!dropped) return;
-  dropped = false;
-  refresh();
-});
+}
 
 function status(shown) {
   const box = document.getElementById("live-status");
