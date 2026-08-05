@@ -1,0 +1,18 @@
+{{/* The inline fragments the pages share — one define per fragment, so a badge
+     or link changes in one place. Each renders a single element with no
+     surrounding whitespace; spacing and any with/else wrapping around an empty
+     value stay with the caller, because pages disagree on both. */}}
+
+{{define "state"}}<span class="state state-{{.}}">{{.}}</span>{{end}}
+
+{{define "priority"}}<span class="priority priority-{{.}}">{{.}}</span>{{end}}
+
+{{define "label"}}<span class="label">{{.}}</span>{{end}}
+
+{{/* none is the placeholder for a field with nothing in it — a dash rather than
+     a blank, so an empty cell still reads as answered. */}}
+{{define "none"}}<span class="none">—</span>{{end}}
+
+{{define "reflink"}}<a class="id" href="/issues/{{.}}">{{.}}</a>{{end}}
+
+{{define "stamp"}}{{if .IsZero}}{{template "none"}}{{else}}<time datetime="{{.Format "2006-01-02T15:04:05Z07:00"}}">{{.Format "2006-01-02 15:04"}} UTC</time>{{end}}{{end}}

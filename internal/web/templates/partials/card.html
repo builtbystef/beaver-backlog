@@ -1,0 +1,15 @@
+{{/* card is one issue on the board: a link to the issue that drag.js also reads
+     its state and target addresses from. */}}
+{{define "card"}}
+<a class="card" draggable="true" data-issue="{{.ID}}" data-state="{{.State}}"
+   data-state-url="/issues/{{.ID}}/state" data-start-url="/issues/{{.ID}}/start"
+   href="/issues/{{.ID}}">
+  <span class="card-title">{{.Title}}</span>
+  <span class="card-meta">
+    <span class="id">{{.ID}}</span>
+    {{with .Priority}}{{template "priority" .}}{{end}}
+    {{range .Labels}}{{template "label" .}}{{end}}
+    {{with .Assignee}}<span class="assignee">{{.}}</span>{{end}}
+  </span>
+</a>
+{{end}}

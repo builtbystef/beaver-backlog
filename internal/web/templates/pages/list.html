@@ -10,12 +10,12 @@
   <tbody>
     {{range .Issues}}
     <tr>
-      <td><a class="id" href="/issues/{{.ID}}">{{.ID}}</a></td>
+      <td>{{template "reflink" .ID}}</td>
       <td><a href="/issues/{{.ID}}">{{.Title}}</a></td>
-      <td><span class="state state-{{.State}}">{{.State}}</span></td>
-      <td>{{with .Priority}}<span class="priority priority-{{.}}">{{.}}</span>{{else}}<span class="none">—</span>{{end}}</td>
-      <td>{{range .Labels}}<span class="label">{{.}}</span> {{else}}<span class="none">—</span>{{end}}</td>
-      <td>{{with .Assignee}}{{.}}{{else}}<span class="none">—</span>{{end}}</td>
+      <td>{{template "state" .State}}</td>
+      <td>{{with .Priority}}{{template "priority" .}}{{else}}{{template "none"}}{{end}}</td>
+      <td>{{range .Labels}}{{template "label" .}} {{else}}{{template "none"}}{{end}}</td>
+      <td>{{with .Assignee}}{{.}}{{else}}{{template "none"}}{{end}}</td>
     </tr>
     {{end}}
   </tbody>

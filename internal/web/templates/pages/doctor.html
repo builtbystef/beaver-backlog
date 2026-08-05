@@ -12,7 +12,7 @@
     <span class="detail">{{.Detail}}</span>
     <span class="anchors">
       {{range .Paths}}<code>{{.}}</code> {{end}}
-      {{range .IDs}}<a class="id" href="/issues/{{.}}">{{.}}</a> {{end}}
+      {{range .IDs}}{{template "reflink" .}} {{end}}
     </span>
   </li>
   {{end}}

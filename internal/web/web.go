@@ -25,7 +25,10 @@ import (
 	"github.com/builtbystef/beaver-backlog/internal/issue"
 )
 
-//go:embed templates/*.html
+// templateFS holds the layout shell, one file per page under pages/, and the
+// fragments they share under partials/.
+//
+//go:embed templates/layout.html templates/pages/*.html templates/partials/*.html
 var templateFS embed.FS
 
 // assets holds the stylesheet and htmx 2.0.4 (vendored, pinned, unmodified from
@@ -316,7 +319,10 @@ var pages = map[string]*template.Template{
 	"error.html":   mustParse("error.html"),
 }
 
+// mustParse builds one page's template set: the layout shell, every shared
+// partial, and the page itself. Each page gets all the partials rather than a
+// curated list, so using a fragment on a new page is a template call away.
 func mustParse(name string) *template.Template {
 	return template.Must(template.ParseFS(templateFS,
-		"templates/layout.html", "templates/filters.html", "templates/"+name))
+		"templates/layout.html", "templates/partials/*.html", "templates/pages/"+name))
 }

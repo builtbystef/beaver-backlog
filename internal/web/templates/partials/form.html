@@ -1,0 +1,9 @@
+{{/* The fragments the forms share. */}}
+
+{{/* options renders a select's option list from []{Value, Label, Selected} —
+     the shape the priority and assignee dropdowns already share. */}}
+{{define "options"}}{{range .}}<option value="{{.Value}}"{{if .Selected}} selected{{end}}>{{.Label}}</option>{{end}}{{end}}
+
+{{/* form-error words a rejected submission next to the form that caused it,
+     rendering nothing when there is nothing to complain about. */}}
+{{define "form-error"}}{{with .}}<p class="error" role="alert">{{.}}</p>{{end}}{{end}}

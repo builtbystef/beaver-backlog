@@ -1,7 +1,7 @@
 {{define "content"}}
 {{$iss := .Issue}}
 <h1>Edit <span class="id">{{$iss.ID}}</span></h1>
-{{with .Error}}<p class="error" role="alert">{{.}}</p>{{end}}
+{{template "form-error" .Error}}
 <form class="issue-form" method="post" action="/issues/{{$iss.ID}}">
   <p>
     <label for="title">Title</label>
@@ -18,7 +18,7 @@
   <p>
     <label for="priority">Priority</label>
     <select id="priority" name="priority">
-      {{range .Priorities}}<option value="{{.Value}}"{{if .Selected}} selected{{end}}>{{.Label}}</option>{{end}}
+      {{template "options" .Priorities}}
     </select>
   </p>
   <fieldset>

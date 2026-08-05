@@ -20,10 +20,10 @@
   </dialog>
   <dl class="fields">
     <dt>ID</dt><dd class="id">{{$iss.ID}}</dd>
-    <dt>State</dt><dd><span class="state state-{{$iss.State}}">{{$iss.State}}</span></dd>
-    <dt>Priority</dt><dd>{{with $iss.Priority}}<span class="priority priority-{{.}}">{{.}}</span>{{else}}<span class="none">—</span>{{end}}</dd>
-    <dt>Labels</dt><dd>{{range $iss.Labels}}<span class="label">{{.}}</span> {{else}}<span class="none">—</span>{{end}}</dd>
-    <dt>Assignee</dt><dd>{{with $iss.Assignee}}{{.}}{{else}}<span class="none">—</span>{{end}}</dd>
+    <dt>State</dt><dd>{{template "state" $iss.State}}</dd>
+    <dt>Priority</dt><dd>{{with $iss.Priority}}{{template "priority" .}}{{else}}{{template "none"}}{{end}}</dd>
+    <dt>Labels</dt><dd>{{range $iss.Labels}}{{template "label" .}} {{else}}{{template "none"}}{{end}}</dd>
+    <dt>Assignee</dt><dd>{{with $iss.Assignee}}{{.}}{{else}}{{template "none"}}{{end}}</dd>
     <dt>Created</dt><dd>{{template "stamp" $iss.Created}}</dd>
     <dt>Updated</dt><dd>{{template "stamp" $iss.Updated}}</dd>
     {{range .Custom}}
@@ -43,20 +43,20 @@
         {{if .Rel.Stuck}}stuck — waiting on a cancelled issue
         {{else if .Rel.Ready}}ready
         {{else if .Rel.Blocked}}blocked
-        {{else}}<span class="none">—</span>{{end}}
+        {{else}}{{template "none"}}{{end}}
       </dd>
-      <dt>Parent</dt><dd>{{with $iss.Parent}}{{template "reflink" .}}{{else}}<span class="none">—</span>{{end}}</dd>
-      <dt>Depends on</dt><dd>{{range $iss.DependsOn}}{{template "reflink" .}} {{else}}<span class="none">—</span>{{end}}</dd>
+      <dt>Parent</dt><dd>{{with $iss.Parent}}{{template "reflink" .}}{{else}}{{template "none"}}{{end}}</dd>
+      <dt>Depends on</dt><dd>{{range $iss.DependsOn}}{{template "reflink" .}} {{else}}{{template "none"}}{{end}}</dd>
       <dt>Waiting on</dt><dd>
         {{range .Rel.BlockedOn}}
         <span class="blocker">{{template "reflink" .ID}}
-          {{if .Missing}}<span class="state state-missing">missing</span>
-          {{else}}<span class="state state-{{.State}}">{{.State}}</span>{{end}}
+          {{if .Missing}}{{template "state" "missing"}}
+          {{else}}{{template "state" .State}}{{end}}
         </span>
-        {{else}}<span class="none">—</span>{{end}}
+        {{else}}{{template "none"}}{{end}}
       </dd>
-      <dt>Blocks</dt><dd>{{range .Rel.Blocks}}{{template "reflink" .}} {{else}}<span class="none">—</span>{{end}}</dd>
-      <dt>Children</dt><dd>{{range .Rel.Children}}{{template "reflink" .}} {{else}}<span class="none">—</span>{{end}}</dd>
+      <dt>Blocks</dt><dd>{{range .Rel.Blocks}}{{template "reflink" .}} {{else}}{{template "none"}}{{end}}</dd>
+      <dt>Children</dt><dd>{{range .Rel.Children}}{{template "reflink" .}} {{else}}{{template "none"}}{{end}}</dd>
     </dl>
   </section>
 
@@ -73,13 +73,9 @@
     <form class="note-form" method="post" action="/issues/{{$iss.ID}}/notes">
       <label for="note-text">Add a note</label>
       <textarea id="note-text" name="text" rows="4">{{.Note.Text}}</textarea>
-      {{with .Note.Error}}<p class="error" role="alert">{{.}}</p>{{end}}
+      {{template "form-error" .Note.Error}}
       <p class="actions"><button type="submit">Add note</button></p>
     </form>
   </section>
 </article>
 {{end}}
-
-{{define "reflink"}}<a class="id" href="/issues/{{.}}">{{.}}</a>{{end}}
-
-{{define "stamp"}}{{if .IsZero}}<span class="none">—</span>{{else}}<time datetime="{{.Format "2006-01-02T15:04:05Z07:00"}}">{{.Format "2006-01-02 15:04"}} UTC</time>{{end}}{{end}}

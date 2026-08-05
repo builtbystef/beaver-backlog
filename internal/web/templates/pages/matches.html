@@ -4,9 +4,9 @@
 <ul class="matches">
   {{range .Matches}}
   <li>
-    <a class="id" href="/issues/{{.ID}}">{{.ID}}</a>
+    {{template "reflink" .ID}}
     {{.Title}}
-    <span class="state state-{{.State}}">{{.State}}</span>
+    {{template "state" .State}}
   </li>
   {{end}}
 </ul>
