@@ -4,8 +4,24 @@
 <div id="issues" class="graph-view">
   <div class="graph-controls">
     <button type="button" data-graph-reset>Reset view</button>
+    {{/* The zoom pair only means anything once graph.js has turned the frame
+         into a viewport, so the script is what reveals them. */}}
+    <button type="button" data-graph-zoom="in" aria-label="Zoom in" hidden>+</button>
+    <button type="button" data-graph-zoom="out" aria-label="Zoom out" hidden>−</button>
     <span class="graph-hint">Drag the background to pan · scroll to zoom · hover a node for its neighbourhood</span>
   </div>
+  {{/* The picture's vocabulary, so a first look needs no guessing: fills are
+       states, the rest are the derived conditions. */}}
+  <ul class="graph-legend" aria-label="Legend">
+    <li><span class="swatch swatch-todo"></span> todo</li>
+    <li><span class="swatch swatch-in-progress"></span> in-progress</li>
+    <li><span class="swatch swatch-done"></span> done</li>
+    <li><span class="swatch swatch-cancelled"></span> cancelled</li>
+    <li><span class="swatch swatch-ready"></span> ready</li>
+    <li><span class="swatch swatch-blocked"></span> blocked</li>
+    <li><span class="swatch swatch-stuck"></span> stuck</li>
+    <li><span class="swatch swatch-cycle"></span> cycle</li>
+  </ul>
   {{/* The canvas is sized in user units and the frame scrolls, so the picture is
        a picture with the script absent; graph.js turns the frame into a viewport
        it pans and zooms instead (ADR 0006). */}}

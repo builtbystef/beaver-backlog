@@ -129,13 +129,14 @@ func (s *server) board(w http.ResponseWriter, r *http.Request) {
 	}
 	p := s.page("Board", listing.Warnings)
 	p.Live = true
+	p.Section = "board"
 	if id := r.URL.Query().Get("deleted"); id != "" {
 		p.Notice = "Deleted issue " + id + "."
 	}
 	s.render(w, r, "board.html", http.StatusOK, boardPage{
 		page:    p,
 		Filters: f.bar("/", r.URL.Query(), refused),
-		Columns: columns(listing.Issues, svc.Now(), r.URL),
+		Columns: columns(listing.Issues, s.relations(svc), svc.Now(), r.URL),
 	})
 }
 
@@ -155,14 +156,40 @@ func (s *server) list(w http.ResponseWriter, r *http.Request) {
 	}
 	p := s.page("Issues", listing.Warnings)
 	p.Live = true
+	p.Section = "issues"
 	// The header's box and the bar's text field are one filter, so a list
 	// reached by searching says what it was searched for in both places.
 	p.Search = f.Search
+	order := parseOrder(r.URL.Query())
+	order.apply(listing.Issues)
 	s.render(w, r, "list.html", http.StatusOK, listPage{
 		page:    p,
 		Filters: f.bar("/issues", r.URL.Query(), refused),
-		Issues:  listing.Issues,
+		Rows:    rows(listing.Issues, s.relations(svc)),
+		Columns: order.headers(r.URL),
 	})
+}
+
+// relations is the derived-condition index over the whole store, not the
+// filtered view, so a card's "blocked" never depends on whether its blocker
+// made it past the filter bar. A store that cannot answer yields nil, which
+// issue.Relations treats as an index over nothing — the marks simply stay off,
+// never costing the page (ADR 0003).
+func (s *server) relations(svc *core.Service) *issue.Relations {
+	all, err := svc.List(core.Query{})
+	if err != nil {
+		return issue.NewRelations(nil)
+	}
+	return issue.NewRelations(all.Issues)
+}
+
+// rows pairs each listed issue with the derived conditions its row shows.
+func rows(issues []issue.Issue, rel *issue.Relations) []row {
+	out := make([]row, len(issues))
+	for i, iss := range issues {
+		out[i] = row{Issue: iss, Conditions: conditions(iss, rel)}
+	}
+	return out
 }
 
 // filtered runs an address's query, telling a reference that names no issue
@@ -228,6 +255,10 @@ func (s *server) fail(w http.ResponseWriter, r *http.Request, err error) {
 // must never cost the reader the rest of the store (ADR 0003).
 type page struct {
 	Title string
+	// Section names the topbar entry this page belongs under, so the nav can
+	// say where the reader is; empty on a page that is nowhere in particular,
+	// like an error.
+	Section string
 	// Search is what the header's box shows, so a filtered list still says what
 	// it was filtered by; empty everywhere the reader has not searched.
 	Search string
@@ -252,7 +283,14 @@ type skipped struct {
 type listPage struct {
 	page
 	Filters filterBar
-	Issues  []issue.Issue
+	Rows    []row
+	Columns []header
+}
+
+// row is one issue in the table with the derived conditions its row shows.
+type row struct {
+	Issue      issue.Issue
+	Conditions conditionMarks
 }
 
 type errorPage struct {

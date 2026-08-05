@@ -5,24 +5,31 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>{{.Title}} · Beaver Backlog</title>
 <link rel="stylesheet" href="/assets/app.css">
+{{/* The .js mark lets the stylesheet hide controls that only duplicate what a
+     script already does — set before first paint, so nothing flickers away. */}}
+<script>document.documentElement.classList.add("js")</script>
 <script src="/assets/htmx.min.js" defer></script>
 <script src="/assets/confirm.js" defer></script>
 <script src="/assets/live.js" defer></script>
+<script src="/assets/ui.js" defer></script>
 </head>
 <body>
 <header class="topbar">
   <a class="brand" href="/">Beaver Backlog</a>
   <nav>
-    <a href="/">Board</a>
-    <a href="/issues">Issues</a>
-    <a href="/graph">Graph</a>
-    <a href="/issues/new">New issue</a>
-    <a href="/doctor">Doctor</a>
+    <a href="/"{{if eq .Section "board"}} class="active" aria-current="page"{{end}}>Board</a>
+    <a href="/issues"{{if eq .Section "issues"}} class="active" aria-current="page"{{end}}>Issues</a>
+    <a href="/graph"{{if eq .Section "graph"}} class="active" aria-current="page"{{end}}>Graph</a>
+    <a href="/issues/new"{{if eq .Section "new"}} class="active" aria-current="page"{{end}}>New issue</a>
+    <a href="/doctor"{{if eq .Section "doctor"}} class="active" aria-current="page"{{end}}>Doctor{{with len .Warnings}} <span class="nav-badge">{{.}}</span>{{end}}</a>
   </nav>
   <form class="search" action="/search" method="get" role="search">
     <input type="search" name="q" value="{{.Search}}" placeholder="Reference or text…" aria-label="Search issues">
   </form>
 </header>
+{{/* What the live listener says when the server stops answering: hidden while
+     the feed is healthy, shown by live.js, never rendered without it. */}}
+<p id="live-status" hidden>Live updates disconnected — retrying…</p>
 {{/* The view is one element so the live listener can replace it whole with a
      freshly rendered fragment of the same address — banner and all, since a
      file repaired outside the browser should stop being complained about. */}}

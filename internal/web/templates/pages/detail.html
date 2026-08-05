@@ -3,6 +3,13 @@
 <article class="detail">
   <h1>{{$iss.Title}}</h1>
   <div class="actions">
+    {{range .Moves}}
+    <form method="post" action="{{.Action}}">
+      {{with .State}}<input type="hidden" name="state" value="{{.}}">{{end}}
+      <input type="hidden" name="back" value="/issues/{{$iss.ID}}">
+      <button type="submit">{{.Label}}</button>
+    </form>
+    {{end}}
     <a href="/issues/{{$iss.ID}}/edit">Edit</a>
     <form method="post" action="/issues/{{$iss.ID}}/delete" data-confirm="confirm-delete">
       <button type="submit" class="danger">Delete</button>
@@ -33,7 +40,7 @@
 
   <section class="description">
     <h2>Description</h2>
-    {{with .Description}}<pre>{{.}}</pre>{{else}}<p class="empty">No description.</p>{{end}}
+    {{with .Description}}<div class="markdown">{{.}}</div>{{else}}<p class="empty">No description.</p>{{end}}
   </section>
 
   <section class="relationships">
@@ -65,7 +72,7 @@
     {{range .Notes}}
     <article class="note">
       <p class="note-meta"><span class="author">{{.Author}}</span> {{template "stamp" .Time}}</p>
-      <pre>{{.Text}}</pre>
+      <div class="markdown">{{.Text}}</div>
     </article>
     {{else}}
     <p class="empty">No notes yet.</p>

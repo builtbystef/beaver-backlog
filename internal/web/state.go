@@ -9,6 +9,7 @@ package web
 import (
 	"errors"
 	"net/http"
+	"strings"
 
 	"github.com/builtbystef/beaver-backlog/internal/core"
 	"github.com/builtbystef/beaver-backlog/internal/issue"
@@ -49,7 +50,7 @@ func (s *server) setState(w http.ResponseWriter, r *http.Request) {
 		s.failDrop(w, r, ref, out.Warnings, err)
 		return
 	}
-	http.Redirect(w, r, "/", http.StatusSeeOther)
+	http.Redirect(w, r, returnTo(r), http.StatusSeeOther)
 }
 
 // start claims the issue for the actor the server was launched as and puts it
@@ -67,7 +68,20 @@ func (s *server) start(w http.ResponseWriter, r *http.Request) {
 		s.failDrop(w, r, ref, out.Warnings, err)
 		return
 	}
-	http.Redirect(w, r, "/", http.StatusSeeOther)
+	http.Redirect(w, r, returnTo(r), http.StatusSeeOther)
+}
+
+// returnTo is where a state change sends the reader afterwards: the local page
+// the form named, or the board — the drag's home — when it named none. Only a
+// path of this site's own is followed, so a crafted form cannot bounce a
+// reader off to elsewhere.
+func returnTo(r *http.Request) string {
+	_ = r.ParseForm() // a malformed body is just a form that named nothing
+	back := r.PostForm.Get("back")
+	if strings.HasPrefix(back, "/") && !strings.HasPrefix(back, "//") {
+		return back
+	}
+	return "/"
 }
 
 // failDrop words a refused drop. A move the lifecycle forbids and an issue

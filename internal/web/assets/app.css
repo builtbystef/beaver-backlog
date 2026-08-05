@@ -1,4 +1,8 @@
-/* The web UI's whole stylesheet: one embedded file, no build step (ADR 0006). */
+/* The web UI's whole stylesheet: one embedded file, no build step (ADR 0006).
+
+   Every colour the UI uses is a variable here, dark by default, overridden as
+   one block for a reader whose system asks for light — the same names either
+   way, so no rule below this table knows which theme it is drawing. */
 
 :root {
   color-scheme: dark;
@@ -6,10 +10,60 @@
   --panel: #262626;
   --line: #383838;
   --text: #dcddde;
-  --muted: #888;
+  --muted: #9a9aa1;
   --accent: #a882ff;
   --warn-bg: #3a2f1c;
   --warn-line: #a5822f;
+  --state-bg: #33373d;
+  --state-in-progress: #2f4f78;
+  --state-done: #2f5d3a;
+  --state-cancelled: #4a3a3a;
+  --prio-urgent: #6b2b2b;
+  --prio-high: #6b4a2b;
+  --danger: #6b2b2b;
+  --danger-bg: #3a2222;
+  --danger-text: #e0918f;
+  --ok: #2f5d3a;
+  --ready: #6bbf7b;
+  --alert: #c65b5b;
+  --edge: #6a6f78;
+  --cluster-fill: rgba(255, 255, 255, 0.02);
+  --graph-bg-1: #21242a;
+  --graph-bg-2: #17181b;
+  --glow: rgba(168, 130, 255, 0.55);
+  --flash: rgba(168, 130, 255, 0.28);
+}
+
+@media (prefers-color-scheme: light) {
+  :root {
+    color-scheme: light;
+    --bg: #f5f5f7;
+    --panel: #ffffff;
+    --line: #d8d8de;
+    --text: #26262b;
+    --muted: #63636b;
+    --accent: #6a3fd8;
+    --warn-bg: #f8ecce;
+    --warn-line: #a5822f;
+    --state-bg: #e4e6eb;
+    --state-in-progress: #cfdff3;
+    --state-done: #d2e7d8;
+    --state-cancelled: #e9dcdc;
+    --prio-urgent: #f3cfca;
+    --prio-high: #f0ddc4;
+    --danger: #c05248;
+    --danger-bg: #f7e2df;
+    --danger-text: #a03a32;
+    --ok: #3c7d4e;
+    --ready: #2e7d43;
+    --alert: #c04b4b;
+    --edge: #8a8f99;
+    --cluster-fill: rgba(0, 0, 0, 0.02);
+    --graph-bg-1: #ffffff;
+    --graph-bg-2: #ececf0;
+    --glow: rgba(106, 63, 216, 0.35);
+    --flash: rgba(106, 63, 216, 0.18);
+  }
 }
 
 * { box-sizing: border-box; }
@@ -21,19 +75,42 @@ body {
   font: 15px/1.5 ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
 }
 
+/* One focus story for everything: the ring only a keyboard summons, never
+   swallowed — a border changing colour is a hint, not a focus indicator. */
+
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
 .topbar {
   align-items: baseline;
   border-bottom: 1px solid var(--line);
   display: flex;
-  gap: 1.5rem;
+  flex-wrap: wrap;
+  gap: 0.5rem 1.5rem;
   padding: 0.75rem 1.5rem;
 }
 
-.topbar nav { display: flex; gap: 1rem; }
+.topbar nav { display: flex; flex-wrap: wrap; gap: 1rem; }
 
 .topbar nav a { color: var(--text); text-decoration: none; }
 
 .topbar nav a:hover { color: var(--accent); }
+
+.topbar nav a.active {
+  border-bottom: 2px solid var(--accent);
+  color: var(--accent);
+}
+
+/* The count of files the scan is skipping, worn by the Doctor link on every
+   page — store health as an ambient fact rather than a page to remember. */
+.nav-badge {
+  background: var(--warn-line);
+  border-radius: 999px;
+  color: var(--bg);
+  font-size: 0.7rem;
+  font-weight: 600;
+  padding: 0.05rem 0.4rem;
+  vertical-align: middle;
+}
 
 .brand {
   color: var(--accent);
@@ -56,13 +133,41 @@ h1 { font-size: 1.25rem; margin: 0 0 1rem; }
 .banner p { margin: 0 0 0.5rem; }
 .banner ul { margin: 0; padding-left: 1.25rem; }
 
-/* The board: four columns side by side, each a stack of cards. */
+/* What live.js says when the event feed drops: pinned to a corner, out of the
+   page's own flow, gone again the moment the feed reopens. */
+#live-status {
+  background: var(--warn-bg);
+  border: 1px solid var(--warn-line);
+  border-radius: 6px;
+  bottom: 1rem;
+  font-size: 0.85rem;
+  margin: 0;
+  padding: 0.4rem 0.75rem;
+  position: fixed;
+  right: 1rem;
+  z-index: 10;
+}
+
+/* The board: four columns side by side, each a stack of cards, folding to two
+   and then one as the window narrows. */
 
 .board {
   align-items: start;
   display: grid;
   gap: 1rem;
   grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+@media (max-width: 1100px) {
+  .board { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
+@media (max-width: 640px) {
+  .board { grid-template-columns: 1fr; }
+  main { padding: 1rem; }
+  .topbar { padding: 0.6rem 1rem; }
+  .topbar .search { flex-basis: 100%; margin-left: 0; }
+  .topbar .search input { width: 100%; }
 }
 
 .column {
@@ -129,6 +234,37 @@ h1 { font-size: 1.25rem; margin: 0 0 1rem; }
 
 .show-all { font-size: 0.8rem; }
 
+/* A change the reader did not make gets a moment of light when the live view
+   redraws, so the store moving underneath the page is visible rather than
+   uncanny. */
+
+@keyframes flash {
+  from { background-color: var(--flash); box-shadow: 0 0 0 3px var(--flash); }
+}
+
+.changed { animation: flash 1.6s ease-out; }
+
+/* The condition marks: the core's derived ready/blocked/stuck, worn inline by
+   cards and rows — one quiet word, coloured like the graph draws it. */
+
+.mark {
+  border: 1px solid;
+  border-radius: 999px;
+  font-size: 0.7rem;
+  margin-left: 0.35rem;
+  padding: 0 0.45rem;
+  vertical-align: middle;
+  white-space: nowrap;
+}
+
+.mark-ready { border-color: var(--ready); color: var(--ready); }
+.mark-blocked { border-color: var(--alert); color: var(--alert); }
+.mark-stuck { border-color: var(--alert); border-style: dashed; color: var(--alert); }
+
+.result-count { color: var(--muted); font-size: 0.85rem; margin: 0 0 0.5rem; }
+
+.table-scroll { overflow-x: auto; }
+
 table.issues {
   border-collapse: collapse;
   width: 100%;
@@ -149,7 +285,14 @@ table.issues {
   text-transform: uppercase;
 }
 
+.issues th a { color: var(--muted); text-decoration: none; }
+.issues th a:hover { color: var(--accent); }
+.sort-mark { color: var(--accent); }
+
 .issues tbody tr:hover { background: var(--panel); }
+
+/* A row is a doorway to the issue it names (ui.js), not just its title cell. */
+.issues tbody tr[data-href] { cursor: pointer; }
 
 .id { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
 
@@ -161,14 +304,14 @@ table.issues {
   white-space: nowrap;
 }
 
-.state { background: #33373d; }
-.state-in-progress { background: #2f4f78; }
-.state-done { background: #2f5d3a; }
-.state-cancelled { background: #4a3a3a; color: var(--muted); }
+.state { background: var(--state-bg); }
+.state-in-progress { background: var(--state-in-progress); }
+.state-done { background: var(--state-done); }
+.state-cancelled { background: var(--state-cancelled); color: var(--muted); }
 
-.priority { background: #33373d; }
-.priority-urgent { background: #6b2b2b; }
-.priority-high { background: #6b4a2b; }
+.priority { background: var(--state-bg); }
+.priority-urgent { background: var(--prio-urgent); }
+.priority-high { background: var(--prio-high); }
 
 .label { background: var(--panel); border: 1px solid var(--line); }
 
@@ -197,7 +340,7 @@ a { color: var(--accent); }
   width: 18rem;
 }
 
-.topbar .search input:focus { border-color: var(--accent); outline: none; }
+.topbar .search input:focus { border-color: var(--accent); }
 
 /* Issue detail: a column of sections, each an aligned key/value block or prose. */
 
@@ -226,7 +369,7 @@ a { color: var(--accent); }
 
 .blocker { margin-right: 0.75rem; white-space: nowrap; }
 
-.state-missing { background: #6b2b2b; }
+.state-missing { background: var(--danger); }
 
 .detail pre {
   background: var(--panel);
@@ -237,6 +380,65 @@ a { color: var(--accent); }
   white-space: pre-wrap;
   word-wrap: break-word;
 }
+
+/* Rendered Markdown: an issue's description and each note, as prose. Sized a
+   step quieter than the page's own headings, because a body's "# Heading" is
+   the issue's outline, not the page's. */
+
+.markdown { line-height: 1.55; }
+
+.markdown > :first-child { margin-top: 0; }
+.markdown > :last-child { margin-bottom: 0; }
+
+/* The detail page's own section headings are h2s too, so a body's headings
+   must take back what .detail h2 quietens — prose headings read as prose. */
+.markdown h1, .markdown h2, .markdown h3, .markdown h4, .markdown h5, .markdown h6 {
+  border: none;
+  color: var(--text);
+  font-size: 1rem;
+  letter-spacing: normal;
+  margin: 1.25rem 0 0.5rem;
+  padding: 0;
+  text-transform: none;
+}
+.markdown h1 { font-size: 1.15rem; }
+.markdown h2 { font-size: 1.05rem; }
+
+.markdown p, .markdown ul, .markdown ol, .markdown table { margin: 0 0 0.75rem; }
+
+.markdown ul, .markdown ol { padding-left: 1.5rem; }
+
+.markdown li > ul, .markdown li > ol { margin-bottom: 0; }
+
+.markdown pre {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  margin: 0 0 0.75rem;
+  overflow-x: auto;
+  padding: 0.75rem 1rem;
+}
+
+.markdown pre code { background: none; padding: 0; }
+
+.markdown blockquote {
+  border-left: 3px solid var(--line);
+  color: var(--muted);
+  margin: 0 0 0.75rem;
+  padding-left: 1rem;
+}
+
+.markdown table { border-collapse: collapse; }
+
+.markdown th, .markdown td {
+  border: 1px solid var(--line);
+  padding: 0.3rem 0.6rem;
+  text-align: left;
+}
+
+.markdown img { max-width: 100%; }
+
+.markdown hr { border: none; border-top: 1px solid var(--line); margin: 1rem 0; }
 
 .note { margin-bottom: 0.75rem; }
 
@@ -262,8 +464,8 @@ a { color: var(--accent); }
 }
 
 .error {
-  background: #3a2222;
-  border: 1px solid #6b2b2b;
+  background: var(--danger-bg);
+  border: 1px solid var(--danger);
   border-radius: 6px;
   margin: 0 0 1rem;
   padding: 0.6rem 1rem;
@@ -294,7 +496,7 @@ a { color: var(--accent); }
 }
 
 .issue-form input:focus, .issue-form select:focus, .issue-form textarea:focus,
-.note-form textarea:focus { border-color: var(--accent); outline: none; }
+.note-form textarea:focus { border-color: var(--accent); }
 
 .issue-form fieldset {
   border: 1px solid var(--line);
@@ -321,9 +523,12 @@ a { color: var(--accent); }
 .actions {
   align-items: center;
   display: flex;
-  gap: 1rem;
+  flex-wrap: wrap;
+  gap: 0.6rem 1rem;
   margin: 0 0 1rem;
 }
+
+.actions form { margin: 0; }
 
 button {
   background: var(--panel);
@@ -337,8 +542,8 @@ button {
 
 button:hover { border-color: var(--accent); }
 
-button.danger { border-color: #6b2b2b; }
-button.danger:hover { background: #3a2222; }
+button.danger { border-color: var(--danger); }
+button.danger:hover { background: var(--danger-bg); }
 
 dialog {
   background: var(--panel);
@@ -353,8 +558,40 @@ dialog::backdrop { background: rgba(0, 0, 0, 0.6); }
 
 .hint { color: var(--muted); font-size: 0.85rem; }
 
-/* The filter bar, shared by the board and the list: groups of controls that wrap
-   onto as many rows as the window needs, above the issues they narrow. */
+/* The filter bar, shared by the board, the list and the graph. Its controls
+   fold away behind a summary line that always shows what is narrowing the view
+   — the chips — so the bar costs one line until it is being worked. */
+
+.filters-shell { margin: 0 0 1.5rem; }
+
+.filters-shell summary {
+  align-items: center;
+  color: var(--muted);
+  cursor: pointer;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  width: fit-content;
+}
+
+/* display:flex costs the summary its marker, so the word carries its own. */
+.filters-word::before { content: "▸ "; }
+.filters-shell[open] .filters-word::before { content: "▾ "; }
+
+.chip {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  color: var(--text);
+  font-size: 0.8rem;
+  padding: 0.1rem 0.6rem;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.chip:hover { border-color: var(--accent); }
+
+.chip span { color: var(--muted); }
 
 .filters {
   align-items: flex-end;
@@ -364,9 +601,13 @@ dialog::backdrop { background: rgba(0, 0, 0, 0.6); }
   display: flex;
   flex-wrap: wrap;
   gap: 0.75rem 1.25rem;
-  margin: 0 0 1.5rem;
+  margin: 0.5rem 0 0;
   padding: 0.75rem 1rem;
 }
+
+/* With the script present every control submits itself, so the button would be
+   a second way of saying nothing. */
+.js .filters .filter-actions { display: none; }
 
 .filter-group {
   align-items: center;
@@ -405,14 +646,14 @@ dialog::backdrop { background: rgba(0, 0, 0, 0.6); }
 
 .filters select { width: auto; }
 
-.filters input:focus, .filters select:focus { border-color: var(--accent); outline: none; }
+.filters input:focus, .filters select:focus { border-color: var(--accent); }
 
 .filter-actions { align-items: center; display: flex; gap: 0.75rem; margin-left: auto; }
 
 /* A reference the bar carries that names no issue: said where it was typed, so
    the view it belongs to stays on screen. */
 .filter-error {
-  color: #e0918f;
+  color: var(--danger-text);
   flex-basis: 100%;
   margin: 0;
 }
@@ -435,9 +676,9 @@ dialog::backdrop { background: rgba(0, 0, 0, 0.6); }
   padding: 0.6rem 0.9rem;
 }
 
-.finding.problem { border-left-color: #6b2b2b; }
+.finding.problem { border-left-color: var(--danger); }
 .finding.advisory { border-left-color: var(--warn-line); }
-.finding.fixed { border-left-color: #2f5d3a; }
+.finding.fixed { border-left-color: var(--ok); }
 
 .class-badge {
   border-radius: 4px;
@@ -448,9 +689,9 @@ dialog::backdrop { background: rgba(0, 0, 0, 0.6); }
   white-space: nowrap;
 }
 
-.class-badge.problem { background: #6b2b2b; }
+.class-badge.problem { background: var(--prio-urgent); }
 .class-badge.advisory { background: var(--warn-bg); border: 1px solid var(--warn-line); }
-.class-badge.fixed { background: #2f5d3a; }
+.class-badge.fixed { background: var(--state-done); }
 
 .finding .anchors { color: var(--muted); margin-left: auto; }
 
@@ -458,7 +699,7 @@ dialog::backdrop { background: rgba(0, 0, 0, 0.6); }
 
 .all-clear {
   background: var(--panel);
-  border: 1px solid #2f5d3a;
+  border: 1px solid var(--ok);
   border-radius: 6px;
   padding: 0.6rem 1rem;
 }
@@ -475,14 +716,52 @@ dialog::backdrop { background: rgba(0, 0, 0, 0.6); }
 .graph-controls {
   align-items: baseline;
   display: flex;
+  flex-wrap: wrap;
   gap: 0.75rem;
   margin-bottom: 0.5rem;
 }
 
 .graph-hint { color: var(--muted); font-size: 0.85rem; }
 
+/* The picture's vocabulary, one line above it. */
+
+.graph-legend {
+  color: var(--muted);
+  display: flex;
+  flex-wrap: wrap;
+  font-size: 0.8rem;
+  gap: 0.35rem 1rem;
+  list-style: none;
+  margin: 0 0 0.5rem;
+  padding: 0;
+}
+
+.graph-legend li { align-items: center; display: flex; gap: 0.35rem; }
+
+.swatch {
+  border: 1px solid var(--line);
+  border-radius: 3px;
+  display: inline-block;
+  height: 0.8rem;
+  width: 1.1rem;
+}
+
+.swatch-todo { background: var(--state-bg); }
+.swatch-in-progress { background: var(--state-in-progress); }
+.swatch-done { background: var(--state-done); }
+.swatch-cancelled { background: var(--state-cancelled); }
+.swatch-ready { background: var(--ready); border: none; border-radius: 50%; width: 0.8rem; }
+.swatch-blocked { background: none; border: 2px solid var(--alert); }
+.swatch-stuck { background: none; border: 2px dashed var(--edge); }
+.swatch-cycle {
+  border: none;
+  border-radius: 0;
+  border-top: 2px dashed var(--alert);
+  height: 0;
+}
+
 .graph-frame {
-  background: radial-gradient(circle at 50% 40%, #21242a, #17181b 70%);
+  background: radial-gradient(circle at 50% 40%, var(--graph-bg-1), var(--graph-bg-2) 70%);
   border: 1px solid var(--line);
   border-radius: 8px;
   max-height: 78vh;
@@ -503,7 +782,7 @@ dialog::backdrop { background: rgba(0, 0, 0, 0.6); }
 .graph { display: block; }
 
 .graph .cluster-box {
-  fill: rgba(255, 255, 255, 0.02);
+  fill: var(--cluster-fill);
   stroke: var(--line);
   stroke-dasharray: 4 4;
 }
@@ -511,25 +790,25 @@ dialog::backdrop { background: rgba(0, 0, 0, 0.6); }
 .graph .cluster-label { fill: var(--muted); font-size: 13px; }
 
 .graph .node { text-decoration: none; }
-.graph .node-box { fill: #33373d; stroke: var(--line); }
-.graph .state-in-progress .node-box { fill: #2f4f78; }
-.graph .state-done .node-box { fill: #2f5d3a; }
-.graph .state-cancelled .node-box { fill: #4a3a3a; }
+.graph .node-box { fill: var(--state-bg); stroke: var(--line); }
+.graph .state-in-progress .node-box { fill: var(--state-in-progress); }
+.graph .state-done .node-box { fill: var(--state-done); }
+.graph .state-cancelled .node-box { fill: var(--state-cancelled); }
 
-.graph .blocked .node-box { stroke: #c65b5b; stroke-width: 2; }
+.graph .blocked .node-box { stroke: var(--alert); stroke-width: 2; }
 .graph .stuck .node-box { stroke-dasharray: 5 3; }
 .graph .node:hover .node-box { stroke: var(--accent); }
 
-.graph .ready-mark { fill: #6bbf7b; }
+.graph .ready-mark { fill: var(--ready); }
 .graph .node-badge { fill: var(--panel); stroke: var(--line); }
 .graph .node-badge-text { fill: var(--text); font-size: 10px; }
 .graph .node-title { fill: var(--text); font-size: 14px; }
 .graph .node-meta { fill: var(--muted); font-size: 11px; }
 
-.graph .edge { fill: none; opacity: 0.7; stroke: #6a6f78; stroke-width: 1.5; }
-.graph .edge-back { stroke: #c65b5b; stroke-dasharray: 6 4; }
-.graph .arrowhead { fill: #6a6f78; }
-.graph .arrowhead-back { fill: #c65b5b; }
+.graph .edge { fill: none; opacity: 0.7; stroke: var(--edge); stroke-width: 1.5; }
+.graph .edge-back { stroke: var(--alert); stroke-dasharray: 6 4; }
+.graph .arrowhead { fill: var(--edge); }
+.graph .arrowhead-back { fill: var(--alert); }
 
 /* Hovering a node lifts its neighbourhood — itself, the arrows at either end,
    and the issues those reach — while the rest recedes rather than vanishing, so
@@ -544,7 +823,7 @@ dialog::backdrop { background: rgba(0, 0, 0, 0.6); }
 .graph.dimmed .near { opacity: 1; }
 
 .graph .node.near .node-box, .graph .node:hover .node-box {
-  filter: drop-shadow(0 0 7px rgba(168, 130, 255, 0.55));
+  filter: drop-shadow(0 0 7px var(--glow));
   stroke: var(--accent);
 }
 

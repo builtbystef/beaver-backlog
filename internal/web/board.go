@@ -34,16 +34,34 @@ type boardPage struct {
 // column that is showing everything it has.
 type column struct {
 	State      issue.State
-	Cards      []issue.Issue
+	Cards      []card
 	Hidden     int
 	ShowAllURL string
+}
+
+// card is one issue on the board with the derived conditions its corner shows.
+type card struct {
+	issue.Issue
+	Conditions conditionMarks
+}
+
+// conditionMarks are the core's derived conditions as a view draws them — the
+// same three the graph's nodes carry, so a card and a node say the same thing.
+type conditionMarks struct {
+	Ready   bool
+	Blocked bool
+	Stuck   bool
+}
+
+func conditions(iss issue.Issue, rel *issue.Relations) conditionMarks {
+	return conditionMarks{Ready: rel.Ready(iss), Blocked: rel.Blocked(iss), Stuck: rel.Stuck(iss)}
 }
 
 // columns splits a listing into the board's columns, keeping each issue in the
 // order the listing gave it. current is the request's address, which the "show
 // all" links extend rather than replace, so a column's escape hatch survives
 // whatever else rides the query string.
-func columns(issues []issue.Issue, now time.Time, current *url.URL) []column {
+func columns(issues []issue.Issue, rel *issue.Relations, now time.Time, current *url.URL) []column {
 	shown := current.Query()["all"]
 	cols := make([]column, len(boardStates))
 	for i, state := range boardStates {
@@ -59,7 +77,7 @@ func columns(issues []issue.Issue, now time.Time, current *url.URL) []column {
 			col.Hidden++
 			continue
 		}
-		col.Cards = append(col.Cards, iss)
+		col.Cards = append(col.Cards, card{Issue: iss, Conditions: conditions(iss, rel)})
 	}
 	for i := range cols {
 		if cols[i].Hidden > 0 {

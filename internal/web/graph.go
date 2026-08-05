@@ -133,6 +133,7 @@ func (s *server) graph(w http.ResponseWriter, r *http.Request) {
 	}
 	p := s.page("Graph", listing.Warnings)
 	p.Live = true
+	p.Section = "graph"
 	s.render(w, r, "graph.html", http.StatusOK, graphPage{
 		page:    p,
 		Filters: f.bar("/graph", r.URL.Query(), refused),

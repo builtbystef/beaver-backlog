@@ -7,7 +7,9 @@ package web
 import (
 	"encoding/json"
 	"fmt"
+	"html/template"
 	"net/http"
+	"time"
 
 	"github.com/builtbystef/beaver-backlog/internal/core"
 	"github.com/builtbystef/beaver-backlog/internal/issue"
@@ -20,13 +22,32 @@ import (
 type detailPage struct {
 	page
 	Issue       issue.Issue
-	Description string
-	Notes       []issue.Note
+	Description template.HTML
+	Notes       []noteView
 	Rel         issue.Relationship
 	Custom      []customField
+	// Moves are the state changes the lifecycle allows from where the issue
+	// stands, each a one-button form, so changing state never needs the board.
+	Moves []move
 	// Note is the box for appending to the log: empty on a page being read,
 	// holding the rejected text and the core's words when a note was refused.
 	Note noteForm
+}
+
+// noteView is one log entry as the page draws it: the attribution, and the
+// text rendered as the Markdown it is stored as.
+type noteView struct {
+	Author string
+	Time   time.Time
+	Text   template.HTML
+}
+
+// move is one legal state change as a form: where it posts, what it posts, and
+// the word on the button.
+type move struct {
+	Label  string
+	Action string
+	State  issue.State // empty for the start route, which needs no field
 }
 
 // customField is one user-defined frontmatter key rendered for a reader.
@@ -67,15 +88,59 @@ func (s *server) detail(w http.ResponseWriter, r *http.Request) {
 func (s *server) renderDetail(w http.ResponseWriter, r *http.Request, got core.Detail, note noteForm, status int) {
 	p := s.page(got.Issue.Title, got.Warnings)
 	p.Live = true
+	p.Section = "issues"
 	s.render(w, r, "detail.html", status, detailPage{
 		page:        p,
 		Issue:       got.Issue,
-		Description: issue.Description(got.Issue.Body),
-		Notes:       issue.ParseNotes(got.Issue.Body),
+		Description: description(got.Issue.Body),
+		Notes:       noteViews(issue.ParseNotes(got.Issue.Body)),
 		Rel:         got.Relationship,
 		Custom:      customFields(got.Issue.Custom),
+		Moves:       moves(got.Issue),
 		Note:        note,
 	})
+}
+
+// description renders the issue's prose, or nothing when there is none, so the
+// template's "no description" placeholder still has an empty value to test.
+func description(body string) template.HTML {
+	src := issue.Description(body)
+	if src == "" {
+		return ""
+	}
+	return renderMarkdown(src)
+}
+
+func noteViews(notes []issue.Note) []noteView {
+	views := make([]noteView, len(notes))
+	for i, n := range notes {
+		views[i] = noteView{Author: n.Author, Time: n.Time, Text: renderMarkdown(n.Text)}
+	}
+	return views
+}
+
+// moves lists the state changes the lifecycle allows from the issue's current
+// state — the same table Transition enforces, phrased as buttons. Start is the
+// odd one out: beginning work also claims the issue, so it posts to its own
+// route (and the core, not this list, still has the final word on every move).
+func moves(iss issue.Issue) []move {
+	base := "/issues/" + iss.ID
+	switch iss.State {
+	case issue.StateTodo:
+		return []move{
+			{Label: "Start", Action: base + "/start"},
+			{Label: "Done", Action: base + "/state", State: issue.StateDone},
+			{Label: "Cancel", Action: base + "/state", State: issue.StateCancelled},
+		}
+	case issue.StateInProgress:
+		return []move{
+			{Label: "Done", Action: base + "/state", State: issue.StateDone},
+			{Label: "Cancel", Action: base + "/state", State: issue.StateCancelled},
+		}
+	case issue.StateDone, issue.StateCancelled:
+		return []move{{Label: "Reopen", Action: base + "/state", State: issue.StateTodo}}
+	}
+	return nil // a state outside the lifecycle belongs to doctor
 }
 
 // customFields renders the preserved frontmatter keys in the order the YAML

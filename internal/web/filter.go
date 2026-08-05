@@ -134,9 +134,19 @@ type filterBar struct {
 	Search     string
 	Keep       []param // the query the bar does not own, carried through
 	Active     bool
+	// Chips are the active filters said one by one above the bar, each with the
+	// address that takes just that one off — the current view minus one filter,
+	// so narrowing is visible and undoable without opening the controls.
+	Chips []chip
 	// Refused is the core's own words about a reference the bar carries that
 	// names no issue, said beside the box that holds it.
 	Refused string
+}
+
+// chip is one active filter as the summary line shows it.
+type chip struct {
+	Label     string
+	RemoveURL string
 }
 
 // toggle is one checkbox: what it posts and whether the address has it on.
@@ -169,6 +179,7 @@ func (f filters) bar(action string, current url.Values, refused string) filterBa
 		Search:     f.Search,
 		Keep:       carried(current),
 		Active:     f.active(),
+		Chips:      f.chips(action, current),
 		Refused:    refused,
 	}
 	for _, state := range boardStates {
@@ -228,4 +239,130 @@ func carried(current url.Values) []param {
 // address might say anything; only an absent or empty value is off.
 func checked(value string) bool {
 	return strings.TrimSpace(value) != ""
+}
+
+// chips words each active filter, pairing it with the address that removes it
+// alone. Every removal address is built from a fresh encoding of the bar's
+// state, mutated for that one chip, with the carried parameters put back — the
+// same round trip the form itself makes.
+func (f filters) chips(action string, current url.Values) []chip {
+	var out []chip
+	add := func(label string, mutate func(url.Values)) {
+		out = append(out, chip{Label: label, RemoveURL: f.removeURL(action, current, mutate)})
+	}
+	for _, state := range f.States {
+		s := string(state)
+		add(s, func(v url.Values) { v["state"] = drop(v["state"], s) })
+	}
+	if f.Ready {
+		add("ready", func(v url.Values) { v.Del("ready") })
+	}
+	if f.Blocked {
+		add("blocked", func(v url.Values) { v.Del("blocked") })
+	}
+	for _, level := range f.Priorities {
+		p := priorityValue(level)
+		add("priority: "+p, func(v url.Values) { v["priority"] = drop(v["priority"], p) })
+	}
+	switch f.AssigneeMode {
+	case assigneeUnassigned:
+		add("unassigned", func(v url.Values) { v.Del("assignee") })
+	case assigneeActor:
+		label := "assignee: …"
+		if f.Actor != "" {
+			label = "assignee: " + f.Actor
+		}
+		add(label, func(v url.Values) { v.Del("assignee"); v.Del("actor") })
+	}
+	for _, l := range f.Labels {
+		label := l
+		add("label: "+label, func(v url.Values) { v["label"] = drop(v["label"], label) })
+	}
+	if f.Parent != "" {
+		add("parent: "+f.Parent, func(v url.Values) { v.Del("parent") })
+	}
+	if f.Search != "" {
+		add("text: "+f.Search, func(v url.Values) { v.Del("search") })
+	}
+	return out
+}
+
+// removeURL is the current address re-written without one filter: the bar's
+// canonical encoding, mutated, with everything the bar does not own put back.
+func (f filters) removeURL(action string, current url.Values, mutate func(url.Values)) string {
+	v := f.encode()
+	mutate(v)
+	for _, p := range carried(current) {
+		v.Add(p.Name, p.Value)
+	}
+	// A key mutated down to no values must go, or Encode writes it as empty.
+	for name, values := range v {
+		if len(values) == 0 {
+			delete(v, name)
+		}
+	}
+	if q := v.Encode(); q != "" {
+		return action + "?" + q
+	}
+	return action
+}
+
+// encode is the bar's state as the canonical query string it would submit —
+// the inverse of parseFilters, one parameter per value.
+func (f filters) encode() url.Values {
+	v := url.Values{}
+	for _, s := range f.States {
+		v.Add("state", string(s))
+	}
+	if f.Ready {
+		v.Set("ready", "1")
+	}
+	if f.Blocked {
+		v.Set("blocked", "1")
+	}
+	for _, level := range f.Priorities {
+		v.Add("priority", priorityValue(level))
+	}
+	switch f.AssigneeMode {
+	case assigneeUnassigned:
+		v.Set("assignee", assigneeUnassigned)
+	case assigneeActor:
+		v.Set("assignee", assigneeActor)
+		if f.Actor != "" {
+			v.Set("actor", f.Actor)
+		}
+	}
+	for _, l := range f.Labels {
+		v.Add("label", l)
+	}
+	if f.Parent != "" {
+		v.Set("parent", f.Parent)
+	}
+	if f.Search != "" {
+		v.Set("search", f.Search)
+	}
+	return v
+}
+
+// priorityValue spells a priority the way an address does, where the
+// unprioritized level is written "none".
+func priorityValue(p issue.Priority) string {
+	if p == "" {
+		return "none"
+	}
+	return string(p)
+}
+
+// drop is list without the first occurrence of value.
+func drop(list []string, value string) []string {
+	var out []string
+	removed := false
+	for _, v := range list {
+		if !removed && v == value {
+			removed = true
+			continue
+		}
+		out = append(out, v)
+	}
+	return out
 }

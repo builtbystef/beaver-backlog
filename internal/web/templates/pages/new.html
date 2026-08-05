@@ -22,12 +22,13 @@
   </p>
   <p>
     <label for="depends_on">Depends on</label>
-    <input id="depends_on" name="depends_on" value="{{.Form.DependsOn}}" placeholder="references, comma separated">
+    <input id="depends_on" name="depends_on" value="{{.Form.DependsOn}}" placeholder="references, comma separated" list="issue-refs">
   </p>
   <p>
     <label for="parent">Parent</label>
-    <input id="parent" name="parent" value="{{.Form.Parent}}" placeholder="reference">
+    <input id="parent" name="parent" value="{{.Form.Parent}}" placeholder="reference" list="issue-refs">
   </p>
+  {{template "issue-refs" .Refs}}
   <p class="actions">
     <button type="submit">Create issue</button>
     <a href="/">Cancel</a>

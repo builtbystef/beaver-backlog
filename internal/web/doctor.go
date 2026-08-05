@@ -73,6 +73,7 @@ func (s *server) scan(w http.ResponseWriter, r *http.Request, repair bool) {
 	}
 	p := s.page("Doctor", nil)
 	p.Live = !repair
+	p.Section = "doctor"
 	s.render(w, r, "doctor.html", http.StatusOK, doctorPage{
 		page:       p,
 		Checked:    rep.Checked,

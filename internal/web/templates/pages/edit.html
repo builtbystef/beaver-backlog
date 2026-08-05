@@ -37,12 +37,13 @@
     <label class="check"><input type="checkbox" name="keep_depends_on" value="{{.Value}}"{{if .Keep}} checked{{end}}> <span class="id">{{.Value}}</span></label>
     {{else}}<span class="none">none yet</span>{{end}}
     <label for="add_depends_on">Add</label>
-    <input id="add_depends_on" name="add_depends_on" value="{{.Form.AddDependsOn}}" placeholder="references, comma separated">
+    <input id="add_depends_on" name="add_depends_on" value="{{.Form.AddDependsOn}}" placeholder="references, comma separated" list="issue-refs">
   </fieldset>
   <p>
     <label for="parent">Parent</label>
-    <input id="parent" name="parent" value="{{.Form.Parent}}" placeholder="empty to detach">
+    <input id="parent" name="parent" value="{{.Form.Parent}}" placeholder="empty to detach" list="issue-refs">
   </p>
+  {{template "issue-refs" .Refs}}
   <p class="actions">
     <button type="submit">Save changes</button>
     <a href="/issues/{{$iss.ID}}">Cancel</a>

@@ -24,7 +24,16 @@ type createPage struct {
 	page
 	Form       createForm
 	Priorities []option
+	Refs       []refOption
 	Error      string
+}
+
+// refOption is one issue the reference fields can offer as a completion: the
+// id a datalist fills in, and the title that tells the reader which issue the
+// id is.
+type refOption struct {
+	Value string
+	Label string
 }
 
 // createForm is what the create form posts. Every field is text as the browser
@@ -46,6 +55,7 @@ type editPage struct {
 	Issue      issue.Issue
 	Form       editForm
 	Priorities []option
+	Refs       []refOption
 	Error      string
 }
 
@@ -308,22 +318,51 @@ func (s *server) remove(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *server) renderCreate(w http.ResponseWriter, r *http.Request, f createForm, msg string, status int) {
+	p := s.page("New issue", nil)
+	p.Section = "new"
 	s.render(w, r, "new.html", status, createPage{
-		page:       s.page("New issue", nil),
+		page:       p,
 		Form:       f,
 		Priorities: priorityOptions(f.Priority),
+		Refs:       s.refOptions(""),
 		Error:      msg,
 	})
 }
 
 func (s *server) renderEdit(w http.ResponseWriter, r *http.Request, iss issue.Issue, f editForm, msg string, status int) {
+	p := s.page("Edit "+iss.Title, nil)
+	p.Section = "issues"
 	s.render(w, r, "edit.html", status, editPage{
-		page:       s.page("Edit "+iss.Title, nil),
+		page:       p,
 		Issue:      iss,
 		Form:       f,
 		Priorities: priorityOptions(f.Priority),
+		Refs:       s.refOptions(iss.ID),
 		Error:      msg,
 	})
+}
+
+// refOptions is every issue a reference field could name, offered as
+// completions, minus the issue the form is about — an issue never depends on
+// or parents itself. A store that cannot answer offers nothing: the fields
+// stay plain text, never costing the form (ADR 0003).
+func (s *server) refOptions(except string) []refOption {
+	svc, err := s.open()
+	if err != nil {
+		return nil
+	}
+	listing, err := svc.List(core.Query{})
+	if err != nil {
+		return nil
+	}
+	var out []refOption
+	for _, iss := range listing.Issues {
+		if iss.ID == except {
+			continue
+		}
+		out = append(out, refOption{Value: iss.ID, Label: iss.Title})
+	}
+	return out
 }
 
 // failRef words a failed reference for a route that takes one: several matches
@@ -331,8 +370,10 @@ func (s *server) renderEdit(w http.ResponseWriter, r *http.Request, iss issue.Is
 func (s *server) failRef(w http.ResponseWriter, r *http.Request, ref string, warnings []core.Warning, err error) {
 	var ambiguous *core.AmbiguousRefError
 	if errors.As(err, &ambiguous) {
+		p := s.page(ref, warnings)
+		p.Section = "issues"
 		s.render(w, r, "matches.html", http.StatusOK, matchesPage{
-			page:    s.page(ref, warnings),
+			page:    p,
 			Ref:     ref,
 			Matches: ambiguous.Matches,
 		})

@@ -7,3 +7,8 @@
 {{/* form-error words a rejected submission next to the form that caused it,
      rendering nothing when there is nothing to complain about. */}}
 {{define "form-error"}}{{with .}}<p class="error" role="alert">{{.}}</p>{{end}}{{end}}
+
+{{/* issue-refs is the completion list the reference fields share: every issue
+     the store holds, offered as id-plus-title, so nobody types an id from
+     memory. An empty list renders an empty datalist, which offers nothing. */}}
+{{define "issue-refs"}}<datalist id="issue-refs">{{range .}}<option value="{{.Value}}">{{.Label}}</option>{{end}}</datalist>{{end}}

@@ -37,6 +37,9 @@ function adopt() {
   if (!svg || svg.dataset.interactive !== undefined) return;
   svg.dataset.interactive = "";
   svg.closest(".graph-frame")?.classList.add("interactive");
+  // The zoom pair is dead weight without a viewport to move, so this script is
+  // what reveals it.
+  for (const control of document.querySelectorAll("[data-graph-zoom]")) control.hidden = false;
   if (!viewport) viewport = whole(svg);
   show(svg);
 }
@@ -58,6 +61,32 @@ document.addEventListener("click", (event) => {
   viewport = whole(svg);
   show(svg);
 });
+
+// The zoom buttons are the wheel's gesture for a hand without one: the same
+// clamped step, about the middle of the window rather than a cursor.
+document.addEventListener("click", (event) => {
+  const svg = canvas();
+  const control = event.target.closest("[data-graph-zoom]");
+  if (!svg || !viewport || !control) return;
+  zoom(svg, control.dataset.graphZoom === "in" ? 1 / 1.3 : 1.3, {
+    x: viewport.x + viewport.w / 2,
+    y: viewport.y + viewport.h / 2,
+  });
+});
+
+// zoom resizes the window by wanted (clamped to the same bounds however it was
+// asked for), keeping the point at about where it is.
+function zoom(svg, wanted, at) {
+  const full = whole(svg);
+  const factor = clamp(viewport.w * wanted, full.w / 40, full.w * 4) / viewport.w;
+  viewport = {
+    x: at.x - (at.x - viewport.x) * factor,
+    y: at.y - (at.y - viewport.y) * factor,
+    w: viewport.w * factor,
+    h: viewport.h * factor,
+  };
+  show(svg);
+}
 
 // Panning drags the background only: a node is a link, and dragging one would
 // cost the reader the click that follows it.
@@ -107,17 +136,7 @@ document.addEventListener(
     const svg = canvas();
     if (!svg || !viewport || !svg.contains(event.target)) return;
     event.preventDefault();
-    const full = whole(svg);
-    const wanted = viewport.w * Math.exp(event.deltaY * 0.0015);
-    const factor = clamp(wanted, full.w / 40, full.w * 4) / viewport.w;
-    const at = user(svg, event);
-    viewport = {
-      x: at.x - (at.x - viewport.x) * factor,
-      y: at.y - (at.y - viewport.y) * factor,
-      w: viewport.w * factor,
-      h: viewport.h * factor,
-    };
-    show(svg);
+    zoom(svg, Math.exp(event.deltaY * 0.0015), user(svg, event));
   },
   { passive: false },
 );

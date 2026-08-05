@@ -2,7 +2,18 @@
 {{/* The bar the board and the list share. It is a plain GET form first — every
      control posts a query parameter and submitting reloads the filtered page —
      and htmx only makes that same request without the reload, so the view works
-     the same with the script absent. */}}
+     the same with the script absent.
+
+     The controls fold away behind a summary line that stays: what is filtering
+     right now, said as chips, each a link to the same view minus that one
+     filter. A refused reference forces the bar open, because an error nobody
+     can see is an error nobody can fix. */}}
+<details class="filters-shell"{{if .Refused}} open{{end}}>
+  <summary>
+    <span class="filters-word">Filters</span>
+    {{range .Chips}}<a class="chip" href="{{.RemoveURL}}" title="Remove this filter">{{.Label}} <span aria-hidden="true">×</span></a>{{end}}
+    {{if .Active}}<a class="clear" href="{{.Action}}">Clear all</a>{{end}}
+  </summary>
 <form class="filters" method="get" action="{{.Action}}"
       hx-get="{{.Action}}" hx-target="#issues" hx-select="#issues" hx-swap="outerHTML"
       hx-push-url="true"
@@ -42,10 +53,12 @@
     <legend>Text</legend>
     <input class="filter-text" type="search" name="search" value="{{.Search}}" placeholder="title or body" aria-label="Text">
   </fieldset>
+  {{/* The submit button serves the reader without the script; with it, every
+       change submits itself, so the stylesheet hides the button under .js. */}}
   <div class="filter-actions">
     <button type="submit">Filter</button>
-    {{if .Active}}<a class="clear" href="{{.Action}}">Clear filters</a>{{end}}
   </div>
   {{with .Refused}}<p class="filter-error" role="alert">{{.}}</p>{{end}}
 </form>
+</details>
 {{end}}
