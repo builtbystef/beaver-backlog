@@ -144,10 +144,11 @@ body {
   align-items: center;
   color: var(--text);
   display: flex;
+  font-size: 1.25rem;
   font-weight: 700;
   gap: 0.6rem;
   justify-self: start;
-  letter-spacing: -0.01em;
+  letter-spacing: -0.015em;
   text-decoration: none;
 }
 
@@ -191,10 +192,11 @@ h1 { font-size: 1.35rem; font-weight: 650; letter-spacing: -0.015em; margin: 0 0
 }
 
 /* The board: four columns side by side, each a stack of cards, folding to two
-   and then one as the window narrows. */
+   and then one as the window narrows. Every column runs the full height of the
+   tallest, so beside a long column the others are still drop targets the whole
+   way down. */
 
 .board {
-  align-items: start;
   display: grid;
   gap: 1rem;
   grid-template-columns: repeat(4, minmax(0, 1fr));
@@ -866,6 +868,9 @@ dialog::backdrop { background: rgba(0, 0, 0, 0.6); }
   overflow: hidden;
   cursor: grab;
   touch-action: none;
+  /* A pan sweeping across a node must not read as a text selection. */
+  user-select: none;
+  -webkit-user-select: none;
 }
 
 .graph-frame.panning { cursor: grabbing; }

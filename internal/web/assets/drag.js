@@ -10,6 +10,27 @@
 // board from being swapped out from under a drag in progress.
 let dragged = null;
 
+// The browser will not scroll the page itself while a drag is in hand, so a
+// long column would strand its cards with the other columns off-screen. While
+// a card is held, the pointer near the viewport's top or bottom edge scrolls
+// the page — faster the closer to the edge it sits. pointerY is where the
+// dragover stream last saw the pointer.
+const EDGE = 90;
+let pointerY = null;
+let scrolling = false;
+
+function autoscroll() {
+  if (!dragged) { scrolling = false; return; }
+  if (pointerY !== null) {
+    const topbar = document.querySelector(".topbar");
+    const top = (topbar ? topbar.offsetHeight : 0) + EDGE;
+    const bottom = window.innerHeight - EDGE;
+    if (pointerY < top) window.scrollBy(0, -Math.min(24, (top - pointerY) / 3));
+    else if (pointerY > bottom) window.scrollBy(0, Math.min(24, (pointerY - bottom) / 3));
+  }
+  requestAnimationFrame(autoscroll);
+}
+
 document.addEventListener("dragstart", (event) => {
   const card = event.target.closest(".card[draggable]");
   if (!card) return;
@@ -20,6 +41,11 @@ document.addEventListener("dragstart", (event) => {
   // payload; the issue's id is what a column can act on.
   event.dataTransfer.effectAllowed = "move";
   event.dataTransfer.setData("text/plain", card.dataset.issue);
+  pointerY = null;
+  if (!scrolling) {
+    scrolling = true;
+    requestAnimationFrame(autoscroll);
+  }
 });
 
 document.addEventListener("dragend", () => {
@@ -30,6 +56,7 @@ document.addEventListener("dragend", () => {
 });
 
 document.addEventListener("dragover", (event) => {
+  pointerY = event.clientY;
   const column = event.target.closest(".column");
   if (!column || !dragged) return;
   event.preventDefault(); // the default is to refuse the drop

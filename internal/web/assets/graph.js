@@ -44,11 +44,12 @@ function adopt() {
   show(svg);
 }
 
-// whole is the window holding the entire picture — the viewBox the server
-// rendered, which is also what the reset control returns to.
+// whole is the window holding the entire picture, which is also what the reset
+// control returns to. It is read from the width and height the server rendered
+// — never from the viewBox, which show() keeps overwriting with wherever the
+// reader has panned to.
 function whole(svg) {
-  const [x, y, w, h] = svg.getAttribute("viewBox").split(/\s+/).map(Number);
-  return { x, y, w, h };
+  return { x: 0, y: 0, w: Number(svg.getAttribute("width")), h: Number(svg.getAttribute("height")) };
 }
 
 function show(svg) {
