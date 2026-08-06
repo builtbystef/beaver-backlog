@@ -4,6 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>{{.Title}} · Beaver Backlog</title>
+<link rel="icon" type="image/png" href="/assets/favicon.png">
 <link rel="stylesheet" href="/assets/app.css">
 {{/* The .js mark lets the stylesheet hide controls that only duplicate what a
      script already does — set before first paint, so nothing flickers away. */}}
@@ -15,7 +16,7 @@
 </head>
 <body>
 <header class="topbar">
-  <a class="brand" href="/">Beaver Backlog</a>
+  <a class="brand" href="/"><img class="brand-logo" src="/assets/logo.png" alt="" width="55" height="36"> Beaver Backlog</a>
   <nav>
     <a href="/"{{if eq .Section "board"}} class="active" aria-current="page"{{end}}>Board</a>
     <a href="/issues"{{if eq .Section "issues"}} class="active" aria-current="page"{{end}}>Issues</a>

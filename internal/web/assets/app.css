@@ -6,15 +6,18 @@
 
 :root {
   color-scheme: dark;
-  --bg: #1e1e1e;
-  --panel: #262626;
-  --line: #383838;
-  --text: #dcddde;
-  --muted: #9a9aa1;
-  --accent: #a882ff;
-  --warn-bg: #3a2f1c;
-  --warn-line: #a5822f;
-  --state-bg: #33373d;
+  --bg: #16181d;
+  --panel: #1e222a;
+  --panel-raised: #252a33;
+  --line: #323844;
+  --text: #e9e7df;
+  --muted: #99a0ac;
+  --accent: #e26628;
+  --accent-hover: #f0793d;
+  --accent-soft: rgba(226, 102, 40, 0.16);
+  --warn-bg: #352b19;
+  --warn-line: #b08430;
+  --state-bg: #2e333d;
   --state-in-progress: #2f4f78;
   --state-done: #2f5d3a;
   --state-cancelled: #4a3a3a;
@@ -28,24 +31,29 @@
   --alert: #c65b5b;
   --edge: #6a6f78;
   --cluster-fill: rgba(255, 255, 255, 0.02);
-  --graph-bg-1: #21242a;
-  --graph-bg-2: #17181b;
-  --glow: rgba(168, 130, 255, 0.55);
-  --flash: rgba(168, 130, 255, 0.28);
+  --graph-bg-1: #1d2027;
+  --graph-bg-2: #131519;
+  --glow: rgba(226, 102, 40, 0.5);
+  --flash: rgba(226, 102, 40, 0.24);
+  --shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+  --shadow-lift: 0 4px 14px rgba(0, 0, 0, 0.35);
 }
 
 @media (prefers-color-scheme: light) {
   :root {
     color-scheme: light;
-    --bg: #f5f5f7;
-    --panel: #ffffff;
-    --line: #d8d8de;
-    --text: #26262b;
-    --muted: #63636b;
-    --accent: #6a3fd8;
+    --bg: #f7f3ea;
+    --panel: #fffdf7;
+    --panel-raised: #ffffff;
+    --line: #e2dbcb;
+    --text: #23272f;
+    --muted: #6d7380;
+    --accent: #c2521a;
+    --accent-hover: #a84512;
+    --accent-soft: rgba(194, 82, 26, 0.12);
     --warn-bg: #f8ecce;
     --warn-line: #a5822f;
-    --state-bg: #e4e6eb;
+    --state-bg: #eae5d7;
     --state-in-progress: #cfdff3;
     --state-done: #d2e7d8;
     --state-cancelled: #e9dcdc;
@@ -59,10 +67,12 @@
     --alert: #c04b4b;
     --edge: #8a8f99;
     --cluster-fill: rgba(0, 0, 0, 0.02);
-    --graph-bg-1: #ffffff;
-    --graph-bg-2: #ececf0;
-    --glow: rgba(106, 63, 216, 0.35);
-    --flash: rgba(106, 63, 216, 0.18);
+    --graph-bg-1: #fffdf7;
+    --graph-bg-2: #ede7d8;
+    --glow: rgba(194, 82, 26, 0.35);
+    --flash: rgba(194, 82, 26, 0.16);
+    --shadow: 0 1px 2px rgba(35, 39, 47, 0.08);
+    --shadow-lift: 0 4px 14px rgba(35, 39, 47, 0.12);
   }
 }
 
@@ -80,24 +90,42 @@ body {
 
 :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 
+/* The topbar rides along: the brand at the left edge, the sections as quiet
+   pills in the centre, the search at the right. Sticky, so the way to any
+   other page never scrolls away. */
+
 .topbar {
-  align-items: baseline;
+  align-items: center;
+  background: var(--panel);
   border-bottom: 1px solid var(--line);
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.5rem 1.5rem;
-  padding: 0.75rem 1.5rem;
+  box-shadow: var(--shadow);
+  display: grid;
+  gap: 0.5rem 1.25rem;
+  grid-template-columns: 1fr auto 1fr;
+  padding: 0.5rem 1.5rem;
+  position: sticky;
+  top: 0;
+  z-index: 20;
 }
 
-.topbar nav { display: flex; flex-wrap: wrap; gap: 1rem; }
+.topbar nav { justify-self: center; }
 
-.topbar nav a { color: var(--text); text-decoration: none; }
+.topbar nav { display: flex; flex-wrap: wrap; gap: 0.25rem; }
 
-.topbar nav a:hover { color: var(--accent); }
+.topbar nav a {
+  border-radius: 6px;
+  color: var(--muted);
+  padding: 0.3rem 0.7rem;
+  text-decoration: none;
+  transition: background-color 120ms ease-out, color 120ms ease-out;
+}
+
+.topbar nav a:hover { background: var(--accent-soft); color: var(--text); }
 
 .topbar nav a.active {
-  border-bottom: 2px solid var(--accent);
+  background: var(--accent-soft);
   color: var(--accent);
+  font-weight: 600;
 }
 
 /* The count of files the scan is skipping, worn by the Doctor link on every
@@ -113,14 +141,28 @@ body {
 }
 
 .brand {
-  color: var(--accent);
-  font-weight: 600;
+  align-items: center;
+  color: var(--text);
+  display: flex;
+  font-weight: 700;
+  gap: 0.6rem;
+  justify-self: start;
+  letter-spacing: -0.01em;
   text-decoration: none;
 }
 
-main { padding: 1.5rem; }
+.brand:hover { color: var(--accent); }
 
-h1 { font-size: 1.25rem; margin: 0 0 1rem; }
+.brand-logo { display: block; height: 36px; width: auto; }
+
+main { margin: 0 auto; max-width: 90rem; padding: 1.5rem; }
+
+/* The write forms and the issue detail are one prose-width column each — the
+   page centres that column, heading and all, instead of hugging the left edge. */
+main:has(> .issue-form) { max-width: 51rem; }
+main:has(> .detail) { max-width: 63rem; }
+
+h1 { font-size: 1.35rem; font-weight: 650; letter-spacing: -0.015em; margin: 0 0 1rem; }
 
 .banner {
   background: var(--warn-bg);
@@ -160,20 +202,28 @@ h1 { font-size: 1.25rem; margin: 0 0 1rem; }
 
 @media (max-width: 1100px) {
   .board { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .topbar .search input { width: 12rem; }
+}
+
+/* Not enough room for three zones: brand and search share the first row, the
+   sections take a row of their own. */
+@media (max-width: 900px) {
+  .topbar { grid-template-columns: auto 1fr; }
+  .topbar nav { grid-column: 1 / -1; justify-self: start; }
 }
 
 @media (max-width: 640px) {
   .board { grid-template-columns: 1fr; }
   main { padding: 1rem; }
   .topbar { padding: 0.6rem 1rem; }
-  .topbar .search { flex-basis: 100%; margin-left: 0; }
   .topbar .search input { width: 100%; }
 }
 
 .column {
   background: var(--panel);
   border: 1px solid var(--line);
-  border-radius: 8px;
+  border-radius: 10px;
+  box-shadow: var(--shadow);
   padding: 0.75rem;
 }
 
@@ -189,17 +239,18 @@ h1 { font-size: 1.25rem; margin: 0 0 1rem; }
 .count { color: var(--muted); }
 
 .card {
-  background: var(--bg);
+  background: var(--panel-raised);
   border: 1px solid var(--line);
-  border-radius: 6px;
+  border-radius: 8px;
   color: var(--text);
   display: block;
   margin-bottom: 0.5rem;
   padding: 0.6rem 0.7rem;
   text-decoration: none;
+  transition: border-color 120ms ease-out, box-shadow 120ms ease-out;
 }
 
-.card:hover { border-color: var(--accent); }
+.card:hover { border-color: var(--accent); box-shadow: var(--shadow-lift); }
 
 /* Dragging: the card in hand fades, the column under the cursor lights up, and
    a card waiting on the server dims until the board is redrawn. */
@@ -263,7 +314,13 @@ h1 { font-size: 1.25rem; margin: 0 0 1rem; }
 
 .result-count { color: var(--muted); font-size: 0.85rem; margin: 0 0 0.5rem; }
 
-.table-scroll { overflow-x: auto; }
+.table-scroll {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  box-shadow: var(--shadow);
+  overflow-x: auto;
+}
 
 table.issues {
   border-collapse: collapse;
@@ -272,10 +329,12 @@ table.issues {
 
 .issues th, .issues td {
   border-bottom: 1px solid var(--line);
-  padding: 0.5rem 0.75rem;
+  padding: 0.55rem 0.9rem;
   text-align: left;
   vertical-align: top;
 }
+
+.issues tbody tr:last-child td { border-bottom: none; }
 
 .issues th {
   color: var(--muted);
@@ -289,7 +348,7 @@ table.issues {
 .issues th a:hover { color: var(--accent); }
 .sort-mark { color: var(--accent); }
 
-.issues tbody tr:hover { background: var(--panel); }
+.issues tbody tr:hover { background: var(--accent-soft); }
 
 /* A row is a doorway to the issue it names (ui.js), not just its title cell. */
 .issues tbody tr[data-href] { cursor: pointer; }
@@ -328,19 +387,24 @@ a { color: var(--accent); }
 
 /* The search box sits at the far end of the topbar, on every page. */
 
-.topbar .search { margin-left: auto; }
+.topbar .search { justify-self: end; }
 
 .topbar .search input {
-  background: var(--panel);
+  background: var(--bg);
   border: 1px solid var(--line);
-  border-radius: 6px;
+  border-radius: 8px;
   color: var(--text);
   font: inherit;
-  padding: 0.3rem 0.6rem;
+  padding: 0.35rem 0.75rem;
+  transition: border-color 120ms ease-out, box-shadow 120ms ease-out;
   width: 18rem;
 }
 
-.topbar .search input:focus { border-color: var(--accent); }
+.topbar .search input:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-soft);
+  outline: none;
+}
 
 /* Issue detail: a column of sections, each an aligned key/value block or prose. */
 
@@ -496,7 +560,11 @@ a { color: var(--accent); }
 }
 
 .issue-form input:focus, .issue-form select:focus, .issue-form textarea:focus,
-.note-form textarea:focus { border-color: var(--accent); }
+.note-form textarea:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-soft);
+  outline: none;
+}
 
 .issue-form fieldset {
   border: 1px solid var(--line);
@@ -531,16 +599,37 @@ a { color: var(--accent); }
 .actions form { margin: 0; }
 
 button {
-  background: var(--panel);
+  background: var(--panel-raised);
   border: 1px solid var(--line);
-  border-radius: 6px;
+  border-radius: 8px;
   color: var(--text);
   cursor: pointer;
   font: inherit;
+  font-weight: 500;
   padding: 0.4rem 0.9rem;
+  transition: background-color 120ms ease-out, border-color 120ms ease-out;
 }
 
-button:hover { border-color: var(--accent); }
+button:hover { background: var(--accent-soft); border-color: var(--accent); }
+
+/* The one act each surface is for — create, save, note, repair, the first
+   state move — wears the accent; its neighbours stay quiet. */
+.issue-form button[type="submit"],
+.note-form button[type="submit"],
+.repair button[type="submit"],
+.actions > form:first-child button:not(.danger) {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff8e7;
+}
+
+.issue-form button[type="submit"]:hover,
+.note-form button[type="submit"]:hover,
+.repair button[type="submit"]:hover,
+.actions > form:first-child button:not(.danger):hover {
+  background: var(--accent-hover);
+  border-color: var(--accent-hover);
+}
 
 button.danger { border-color: var(--danger); }
 button.danger:hover { background: var(--danger-bg); }
@@ -646,7 +735,11 @@ dialog::backdrop { background: rgba(0, 0, 0, 0.6); }
 
 .filters select { width: auto; }
 
-.filters input:focus, .filters select:focus { border-color: var(--accent); }
+.filters input:focus, .filters select:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-soft);
+  outline: none;
+}
 
 .filter-actions { align-items: center; display: flex; gap: 0.75rem; margin-left: auto; }
 
