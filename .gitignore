@@ -5,9 +5,6 @@
 *.test
 *.out
 
-# Local recovery drafts (per-machine, never shared)
-.beaver/drafts/
-
 # Agent skill files (per-machine, never shared)
 .claude/skills/
 .agents/skills/
