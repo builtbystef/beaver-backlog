@@ -19,9 +19,9 @@ import (
 
 // cmdStart moves an issue to in-progress, auto-claiming an unowned one for the
 // current actor and refusing one held by a different actor unless --force steals
-// it. A closed issue is refused outright (reopen it first). Unmet dependencies
-// produce a warning, never a refusal — starting blocked work is sometimes the
-// right call.
+// it. A closed issue is resurrected into active work in the same move. Unmet
+// dependencies produce a warning, never a refusal — starting blocked work is
+// sometimes the right call.
 func cmdStart(env Env, args []string) int {
 	fs, formatFlag := newFlagSet(env, "start")
 	asFlag := fs.String("as", "", "start as this actor (overrides identity detection)")
@@ -82,22 +82,16 @@ func cmdStart(env Env, args []string) int {
 	return exitOK
 }
 
-// startError maps start's own refusals onto its diagnostics: a closed issue must
-// be reopened first, and an issue another actor holds needs --force. Anything
-// else is a failure every command reports the same way.
+// startError maps start's one refusal onto its diagnostic: an issue another
+// actor holds needs --force. Anything else is a failure every command reports
+// the same way.
 func startError(env Env, err error) int {
-	var illegal *core.IllegalTransitionError
 	var claimed *core.ClaimedError
-	switch {
-	case errors.As(err, &illegal):
-		errf(env, "%s is %s; reopen it first to start it", illegal.ID, illegal.From)
-		return exitUsage
-	case errors.As(err, &claimed):
+	if errors.As(err, &claimed) {
 		errf(env, "%s is claimed by %s; use --force to steal it", claimed.ID, claimed.By)
 		return exitUsage
-	default:
-		return coreError(env, err)
 	}
+	return coreError(env, err)
 }
 
 // startLine renders start's confirmation from what the core actually did: the

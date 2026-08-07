@@ -22,10 +22,13 @@ func TestTransitionsSetStateAndBumpUpdated(t *testing.T) {
 	}{
 		{"done", issue.StateTodo, "done"},
 		{"done", issue.StateInProgress, "done"},
+		{"done", issue.StateCancelled, "done"},
 		{"cancel", issue.StateTodo, "cancelled"},
 		{"cancel", issue.StateInProgress, "cancelled"},
+		{"cancel", issue.StateDone, "cancelled"},
 		{"reopen", issue.StateDone, "todo"},
 		{"reopen", issue.StateCancelled, "todo"},
+		{"reopen", issue.StateInProgress, "todo"},
 	}
 	for _, c := range cases {
 		t.Run(c.verb+"-from-"+string(c.from), func(t *testing.T) {
@@ -75,42 +78,6 @@ func TestCancelIsDistinctFromDoneAndReadable(t *testing.T) {
 	}
 	if got := listIDs(t, h, "--state", "cancelled"); !slices.Equal(got, []string{"cnc111"}) {
 		t.Errorf("cancelled list = %v, want [cnc111]", got)
-	}
-}
-
-// The clock is advanced before the rejected verb so an erroneous write (which
-// would bump `updated`) could not slip past the byte-for-byte comparison.
-func TestTransitionsRejectNonsensical(t *testing.T) {
-	cases := []struct {
-		verb string
-		from issue.State
-	}{
-		{"done", issue.StateCancelled},    // a cancelled issue is closed; reopen first
-		{"cancel", issue.StateDone},       // a done issue is closed; reopen first
-		{"reopen", issue.StateInProgress}, // in-progress is not closed; nothing to reopen
-	}
-	for _, c := range cases {
-		t.Run(c.verb+"-from-"+string(c.from), func(t *testing.T) {
-			h := beavertest.New(t).Init()
-			seed(t, h, "iss001", "Some work", c.from, beavertest.DefaultNow)
-			file := "issues/" + h.IssueFiles()[0]
-			before := h.ReadFile(file)
-			h.Clock.Advance(time.Hour) // a stray write would change the bytes
-
-			r := h.Run(c.verb, "iss001")
-			if r.Code != 2 {
-				t.Errorf("%s from %s exit = %d, want 2 (usage)", c.verb, c.from, r.Code)
-			}
-			if !strings.Contains(r.Stderr, "iss001") {
-				t.Errorf("rejection should name the issue:\n%s", r.Stderr)
-			}
-			if r.Stdout != "" {
-				t.Errorf("rejected transition wrote to stdout: %q", r.Stdout)
-			}
-			if after := h.ReadFile(file); after != before {
-				t.Errorf("rejected transition modified the file (corruption):\nbefore:\n%s\nafter:\n%s", before, after)
-			}
-		})
 	}
 }
 
@@ -220,7 +187,6 @@ func TestTransitionsHumanOutput(t *testing.T) {
 	h.IsTTY = true
 	seed(t, h, "app111", "Do it", issue.StateTodo, beavertest.DefaultNow)
 	seed(t, h, "red222", "Already", issue.StateDone, beavertest.DefaultNow)
-	seed(t, h, "rej333", "Active", issue.StateInProgress, beavertest.DefaultNow)
 
 	applied := h.MustRun("done", "app111").Stdout
 	if strings.HasPrefix(strings.TrimSpace(applied), "{") {
@@ -233,14 +199,6 @@ func TestTransitionsHumanOutput(t *testing.T) {
 	redundant := h.MustRun("done", "red222").Stdout
 	if !strings.Contains(strings.ToLower(redundant), "already") {
 		t.Errorf("redundant line should say 'already':\n%s", redundant)
-	}
-
-	rej := h.Run("reopen", "rej333")
-	if rej.Code != 2 {
-		t.Errorf("reopen of an in-progress issue exit = %d, want 2", rej.Code)
-	}
-	if !strings.Contains(rej.Stderr, "rej333") {
-		t.Errorf("rejection should name the issue:\n%s", rej.Stderr)
 	}
 }
 

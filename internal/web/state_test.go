@@ -2,9 +2,9 @@ package web_test
 
 // The board's write surface: dropping a card on a column. What is asserted here
 // is the mapping from a drop to a core call and from the core's refusal to a
-// status — the lifecycle rules themselves (what may follow what, who may claim
-// what) are the core's own tests. Drag mechanics are demoed by hand; the
-// endpoints they post to are tested here.
+// status — the lifecycle itself (what a move writes, who may claim what) is the
+// core's own tests. Drag mechanics are demoed by hand; the endpoints they post
+// to are tested here.
 
 import (
 	"net/http"
@@ -77,28 +77,21 @@ func TestDropOnInProgressClaimsForTheLaunchActor(t *testing.T) {
 	}
 }
 
-// A move the lifecycle forbids is refused whole: the status says so, the core's
-// words come back for the card to show, and the file is untouched.
-func TestIllegalDropIsRefusedWith409AndWritesNothing(t *testing.T) {
+// Every move between columns is legal — reclassifying a closed issue between
+// done and cancelled included. The card goes where it was dropped.
+func TestDropReclassifiesAClosedIssue(t *testing.T) {
 	dir := newStore(t)
 	svc := open(t, dir)
 	target := create(t, svc, core.Draft{Title: "All finished"})
 	transition(t, svc, target.ID, issue.StateDone)
-	before := readIssueFile(t, dir, target.ID)
 
 	res := post(newHandler(t, dir), "/issues/"+target.ID+"/state", url.Values{"state": {"cancelled"}})
 
-	if res.Code != http.StatusConflict {
-		t.Fatalf("status = %d, want 409:\n%s", res.Code, res.Body.String())
+	if res.Code != http.StatusSeeOther {
+		t.Fatalf("status = %d, want 303:\n%s", res.Code, res.Body.String())
 	}
-	body := res.Body.String()
-	for _, want := range []string{target.ID, "done", "cancelled"} {
-		if !strings.Contains(body, want) {
-			t.Errorf("refusal does not carry the core's message (missing %q):\n%s", want, body)
-		}
-	}
-	if after := readIssueFile(t, dir, target.ID); after != before {
-		t.Errorf("the refused drop wrote to the file:\nbefore:\n%s\nafter:\n%s", before, after)
+	if file := readIssueFile(t, dir, target.ID); !strings.Contains(file, "state: cancelled") {
+		t.Errorf("file on disk is not cancelled:\n%s", file)
 	}
 }
 

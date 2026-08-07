@@ -1,12 +1,15 @@
 package core
 
-// This file holds the lifecycle rules: which state changes are legal, which are
-// idempotent no-ops, and what beginning work does beyond moving the state.
+// This file holds the lifecycle rules: what a state change writes, which calls
+// are idempotent no-ops, and what beginning work does beyond moving the state.
+// Any state may move to any other — the files are the truth and every issue is
+// hand-editable markdown, so the tools describe changes rather than gatekeep
+// them. The one distinction that remains is where in-progress enters: beginning
+// work also claims the issue, so it belongs to Start.
 
 import (
 	"errors"
 	"fmt"
-	"slices"
 
 	"github.com/builtbystef/beaver-backlog/internal/issue"
 )
@@ -16,37 +19,14 @@ import (
 // reports what it waits on, so it belongs to Start.
 var ErrNotATransition = errors.New("not a transition target")
 
-// IllegalTransitionError reports a state change the issue's current state
-// forbids — closing an already-closed issue, or starting one. It carries the
-// issue and both ends of the refused move, so a caller can phrase the refusal
-// in its own words.
-type IllegalTransitionError struct {
-	ID   string      // the issue that was not moved
-	From issue.State // the state it is in
-	To   issue.State // the state the caller asked for
-}
-
-func (e *IllegalTransitionError) Error() string {
-	return fmt.Sprintf("%s is %s and cannot become %s", e.ID, e.From, e.To)
-}
-
-// enterFrom is the legality table: for each state a transition may set, the
-// states an issue may enter it from. Closing works from the two open states,
-// and reopening restores either closed state; everything else is refused.
-var enterFrom = map[issue.State][]issue.State{
-	issue.StateDone:      {issue.StateTodo, issue.StateInProgress},
-	issue.StateCancelled: {issue.StateTodo, issue.StateInProgress},
-	issue.StateTodo:      {issue.StateDone, issue.StateCancelled},
-}
-
-// Transition moves the issue ref names to the state to. An issue already in
-// that state is an idempotent no-op — reported with Changed false, with nothing
-// written — and a move the current state forbids is an *IllegalTransitionError
-// that never touches the file. to must be a state a transition can set;
-// in-progress yields ErrNotATransition, since starting work is Start's.
+// Transition moves the issue ref names to the state to. Every move is legal;
+// an issue already in that state is an idempotent no-op — reported with Changed
+// false, with nothing written. Entering todo also clears the assignee: todo is
+// the unowned pile, and whoever picks the issue up claims it by starting it.
+// to must be a state a transition can set; in-progress yields
+// ErrNotATransition, since starting work is Start's.
 func (s *Service) Transition(ref string, to issue.State) (Outcome, error) {
-	sources, ok := enterFrom[to]
-	if !ok {
+	if to == issue.StateInProgress {
 		return Outcome{}, fmt.Errorf("%w: %s", ErrNotATransition, to)
 	}
 	snap, warnings, err := s.scan()
@@ -61,12 +41,12 @@ func (s *Service) Transition(ref string, to issue.State) (Outcome, error) {
 	if iss.State == to {
 		return Outcome{Issue: iss, Previous: iss, Warnings: warnings}, nil
 	}
-	if !slices.Contains(sources, iss.State) {
-		return Outcome{Warnings: warnings}, &IllegalTransitionError{ID: iss.ID, From: iss.State, To: to}
-	}
 
 	previous := iss
 	iss.State = to
+	if to == issue.StateTodo {
+		iss.Assignee = ""
+	}
 	iss, err = s.write(path, iss)
 	if err != nil {
 		return Outcome{Warnings: warnings}, err
@@ -97,11 +77,10 @@ type StartOutcome struct {
 }
 
 // Start begins work on the issue ref names: it moves the issue to in-progress
-// and makes actor its assignee, auto-claiming an unowned issue. An issue
-// another actor holds is refused with a *ClaimedError unless force steals it,
-// and a closed issue is refused with an *IllegalTransitionError — it must be
-// reopened first. Starting an issue that is already the actor's and already in
-// progress writes nothing.
+// and makes actor its assignee, auto-claiming an unowned issue. A closed issue
+// is resurrected into active work in the same move. An issue another actor
+// holds is refused with a *ClaimedError unless force steals it. Starting an
+// issue that is already the actor's and already in progress writes nothing.
 //
 // Unmet dependencies never refuse a start: beginning blocked work is sometimes
 // the right call, so they come back as data for the caller to surface.
@@ -115,9 +94,6 @@ func (s *Service) Start(ref, actor string, force bool) (StartOutcome, error) {
 		return startFailure(warnings, err)
 	}
 
-	if iss.State == issue.StateDone || iss.State == issue.StateCancelled {
-		return startFailure(warnings, &IllegalTransitionError{ID: iss.ID, From: iss.State, To: issue.StateInProgress})
-	}
 	if iss.Assignee != "" && iss.Assignee != actor && !force {
 		return startFailure(warnings, &ClaimedError{ID: iss.ID, By: iss.Assignee})
 	}
@@ -130,7 +106,7 @@ func (s *Service) Start(ref, actor string, force bool) (StartOutcome, error) {
 	// The dependencies are reported only when work actually begins — an issue
 	// already in progress had its turn when it started.
 	var unmet []issue.Blocker
-	if iss.State == issue.StateTodo {
+	if iss.State != issue.StateInProgress {
 		unmet = rel.BlockedOn(iss)
 	}
 

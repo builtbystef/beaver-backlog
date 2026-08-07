@@ -84,25 +84,18 @@ func returnTo(r *http.Request) string {
 	return "/"
 }
 
-// failDrop words a refused drop. A move the lifecycle forbids and an issue
-// someone else holds are both conflicts with the store's current truth — the
-// card goes back where it was and the reader is told why — while anything else
-// is the shared failure page.
+// failDrop words a refused drop. An issue someone else holds is a conflict with
+// the store's current truth — the card goes back where it was and the reader is
+// told why — while anything else is the shared failure page.
 func (s *server) failDrop(w http.ResponseWriter, r *http.Request, ref string, warnings []core.Warning, err error) {
-	var (
-		illegal *core.IllegalTransitionError
-		claimed *core.ClaimedError
-	)
-	switch {
-	case errors.As(err, &illegal):
-		s.refuse(w, r, http.StatusConflict, err.Error()+".")
-	case errors.As(err, &claimed):
+	var claimed *core.ClaimedError
+	if errors.As(err, &claimed) {
 		// The core states the fact; where to go from here is this interface's to
 		// say, since the web deliberately offers no way to steal.
 		s.refuse(w, r, http.StatusConflict, err.Error()+" — steal it with `beaver start "+claimed.ID+" --force`.")
-	default:
-		s.failRef(w, r, ref, warnings, err)
+		return
 	}
+	s.failRef(w, r, ref, warnings, err)
 }
 
 // refuse renders a drop the board could not make. It is the shared error page,

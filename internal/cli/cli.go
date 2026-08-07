@@ -105,7 +105,7 @@ usage:
   beaver start <ref>          start an issue (in-progress; auto-claims if unowned)
   beaver done <ref>           mark an issue done
   beaver cancel <ref>         cancel an issue (deliberately abandon it)
-  beaver reopen <ref>         return a done or cancelled issue to todo
+  beaver reopen <ref>         return an issue to todo (clears its assignee)
   beaver update <ref>         change an issue's fields (title, body, labels, ...)
   beaver note <ref> "<text>"  append a note to an issue's coordination log
   beaver delete <ref>         delete an issue's file (for junk; the VCS keeps history)

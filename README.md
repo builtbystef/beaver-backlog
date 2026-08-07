@@ -125,7 +125,7 @@ Fourteen of them, and they fit on one screen:
 | `beaver start <ref>`         | Move to in-progress, auto-claiming if unowned                                                                  |
 | `beaver done <ref>`          | Mark done                                                                                                      |
 | `beaver cancel <ref>`        | Deliberately abandon (terminal, but not completed)                                                             |
-| `beaver reopen <ref>`        | Return a done or cancelled issue to todo                                                                       |
+| `beaver reopen <ref>`        | Return an issue to todo, clearing its assignee                                                                 |
 | `beaver update <ref>`        | Change any non-state field (see below)                                                                         |
 | `beaver note <ref> "<text>"` | Append an attributed, timestamped note                                                                         |
 | `beaver delete <ref>`        | Delete the file (for junk; the VCS keeps history)                                                              |

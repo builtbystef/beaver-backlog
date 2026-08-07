@@ -68,18 +68,17 @@ func TestStartRefusesAnothersIssueUnlessForce(t *testing.T) {
 	}
 }
 
-func TestStartRejectsClosedIssue(t *testing.T) {
+// A closed issue is resurrected into active work in one move: no reopen dance
+// in between.
+func TestStartResurrectsClosedIssue(t *testing.T) {
 	for _, st := range []issue.State{issue.StateDone, issue.StateCancelled} {
 		t.Run(string(st), func(t *testing.T) {
 			h := beavertest.New(t).Init()
 			seed(t, h, "iss001", "Closed", st, beavertest.DefaultNow)
 
-			r := h.Run("start", "iss001", "--as", "alice")
-			if r.Code != 2 {
-				t.Errorf("start of a %s issue exit = %d, want 2 (usage)", st, r.Code)
-			}
-			if !strings.Contains(r.Stderr, "iss001") || !strings.Contains(strings.ToLower(r.Stderr), "reopen") {
-				t.Errorf("rejection should name the issue and suggest reopen:\n%s", r.Stderr)
+			out := h.DecodeJSON(h.MustRun("start", "iss001", "--as", "alice").Stdout)
+			if out["state"] != "in-progress" || out["assignee"] != "alice" {
+				t.Errorf("start of a %s issue = %v/%v, want in-progress/alice", st, out["state"], out["assignee"])
 			}
 		})
 	}

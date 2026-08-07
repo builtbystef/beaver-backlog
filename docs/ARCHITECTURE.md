@@ -24,8 +24,8 @@ invokes a version-control system; committing the files is the operator's job.
 
 - `internal/core/` — **the application**: creating and opening a store, reading
   one issue with its derived relationships, querying with filters and ordering,
-  the lifecycle writes (legal state transitions and starting work, with its
-  ownership guard and dependency report), creation (a draft validated, its edges
+  the lifecycle writes (state transitions — any state may move to any other —
+  and starting work, with its ownership guard and dependency report), creation (a draft validated, its edges
   resolved to ids, an id minted collision-safe), the coordination log, the
   multi-field update every other mutation goes through (set algebra for labels
   and dependencies, the notes-preserving description replacement, and refusal of

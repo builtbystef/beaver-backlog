@@ -17,70 +17,51 @@ import (
 // stray write cannot hide behind an unchanged timestamp.
 var writeTime = fixedTime.Add(48 * time.Hour)
 
-func TestTransitionAppliesTheLegalityTable(t *testing.T) {
-	cases := []struct {
-		from  issue.State
-		to    issue.State
-		legal bool
-	}{
-		{issue.StateTodo, issue.StateDone, true},
-		{issue.StateInProgress, issue.StateDone, true},
-		{issue.StateTodo, issue.StateCancelled, true},
-		{issue.StateInProgress, issue.StateCancelled, true},
-		{issue.StateDone, issue.StateTodo, true},
-		{issue.StateCancelled, issue.StateTodo, true},
-		{issue.StateCancelled, issue.StateDone, false}, // closed: reopen it first
-		{issue.StateDone, issue.StateCancelled, false}, // closed: reopen it first
-		{issue.StateInProgress, issue.StateTodo, false},
-	}
-	for _, c := range cases {
-		t.Run(string(c.from)+"-to-"+string(c.to), func(t *testing.T) {
-			root := newStore(t)
-			seed(t, root, withState(mkIssue("iss001", "Some work"), c.from))
-			before := fileOf(t, root, "iss001", "Some work")
+// Every move is legal: any state may reach any transition target. The files
+// are hand-editable markdown, so the tools describe changes rather than
+// gatekeep them.
+func TestTransitionMovesBetweenAnyTwoStates(t *testing.T) {
+	states := []issue.State{issue.StateTodo, issue.StateInProgress, issue.StateDone, issue.StateCancelled}
+	targets := []issue.State{issue.StateTodo, issue.StateDone, issue.StateCancelled}
+	for _, from := range states {
+		for _, to := range targets {
+			if from == to {
+				continue // the idempotent no-op has its own test
+			}
+			t.Run(string(from)+"-to-"+string(to), func(t *testing.T) {
+				root := newStore(t)
+				seed(t, root, withState(mkIssue("iss001", "Some work"), from))
 
-			out, err := openAt(t, root).Transition("iss001", c.to)
-			if !c.legal {
-				var illegal *core.IllegalTransitionError
-				if !errors.As(err, &illegal) {
-					t.Fatalf("Transition %s → %s = %v, want *IllegalTransitionError", c.from, c.to, err)
+				out, err := openAt(t, root).Transition("iss001", to)
+				if err != nil {
+					t.Fatalf("Transition %s → %s: %v", from, to, err)
 				}
-				if illegal.ID != "iss001" || illegal.From != c.from || illegal.To != c.to {
-					t.Errorf("error = %+v, want iss001 from %s to %s", illegal, c.from, c.to)
+				if !out.Changed {
+					t.Error("Changed = false, want true for a state that moved")
 				}
-				if after := fileOf(t, root, "iss001", "Some work"); after != before {
-					t.Errorf("a refused transition rewrote the file:\nbefore:\n%s\nafter:\n%s", before, after)
+				if out.Issue.State != to {
+					t.Errorf("state = %s, want %s", out.Issue.State, to)
 				}
-				return
-			}
-			if err != nil {
-				t.Fatalf("Transition %s → %s: %v", c.from, c.to, err)
-			}
-			if !out.Changed {
-				t.Error("Changed = false, want true for a state that moved")
-			}
-			if out.Issue.State != c.to {
-				t.Errorf("state = %s, want %s", out.Issue.State, c.to)
-			}
-			if !out.Issue.Updated.Equal(writeTime) {
-				t.Errorf("updated = %s, want it bumped to %s", out.Issue.Updated, writeTime)
-			}
-			// The move is on disk, not just in the returned value.
-			detail, err := open(t, root).Get("iss001")
-			if err != nil {
-				t.Fatalf("Get after Transition: %v", err)
-			}
-			if detail.Issue.State != c.to || !detail.Issue.Updated.Equal(writeTime) {
-				t.Errorf("persisted state/updated = %s/%s, want %s/%s",
-					detail.Issue.State, detail.Issue.Updated, c.to, writeTime)
-			}
-		})
+				if !out.Issue.Updated.Equal(writeTime) {
+					t.Errorf("updated = %s, want it bumped to %s", out.Issue.Updated, writeTime)
+				}
+				// The move is on disk, not just in the returned value.
+				detail, err := open(t, root).Get("iss001")
+				if err != nil {
+					t.Fatalf("Get after Transition: %v", err)
+				}
+				if detail.Issue.State != to || !detail.Issue.Updated.Equal(writeTime) {
+					t.Errorf("persisted state/updated = %s/%s, want %s/%s",
+						detail.Issue.State, detail.Issue.Updated, to, writeTime)
+				}
+			})
+		}
 	}
 }
 
-// A transition moves the state and nothing else: the assignee is kept as the
-// record of who did the work, so a closed issue still names them.
-func TestTransitionKeepsTheAssignee(t *testing.T) {
+// A transition to a closed state keeps the assignee as the record of who did
+// the work, so a closed issue still names them.
+func TestTransitionToAClosedStateKeepsTheAssignee(t *testing.T) {
 	root := newStore(t)
 	seed(t, root, withAssignee(withState(mkIssue("iss001", "Work to finish"), issue.StateInProgress), "alice"))
 
@@ -97,6 +78,36 @@ func TestTransitionKeepsTheAssignee(t *testing.T) {
 	}
 	if detail.Issue.Assignee != "alice" {
 		t.Errorf("persisted assignee = %q, want alice", detail.Issue.Assignee)
+	}
+}
+
+// Entering todo clears the assignee: todo is the unowned pile, and whoever
+// picks the issue up next claims it by starting it. This holds wherever the
+// issue came from — a closed state or active work.
+func TestTransitionToTodoClearsTheAssignee(t *testing.T) {
+	for _, from := range []issue.State{issue.StateInProgress, issue.StateDone, issue.StateCancelled} {
+		t.Run(string(from), func(t *testing.T) {
+			root := newStore(t)
+			seed(t, root, withAssignee(withState(mkIssue("iss001", "Owned work"), from), "alice"))
+
+			out, err := openAt(t, root).Transition("iss001", issue.StateTodo)
+			if err != nil {
+				t.Fatalf("Transition: %v", err)
+			}
+			if out.Issue.Assignee != "" {
+				t.Errorf("assignee after todo = %q, want cleared", out.Issue.Assignee)
+			}
+			if out.Previous.Assignee != "alice" {
+				t.Errorf("previous assignee = %q, want alice (who held it)", out.Previous.Assignee)
+			}
+			detail, err := open(t, root).Get("iss001")
+			if err != nil {
+				t.Fatalf("Get after Transition: %v", err)
+			}
+			if detail.Issue.Assignee != "" {
+				t.Errorf("persisted assignee = %q, want cleared", detail.Issue.Assignee)
+			}
+		})
 	}
 }
 
@@ -121,6 +132,26 @@ func TestTransitionToTheCurrentStateWritesNothing(t *testing.T) {
 		t.Errorf("updated = %s, want unchanged %s (no bump on a no-op)", out.Issue.Updated, fixedTime)
 	}
 	if after := fileOf(t, root, "iss001", "Some work"); after != before {
+		t.Errorf("a no-op transition rewrote the file:\nbefore:\n%s\nafter:\n%s", before, after)
+	}
+}
+
+// The assignee clearing belongs to entering todo, not to being asked for it: a
+// transition to the state an issue already holds is a pure no-op, so an
+// already-todo issue keeps its assignee — unassigning is update's, not reopen's.
+func TestTransitionToTodoOfATodoIssueKeepsTheAssignee(t *testing.T) {
+	root := newStore(t)
+	seed(t, root, withAssignee(mkIssue("iss001", "Claimed but unstarted"), "alice"))
+	before := fileOf(t, root, "iss001", "Claimed but unstarted")
+
+	out, err := openAt(t, root).Transition("iss001", issue.StateTodo)
+	if err != nil {
+		t.Fatalf("Transition: %v", err)
+	}
+	if out.Changed || out.Issue.Assignee != "alice" {
+		t.Errorf("changed/assignee = %v/%q, want false/alice: a no-op must not unassign", out.Changed, out.Issue.Assignee)
+	}
+	if after := fileOf(t, root, "iss001", "Claimed but unstarted"); after != before {
 		t.Errorf("a no-op transition rewrote the file:\nbefore:\n%s\nafter:\n%s", before, after)
 	}
 }
@@ -243,23 +274,29 @@ func TestStartOnOwnInProgressIssueWritesNothing(t *testing.T) {
 	}
 }
 
-func TestStartRefusesAClosedIssue(t *testing.T) {
+// A closed issue is resurrected into active work in one move: starting it
+// claims it and puts it in progress, with no reopen dance in between. Work
+// begins here too, so its unmet dependencies are reported like any other start.
+func TestStartResurrectsAClosedIssue(t *testing.T) {
 	for _, state := range []issue.State{issue.StateDone, issue.StateCancelled} {
 		t.Run(string(state), func(t *testing.T) {
 			root := newStore(t)
-			seed(t, root, withState(mkIssue("iss001", "Closed"), state))
-			before := fileOf(t, root, "iss001", "Closed")
+			seed(t, root, withState(mkIssue("dep001", "Prerequisite"), issue.StateInProgress))
+			seed(t, root, withDeps(withState(mkIssue("iss001", "Closed"), state), "dep001"))
 
-			_, err := openAt(t, root).Start("iss001", "alice", false)
-			var illegal *core.IllegalTransitionError
-			if !errors.As(err, &illegal) {
-				t.Fatalf("Start of a %s issue = %v, want *IllegalTransitionError", state, err)
+			out, err := openAt(t, root).Start("iss001", "alice", false)
+			if err != nil {
+				t.Fatalf("Start of a %s issue: %v", state, err)
 			}
-			if illegal.From != state || illegal.To != issue.StateInProgress {
-				t.Errorf("error = %+v, want from %s to in-progress", illegal, state)
+			if !out.Changed || out.Issue.State != issue.StateInProgress || out.Issue.Assignee != "alice" {
+				t.Errorf("changed/state/assignee = %v/%s/%s, want true/in-progress/alice",
+					out.Changed, out.Issue.State, out.Issue.Assignee)
 			}
-			if after := fileOf(t, root, "iss001", "Closed"); after != before {
-				t.Errorf("a refused start rewrote the %s file", state)
+			if out.Previous.State != state {
+				t.Errorf("previous state = %s, want %s", out.Previous.State, state)
+			}
+			if len(out.UnmetDependencies) != 1 || out.UnmetDependencies[0].ID != "dep001" {
+				t.Errorf("unmet dependencies = %v, want dep001: this call began the work", out.UnmetDependencies)
 			}
 		})
 	}

@@ -1,24 +1,21 @@
 package cli
 
 import (
-	"errors"
 	"fmt"
 
-	"github.com/builtbystef/beaver-backlog/internal/core"
 	"github.com/builtbystef/beaver-backlog/internal/issue"
 	"github.com/builtbystef/beaver-backlog/internal/output"
 )
 
 // verb is a lifecycle transition as this CLI presents it: the state it sets and
-// the wording for each way the core can answer. Which states may reach the
-// target, and whether a call changes anything, is the core's business.
+// the wording for each way the core can answer. Every move is legal — whether a
+// call changes anything is the core's business.
 type verb struct {
 	name   string      // command name, used in usage diagnostics
 	target issue.State // state a successful transition sets
 
 	did     string // human confirmation on a real transition; one %s (id)
 	already string // human line when already at target; one %s (id)
-	reject  string // stderr guidance when the current state forbids it; two %s (id, current state)
 }
 
 var (
@@ -27,21 +24,18 @@ var (
 		target:  issue.StateDone,
 		did:     "Marked %s done",
 		already: "%s is already done",
-		reject:  "%s is %s; reopen it first to mark it done",
 	}
 	verbCancel = verb{
 		name:    "cancel",
 		target:  issue.StateCancelled,
 		did:     "Cancelled %s",
 		already: "%s is already cancelled",
-		reject:  "%s is %s; reopen it first to cancel it",
 	}
 	verbReopen = verb{
 		name:    "reopen",
 		target:  issue.StateTodo,
 		did:     "Reopened %s",
 		already: "%s is already todo",
-		reject:  "%s is %s, not closed; reopen only restores done or cancelled issues",
 	}
 )
 
@@ -51,8 +45,7 @@ func cmdReopen(env Env, args []string) int { return runTransition(env, args, ver
 
 // runTransition is the shared engine behind done, cancel, and reopen: it parses
 // the invocation, asks the core to move the issue to the verb's target state,
-// and renders whichever of the three answers came back — moved, already there,
-// or refused by the current state.
+// and renders whichever answer came back — moved, or already there.
 func runTransition(env Env, args []string, v verb) int {
 	fs, formatFlag := newFlagSet(env, v.name)
 	pos, ok := parseArgs(fs, args)
@@ -77,11 +70,6 @@ func runTransition(env Env, args []string, v verb) int {
 	out, err := svc.Transition(ref, v.target)
 	warnSkipped(env, out.Warnings)
 	if err != nil {
-		var illegal *core.IllegalTransitionError
-		if errors.As(err, &illegal) {
-			errf(env, v.reject, illegal.ID, illegal.From)
-			return exitUsage
-		}
 		return coreError(env, err)
 	}
 
