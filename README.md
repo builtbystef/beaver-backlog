@@ -122,13 +122,13 @@ writes are attributed just like CLI writes (`beaver serve --as <actor>`).
 
 ### Screenshots
 
-_Placeholders for now — the captures land in `docs/screenshots/` shortly._
-
-|                     The board                     |                      The graph                      |
-| :-----------------------------------------------: | :-------------------------------------------------: |
-|    ![The board view](docs/screenshots/board.png)    | ![The dependency graph](docs/screenshots/graph.png) |
-|                  **The issue list**                 |                  **An issue page**                  |
-|    ![The issue list](docs/screenshots/list.png)     |    ![An issue page](docs/screenshots/issue.png)     |
+|                          The board                          |                             The graph                             |
+| :---------------------------------------------------------: | :---------------------------------------------------------------: |
+|    ![The board view](screenshots/background/light-board.png)    | ![The dependency graph](screenshots/background/light-graph.png)   |
+|                      **The issue list**                       |                         **An issue page**                         |
+| ![The issue list](screenshots/background/light-list.png) | ![An issue page](screenshots/background/light-detail-research.png) |
+|                     **Dark mode: board**                      |                        **Dark mode: graph**                       |
+| ![The board in dark mode](screenshots/background/dark-board.png) | ![The graph in dark mode](screenshots/background/dark-graph.png) |
 
 ## The issue file
 
