@@ -157,7 +157,8 @@ note flags:
   --as <actor>                attribute the note to this actor (overrides detection)
 
 serve flags:
-  --port <n>                  port to listen on (default 2328; 0 picks a free one)
+  --port <n>                  port to listen on (default 2328, scanning forward
+                              if taken; 0 picks a free one)
   --as <actor>                attribute web writes to this actor (overrides detection)
 
 doctor flags:
