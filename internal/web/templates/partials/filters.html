@@ -9,13 +9,17 @@
      filter. A refused reference forces the bar open, because an error nobody
      can see is an error nobody can fix. */}}
 <details class="filters-shell"{{if .Refused}} open{{end}}>
-  <summary>
+  {{/* The summary carries an id so the form's htmx request can refresh the
+       chips out-of-band: the swap below only replaces #issues, and chips that
+       kept saying yesterday's filters would be worse than none. */}}
+  <summary id="filters-summary">
     <span class="filters-word">Filters</span>
     {{range .Chips}}<a class="chip" href="{{.RemoveURL}}" title="Remove this filter">{{.Label}} <span aria-hidden="true">×</span></a>{{end}}
     {{if .Active}}<a class="clear" href="{{.Action}}">Clear all</a>{{end}}
   </summary>
 <form class="filters" method="get" action="{{.Action}}"
       hx-get="{{.Action}}" hx-target="#issues" hx-select="#issues" hx-swap="outerHTML"
+      hx-select-oob="#filters-summary"
       hx-push-url="true"
       hx-trigger="submit, change, input changed delay:300ms from:.filter-text"
       aria-label="Filter issues">

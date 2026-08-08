@@ -92,7 +92,7 @@ func (s *server) failDrop(w http.ResponseWriter, r *http.Request, ref string, wa
 	if errors.As(err, &claimed) {
 		// The core states the fact; where to go from here is this interface's to
 		// say, since the web deliberately offers no way to steal.
-		s.refuse(w, r, http.StatusConflict, err.Error()+" — steal it with `beaver start "+claimed.ID+" --force`.")
+		s.refuse(w, r, http.StatusConflict, err.Error()+". Steal it with `beaver start "+claimed.ID+" --force`.")
 		return
 	}
 	s.failRef(w, r, ref, warnings, err)

@@ -78,11 +78,17 @@
 
 * { box-sizing: border-box; }
 
+/* The whole UI's scale in one place: every size below is rem, so the root
+   percentage is the only knob — 110% draws the app as a browser at default
+   scale would draw it zoomed to 110%. */
+
+html { font-size: 110%; }
+
 body {
   margin: 0;
   background: var(--bg);
   color: var(--text);
-  font: 15px/1.5 ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  font: 0.9375rem/1.5 ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
 }
 
 /* One focus story for everything: the ring only a keyboard summons, never
@@ -166,7 +172,7 @@ body {
 
 .brand:hover { color: var(--accent); }
 
-.brand-logo { display: block; height: 36px; width: auto; }
+.brand-logo { display: block; height: 3.5rem; width: auto; }
 
 main { margin: 0 auto; max-width: var(--page-max); padding: 1.5rem var(--gutter); }
 
@@ -675,8 +681,11 @@ dialog::backdrop { background: rgba(0, 0, 0, 0.6); }
   display: flex;
   flex-wrap: wrap;
   gap: 0.5rem;
+  user-select: none;
   width: fit-content;
 }
+
+.filters-shell summary:hover .filters-word { color: var(--text); }
 
 /* display:flex costs the summary its marker, so the word carries its own. */
 .filters-word::before { content: "▸ "; }
@@ -698,15 +707,16 @@ dialog::backdrop { background: rgba(0, 0, 0, 0.6); }
 .chip span { color: var(--muted); }
 
 .filters {
-  align-items: flex-end;
+  align-items: flex-start;
   background: var(--panel);
   border: 1px solid var(--line);
-  border-radius: 6px;
+  border-radius: 10px;
+  box-shadow: var(--shadow);
   display: flex;
   flex-wrap: wrap;
-  gap: 0.75rem 1.25rem;
-  margin: 0.5rem 0 0;
-  padding: 0.75rem 1rem;
+  gap: 1rem 2rem;
+  margin: 0.75rem 0 0;
+  padding: 1rem 1.25rem;
 }
 
 /* With the script present every control submits itself, so the button would be
@@ -718,33 +728,77 @@ dialog::backdrop { background: rgba(0, 0, 0, 0.6); }
   border: none;
   display: flex;
   flex-wrap: wrap;
-  gap: 0.5rem;
+  gap: 0.4rem;
   margin: 0;
   padding: 0;
 }
 
+/* Floating the legend gives up its fieldset magic, so it lays out as an
+   ordinary first child — a heading row above the controls, aligned across
+   every group instead of hovering wherever the browser puts it. */
 .filter-group legend {
   color: var(--muted);
+  float: left;
   font-size: 0.7rem;
-  letter-spacing: 0.04em;
+  font-weight: 600;
+  letter-spacing: 0.06em;
   padding: 0;
   text-transform: uppercase;
+  width: 100%;
 }
 
+/* Each checkbox wears its label as a pill: the box itself stays in the tree
+   for the form and the screen reader, but the pill carries the look — quiet
+   until checked, when the accent fills it and a check names the state for
+   anyone who cannot lean on the colour. */
 .filter-group label {
   align-items: center;
+  background: var(--bg);
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  cursor: pointer;
   display: flex;
   gap: 0.25rem;
+  padding: 0.2rem 0.7rem;
+  transition: border-color 0.12s, background-color 0.12s, color 0.12s;
   white-space: nowrap;
+}
+
+.filter-group label:hover { border-color: var(--accent); }
+
+.filter-group label input {
+  height: 1px;
+  margin: 0;
+  opacity: 0;
+  pointer-events: none;
+  position: absolute;
+  width: 1px;
+}
+
+.filter-group label:has(input:checked) {
+  background: var(--accent-soft);
+  border-color: var(--accent);
+}
+
+.filter-group label:has(input:checked)::before {
+  color: var(--accent);
+  content: "✓";
+  font-weight: 700;
+}
+
+.filter-group label:has(input:focus-visible) {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
 }
 
 .filters input[type="text"], .filters input[type="search"], .filters select {
   background: var(--bg);
   border: 1px solid var(--line);
-  border-radius: 6px;
+  border-radius: 8px;
   color: var(--text);
   font: inherit;
-  padding: 0.25rem 0.5rem;
+  font-size: 0.875rem;
+  padding: 0.25rem 0.6rem;
   width: 10rem;
 }
 
@@ -756,7 +810,7 @@ dialog::backdrop { background: rgba(0, 0, 0, 0.6); }
   outline: none;
 }
 
-.filter-actions { align-items: center; display: flex; gap: 0.75rem; margin-left: auto; }
+.filter-actions { align-items: center; align-self: flex-end; display: flex; gap: 0.75rem; margin-left: auto; }
 
 /* A reference the bar carries that names no issue: said where it was typed, so
    the view it belongs to stays on screen. */

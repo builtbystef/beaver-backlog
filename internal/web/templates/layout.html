@@ -16,7 +16,7 @@
 </head>
 <body>
 <header class="topbar">
-  <a class="brand" href="/"><img class="brand-logo" src="/assets/logo.png" alt="" width="55" height="36"> Beaver Backlog</a>
+  <a class="brand" href="/"><img class="brand-logo" src="/assets/logo.svg" alt="Beaver Backlog" width="126" height="56"></a>
   <nav>
     <a href="/"{{if eq .Section "board"}} class="active" aria-current="page"{{end}}>Board</a>
     <a href="/issues"{{if eq .Section "issues"}} class="active" aria-current="page"{{end}}>Issues</a>
@@ -30,7 +30,7 @@
 </header>
 {{/* What the live listener says when the store stops answering its polls:
      hidden while they succeed, shown by live.js, never rendered without it. */}}
-<p id="live-status" hidden>Live updates disconnected — retrying…</p>
+<p id="live-status" hidden>Live updates disconnected; retrying…</p>
 {{/* The view is one element so the live listener can replace it whole with a
      freshly rendered fragment of the same address — banner and all, since a
      file repaired outside the browser should stop being complained about. */}}
@@ -47,9 +47,9 @@
 {{with .Notice}}<p class="notice" role="status">{{.}}</p>{{end}}
 {{with .Warnings}}
 <section class="banner" role="status">
-  <p>{{len .}} file(s) skipped — not usable issues. Run <code>beaver doctor</code>.</p>
+  <p>{{len .}} file(s) skipped: not usable issues. Run <code>beaver doctor</code>.</p>
   <ul>
-    {{range .}}<li><code>{{.Path}}</code> — {{.Reason}}</li>{{end}}
+    {{range .}}<li><code>{{.Path}}</code>: {{.Reason}}</li>{{end}}
   </ul>
 </section>
 {{end}}

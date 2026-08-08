@@ -17,7 +17,7 @@
   </div>
   <dialog id="confirm-delete">
     <form method="dialog">
-      <p>Delete <span class="id">{{$iss.ID}}</span> — {{$iss.Title}}?</p>
+      <p>Delete <span class="id">{{$iss.ID}}</span>, {{$iss.Title}}?</p>
       <p class="hint">The file is removed outright; version control is the only undo.</p>
       <p class="actions">
         <button value="cancel">Cancel</button>
@@ -47,7 +47,7 @@
     <h2>Relationships</h2>
     <dl class="fields">
       <dt>Status</dt><dd>
-        {{if .Rel.Stuck}}stuck — waiting on a cancelled issue
+        {{if .Rel.Stuck}}stuck: waiting on a cancelled issue
         {{else if .Rel.Ready}}ready
         {{else if .Rel.Blocked}}blocked
         {{else}}{{template "none"}}{{end}}

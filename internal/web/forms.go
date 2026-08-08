@@ -441,7 +441,7 @@ func priorityOptions(current string) []option {
 	for i, level := range priorityLevels {
 		label := level
 		if level == "none" {
-			label = "—"
+			label = "–"
 		}
 		opts[i] = option{Value: level, Label: label, Selected: level == sel}
 	}

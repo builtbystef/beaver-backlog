@@ -1,12 +1,33 @@
-# 🦫 Beaver Backlog
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="internal/web/assets/logo.svg">
+    <img src="docs/assets/logo-full.svg" alt="Beaver Backlog" width="440">
+  </picture>
+</p>
 
-[![CI](https://github.com/builtbystef/beaver-backlog/actions/workflows/ci.yml/badge.svg)](https://github.com/builtbystef/beaver-backlog/actions/workflows/ci.yml)
-[![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
-[![Go Reference](https://pkg.go.dev/badge/github.com/builtbystef/beaver-backlog.svg)](https://pkg.go.dev/github.com/builtbystef/beaver-backlog)
+<p align="center">
+  <b>A local-first issue tracker that stores issues as Markdown files inside your project.</b><br>
+  Humans and coding agents coordinate work through the files themselves.<br>
+  No external service, account, or database needed.
+</p>
 
-**Beaver Backlog is a local-first issue tracker that stores issues as Markdown
-files inside your project.** Humans and coding agents coordinate work through
-the files themselves. No external service, account, or database needed.
+<p align="center">
+  <a href="https://github.com/builtbystef/beaver-backlog/actions/workflows/ci.yml"><img src="https://github.com/builtbystef/beaver-backlog/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
+  <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue.svg" alt="License: MIT"></a>
+  <a href="https://pkg.go.dev/github.com/builtbystef/beaver-backlog"><img src="https://pkg.go.dev/badge/github.com/builtbystef/beaver-backlog.svg" alt="Go Reference"></a>
+</p>
+
+<p align="center">
+  <a href="#installation">Install</a> ·
+  <a href="#quick-start">Quick start</a> ·
+  <a href="#the-web-ui">Web UI</a> ·
+  <a href="#screenshots">Screenshots</a> ·
+  <a href="#commands">Commands</a> ·
+  <a href="#for-scripts-and-agents">Agents</a> ·
+  <a href="#documentation">Docs</a>
+</p>
+
+---
 
 ```console
 $ beaver create "Login form rejects valid passwords" --label bug --priority high
@@ -27,8 +48,9 @@ with your code:
   merges cleanly.
 - **Agent-friendly**: coding agents read, create, and update issues through
   the same files as you.
-- **Nothing hidden**: the files are the only source of truth. The CLI is a
-  thin client over them; hand-editing an issue file is a first-class operation.
+- **Nothing hidden**: the files are the only source of truth. The CLI and the
+  web UI are thin clients over them; hand-editing an issue file is a
+  first-class operation.
 
 ## Installation
 
@@ -77,6 +99,37 @@ State changes are verbs of their own (`start`, `done`, `cancel`, `reopen`);
 every other field — title, description, assignee, priority, labels,
 relationships — changes through `beaver update`.
 
+## The web UI
+
+`beaver serve` starts a local web UI on loopback (default port 2328) over the
+same files. No daemon and no build step; stop it with Ctrl-C.
+
+- **Board** — issues as cards in state columns; drag a card to move it.
+- **List** — the same issues as a table, sharing one filter bar with the board
+  (label, priority, assignee, text search).
+- **Graph** — the dependency graph as a server-rendered picture: layered
+  layout, parent clusters, dependency arrows; pan, zoom, and filter it.
+- **Issue pages** — rendered Markdown descriptions and notes, every field
+  editable, plus creating new issues in the browser.
+- **Doctor** — store health as a page, with the same safe repair as
+  `doctor --fix`.
+
+Open pages notice when the store changes underneath them — a pull, a hand
+edit, another actor — and redraw themselves. Every control is a plain HTML
+form first, so the UI keeps working with JavaScript disabled; scripts only
+add polish on top. The UI follows your system's light or dark theme, and
+writes are attributed just like CLI writes (`beaver serve --as <actor>`).
+
+### Screenshots
+
+_Placeholders for now — the captures land in `docs/screenshots/` shortly._
+
+|                     The board                     |                      The graph                      |
+| :-----------------------------------------------: | :-------------------------------------------------: |
+|    ![The board view](docs/screenshots/board.png)    | ![The dependency graph](docs/screenshots/graph.png) |
+|                  **The issue list**                 |                  **An issue page**                  |
+|    ![The issue list](docs/screenshots/list.png)     |    ![An issue page](docs/screenshots/issue.png)     |
+
 ## The issue file
 
 Each issue is one file in `.beaver/issues/`, named `<id>-<slug>.md` for
@@ -110,7 +163,8 @@ The frontmatter is machine-owned (Beaver Backlog keeps it formatted,
 and unknown keys you add by hand are preserved verbatim, never interpreted);
 the issue body is yours (Beaver Backlog only ever appends notes to it). State is one of
 `todo`, `in-progress`, `done`, or `cancelled` — cancelled meaning deliberately
-abandoned, kept visible so nobody re-files it.
+abandoned, kept visible so nobody re-files it. Any state may move to any
+other; the tracker records reality rather than enforcing a workflow.
 
 ## Commands
 

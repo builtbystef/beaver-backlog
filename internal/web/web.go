@@ -215,7 +215,7 @@ func (s *server) fail(w http.ResponseWriter, r *http.Request, err error) {
 	if errors.Is(err, core.ErrNoStore) {
 		s.render(w, r, "error.html", http.StatusNotFound, errorPage{
 			page:    s.page("No store", nil),
-			Message: "No Beaver Backlog store here any more — it may return with the next checkout.",
+			Message: "No Beaver Backlog store here any more; it may return with the next checkout.",
 		})
 		return
 	}
