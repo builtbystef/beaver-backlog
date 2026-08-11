@@ -101,8 +101,9 @@ relationships — changes through `beaver update`.
 
 ## The web UI
 
-`beaver serve` starts a local web UI on loopback (default port 2328) over the
-same files. No daemon and no build step; stop it with Ctrl-C.
+`beaver serve` starts a local web UI on loopback over the same files. It uses
+port 2328 by default and scans forward if that port is occupied (override it
+with `--port`). No daemon and no build step; stop it with Ctrl-C.
 
 - **Board** — issues as cards in state columns; drag a card to move it.
 - **List** — the same issues as a table, sharing one filter bar with the board
@@ -311,15 +312,22 @@ never removes data.
 
 - [`docs/GLOSSARY.md`](docs/GLOSSARY.md) — the project's language: what an
   issue, actor, claim, and note precisely mean.
+- [`docs/TRACKER.md`](docs/TRACKER.md) — the conventions this repository uses
+  to track its own work with Beaver Backlog.
 - [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) — the modules and the seams
   between them.
+- [`docs/CODING_STANDARDS.md`](docs/CODING_STANDARDS.md) — the coding and test
+  conventions used by contributors.
 - [`docs/adr/`](docs/adr/) — the architecture decisions behind the design and
   their tradeoffs.
 
 ## Status
 
-Beaver Backlog is pre-1.0. The CLI works and is well tested, but the file format
-and command surface may still change without a deprecation cycle.
+Beaver Backlog is now at **1.0.0**. It will continue to evolve, but compatibility
+matters: changes to the issue file format, commands, flags, machine-readable
+output, and other public behavior will aim to remain backward-compatible.
+Unavoidable breaking changes may still happen, but they will be kept to a
+minimum and called out clearly.
 
 ## Contributing
 
