@@ -1,9 +1,7 @@
 {
   "$schema": "https://raw.githubusercontent.com/gotgenes/pi-packages/main/packages/pi-permission-system/schemas/permissions.schema.json",
-
   "yoloMode": false,
   "permissionReviewLog": true,
-
   "permission": {
     "*": "allow",
     "path": {
@@ -56,6 +54,6 @@
       "kubectl apply*": "deny",
       "kubectl delete*": "deny"
     },
-    "external_directory": "deny"
+    "external_directory": "allow"
   }
 }

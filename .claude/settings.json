@@ -46,7 +46,8 @@
         "~/go/pkg/mod"
       ],
       "denyWrite": [
-        "~/.cache/ccache"
+        "~/.cache/ccache",
+        "~/.cache/go-build"
       ]
     }
   },
