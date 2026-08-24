@@ -6,9 +6,6 @@
     "*": "allow",
     "path": {
       "*": "allow",
-      "*.env": "deny",
-      "*.env.*": "deny",
-      "*.env.example": "allow",
       "*.pem": "deny",
       "*.key": "deny",
       "*/site-packages/certifi/cacert.pem": "allow",
