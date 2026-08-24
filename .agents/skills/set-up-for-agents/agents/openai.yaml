@@ -1,0 +1,5 @@
+interface:
+  display_name: "Set Up For Agents"
+  short_description: "Set this repository up for coding agents: docs/, the tracker doc, and the entry files"
+policy:
+  allow_implicit_invocation: false

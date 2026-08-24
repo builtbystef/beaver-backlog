@@ -1,0 +1,5 @@
+interface:
+  display_name: "Create Plan"
+  short_description: "Interview to a full plan, or chart a roadmap of sessions"
+policy:
+  allow_implicit_invocation: false

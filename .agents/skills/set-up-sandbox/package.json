@@ -1,0 +1,9 @@
+{
+  "name": "set-up-sandbox-version-tracker",
+  "private": true,
+  "description": "Not an npm package. Mirrors the pinned Pi extension versions the skill was verified against, so Dependabot opens a PR when either ships a new release. A PR here is a review trigger, not an update: read the diff, re-verify the measured behaviors in SKILL.md, then bump the pins in ~/.pi/agent and in this file together.",
+  "dependencies": {
+    "pi-sandbox": "0.6.5",
+    "@gotgenes/pi-permission-system": "26.3.1"
+  }
+}

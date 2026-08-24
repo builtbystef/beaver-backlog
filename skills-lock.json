@@ -1,0 +1,95 @@
+{
+  "version": 1,
+  "skills": {
+    "advance-plan": {
+      "source": "builtbystef/skills",
+      "sourceType": "github",
+      "skillPath": "advance-plan/SKILL.md",
+      "computedHash": "ef85479e90e5f66818aba31c299ef1b058064143c31ea0ce7c8823aa03a5d9b6"
+    },
+    "create-issues": {
+      "source": "builtbystef/skills",
+      "sourceType": "github",
+      "skillPath": "create-issues/SKILL.md",
+      "computedHash": "89c76c8bd5ffc48c588663194e14b54987ecf03a1af6863a3713e6771f8b665c"
+    },
+    "create-plan": {
+      "source": "builtbystef/skills",
+      "sourceType": "github",
+      "skillPath": "create-plan/SKILL.md",
+      "computedHash": "ef3a325940dad963344d5b319da2ff7af4a433008245d6001f1064134b59970b"
+    },
+    "create-specification": {
+      "source": "builtbystef/skills",
+      "sourceType": "github",
+      "skillPath": "create-specification/SKILL.md",
+      "computedHash": "ab60f8c04402edbb8d2610039d3900ba2a55c562195ee8ea6918d7405ed34f04"
+    },
+    "grill-me": {
+      "source": "builtbystef/skills",
+      "sourceType": "github",
+      "skillPath": "grill-me/SKILL.md",
+      "computedHash": "1c9ee78fb692a62de0336e726dc14d4ad41031a440cc63132731f8bc51294759"
+    },
+    "handoff": {
+      "source": "builtbystef/skills",
+      "sourceType": "github",
+      "skillPath": "handoff/SKILL.md",
+      "computedHash": "fd3e47071dfe245b29d76a9826f885672624d19622c40fc10109f6202f0535c2"
+    },
+    "implement": {
+      "source": "builtbystef/skills",
+      "sourceType": "github",
+      "skillPath": "implement/SKILL.md",
+      "computedHash": "247045023805950c14221044cc1a3dc10a1a2ea35583f4ded6c1c6ef60a8b92d"
+    },
+    "implement-loop": {
+      "source": "builtbystef/skills",
+      "sourceType": "github",
+      "skillPath": "implement-loop/SKILL.md",
+      "computedHash": "e97300c3bfa67712f06f197018ecd724678d2c971aeccbb10c96ac410177d079"
+    },
+    "maintain-codebase": {
+      "source": "builtbystef/skills",
+      "sourceType": "github",
+      "skillPath": "maintain-codebase/SKILL.md",
+      "computedHash": "87fa756432c3df0858e923ec7cb0de3da2dacff8d48f4c7fe245277774ba6578"
+    },
+    "prototype": {
+      "source": "builtbystef/skills",
+      "sourceType": "github",
+      "skillPath": "prototype/SKILL.md",
+      "computedHash": "5c403a8f08d821d46c62e0eafbf388d40b094553142c9e72c610c10a558b62ac"
+    },
+    "research": {
+      "source": "builtbystef/skills",
+      "sourceType": "github",
+      "skillPath": "research/SKILL.md",
+      "computedHash": "da4e939c6d40bfff9f173935fb7bc45b974e12b49f24f9e1584a03899ccc2a3e"
+    },
+    "review-code": {
+      "source": "builtbystef/skills",
+      "sourceType": "github",
+      "skillPath": "review-code/SKILL.md",
+      "computedHash": "c3512ff336e123590b9c1e4fa9edc42d52f208ced293ed233b4c0f1c39e95e30"
+    },
+    "set-up-for-agents": {
+      "source": "builtbystef/skills",
+      "sourceType": "github",
+      "skillPath": "set-up-for-agents/SKILL.md",
+      "computedHash": "302a4a02e863fa232fa3c6ed0ecac22134afbf2a3aa7e9e3af7c2aac9f083261"
+    },
+    "set-up-sandbox": {
+      "source": "builtbystef/skills",
+      "sourceType": "github",
+      "skillPath": "set-up-sandbox/SKILL.md",
+      "computedHash": "7bd7f52d4105de7da1d1f51a3f467326cd9ce06d3a972c991c51a739046616e1"
+    },
+    "test": {
+      "source": "builtbystef/skills",
+      "sourceType": "github",
+      "skillPath": "test/SKILL.md",
+      "computedHash": "c48fc9458d9f3d4ea82e872ba364c844003fc8635fe916c90374e9a2aeed0fda"
+    }
+  }
+}

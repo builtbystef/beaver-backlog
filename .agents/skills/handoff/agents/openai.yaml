@@ -1,0 +1,5 @@
+interface:
+  display_name: "Handoff"
+  short_description: "Compact the session for a fresh one to continue"
+policy:
+  allow_implicit_invocation: false

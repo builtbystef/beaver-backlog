@@ -1,0 +1,5 @@
+interface:
+  display_name: "Review Code"
+  short_description: "Two-axis review: spec fidelity and coding standards"
+policy:
+  allow_implicit_invocation: true

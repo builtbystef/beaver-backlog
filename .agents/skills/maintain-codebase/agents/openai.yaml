@@ -1,0 +1,5 @@
+interface:
+  display_name: "Maintain Codebase"
+  short_description: "Audit maintainability drift, file issues"
+policy:
+  allow_implicit_invocation: false

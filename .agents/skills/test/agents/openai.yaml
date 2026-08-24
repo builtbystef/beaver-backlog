@@ -1,0 +1,5 @@
+interface:
+  display_name: "Test"
+  short_description: "The red-green TDD loop"
+policy:
+  allow_implicit_invocation: true

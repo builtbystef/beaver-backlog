@@ -1,0 +1,5 @@
+interface:
+  display_name: "Advance Plan"
+  short_description: "Advance a roadmap by one ready node"
+policy:
+  allow_implicit_invocation: false

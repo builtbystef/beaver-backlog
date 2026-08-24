@@ -1,0 +1,5 @@
+interface:
+  display_name: "Create Issues"
+  short_description: "Break a spec into tracer-bullet issues"
+policy:
+  allow_implicit_invocation: false

@@ -1,0 +1,5 @@
+interface:
+  display_name: "Create Specification"
+  short_description: "Turn session context into a spec document"
+policy:
+  allow_implicit_invocation: false

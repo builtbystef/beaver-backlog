@@ -1,0 +1,5 @@
+interface:
+  display_name: "Grill Me"
+  short_description: "Rounds of questions until a plan or design is settled"
+policy:
+  allow_implicit_invocation: true

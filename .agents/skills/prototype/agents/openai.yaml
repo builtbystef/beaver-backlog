@@ -1,0 +1,5 @@
+interface:
+  display_name: "Prototype"
+  short_description: "Throwaway code that answers a design question"
+policy:
+  allow_implicit_invocation: true
