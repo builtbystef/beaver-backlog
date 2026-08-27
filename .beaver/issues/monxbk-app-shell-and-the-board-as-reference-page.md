@@ -1,15 +1,13 @@
 ---
 id: monxbk
 title: App shell and the Board as reference page
-state: in-progress
+state: done
 priority: high
-labels:
-    - needs-review
 depends_on:
     - dpry4y
 parent: qf0mr2
 created: 2026-08-27T05:26:00Z
-updated: 2026-08-27T11:27:10Z
+updated: 2026-08-27T12:24:56Z
 ---
 
 ## What to build
@@ -105,3 +103,11 @@ slice starts.
 **claude** — 2026-08-27T11:27:10Z
 
 Left open on the visual criterion. Every other criterion is met and all four checks pass, but "the Board reads correctly in both the light and the dark palette" is a judgement nobody has made yet — this session could not reach a running server from a browser. Look at the Board with `go run ./cmd/beaver serve` in both palettes: close the issue to approve it, or note the changes you want and remove the needs-review label.
+
+**claude** — 2026-08-27T12:18:28Z
+
+Review feedback: the semantic marks were the reflex blue-green-amber-red set, which reads as generic. Redrawn in the accent's own family — warm stone, slate-teal, moss and dusty mauve for state; clay, ochre and stone for priority; rust, sage and plum for the conditions — in both palettes. The three families no longer share hues: stuck had been priority's amber and ready had been state's green, so two different facts about an issue wore the same colour. Token names are unchanged, so nothing below the table moved. Awaiting a second look before this closes.
+
+**claude** — 2026-08-27T12:24:56Z
+
+Reviewed in the browser and approved: the shell and the Board read correctly in both palettes, and the earth-family marks landed. Closing.
