@@ -92,6 +92,13 @@ A presentation of the store, not stored data — column membership is just the
 issue's state, and card order is the same fixed ordering every list uses.
 _Avoid_: Kanban view, Dashboard
 
+**Quick view**:
+A compact, in-place summary of an issue — its key fields and conditions —
+shown without leaving the current view, with a way through to the full issue
+page. Used on the graph view to inspect a node where navigating away would
+lose the reader's place.
+_Avoid_: Preview, Popup
+
 **Note**:
 A flat, append-only, attributed and timestamped entry appended to an issue's body
 — a coordination journal for humans and agents ("tried X, see commit abc; handing
