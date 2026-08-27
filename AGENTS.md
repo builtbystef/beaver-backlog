@@ -1,8 +1,3 @@
-# Beaver Backlog — agent guide
-
-Beaver Backlog is a local-first markdown issue tracker. This repo dogfoods its own
-tracker — project work is tracked in the `.beaver/` store right here.
-
 ## Checks
 
 Run whichever check the change touches as you go, and all of them before ending a session that changed code — every one must pass:
