@@ -5,6 +5,12 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>{{.Title}} · Beaver Backlog</title>
 <link rel="icon" type="image/png" href="/assets/favicon.png">
+{{/* The design system first, the sheet still drawing the pages it has not
+     reached yet second. app.css declares itself into the legacy cascade layer,
+     which sits above the reset and below the design system's own rules, so a
+     restyled page wins wherever the two meet. It goes when the last page is
+     redrawn on the tokens. */}}
+<link rel="stylesheet" href="/assets/tailwind.css">
 <link rel="stylesheet" href="/assets/app.css">
 {{/* The .js mark lets the stylesheet hide controls that only duplicate what a
      script already does — set before first paint, so nothing flickers away. */}}
@@ -14,44 +20,66 @@
 <script src="/assets/live.js" defer></script>
 <script src="/assets/ui.js" defer></script>
 </head>
-<body>
-<header class="topbar">
-  <a class="brand" href="/"><img class="brand-logo" src="/assets/logo.svg" alt="Beaver Backlog" width="126" height="56"></a>
-  <nav>
-    <a href="/"{{if eq .Section "board"}} class="active" aria-current="page"{{end}}>Board</a>
-    <a href="/issues"{{if eq .Section "issues"}} class="active" aria-current="page"{{end}}>Issues</a>
-    <a href="/graph"{{if eq .Section "graph"}} class="active" aria-current="page"{{end}}>Graph</a>
-    <a href="/issues/new"{{if eq .Section "new"}} class="active" aria-current="page"{{end}}>New issue</a>
-    <a href="/doctor"{{if eq .Section "doctor"}} class="active" aria-current="page"{{end}}>Doctor{{with len .Warnings}} <span class="nav-badge">{{.}}</span>{{end}}</a>
-  </nav>
-  <form class="search" action="/search" method="get" role="search">
-    <input type="search" name="q" value="{{.Search}}" placeholder="Reference or text…" aria-label="Search issues">
-  </form>
-</header>
-{{/* What the live listener says when the store stops answering its polls:
-     hidden while they succeed, shown by live.js, never rendered without it. */}}
-<p id="live-status" hidden>Live updates disconnected; retrying…</p>
-{{/* The view is one element so the live listener can replace it whole with a
-     freshly rendered fragment of the same address — banner and all, since a
-     file repaired outside the browser should stop being complained about. */}}
-<main id="view"{{if .Live}} data-live{{end}}>
-{{template "view" .}}
-</main>
+<body class="bg-canvas font-sans text-[0.9375rem] leading-normal text-ink">
+{{/* The shell: a sidebar that stays put and a main region beside it. Below the
+     sidebar's breakpoint the two stack, which is the same shell narrower —
+     never a bar across the top. */}}
+<div class="flex min-h-screen flex-col md:flex-row">
+  <aside class="shrink-0 border-b border-line bg-surface md:sticky md:top-0 md:h-screen md:w-60 md:border-r md:border-b-0">
+    <div class="flex h-full flex-col gap-4 px-4 py-4">
+      <a class="inline-flex w-fit rounded-md focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent" href="/">
+        <img class="h-10 w-auto" src="/assets/logo.svg" alt="Beaver Backlog" width="126" height="56">
+      </a>
+      <form action="/search" method="get" role="search">
+        <input class="w-full rounded-md border border-line bg-canvas px-2.5 py-1.5 text-sm text-ink placeholder:text-ink-subtle focus:border-accent focus:outline-none"
+               type="search" name="q" value="{{.Search}}" placeholder="Reference or text…" aria-label="Search issues">
+      </form>
+      <a class="rounded-md bg-accent px-3 py-1.5 text-center text-sm font-medium text-ink-on-accent hover:bg-accent-hover" href="/issues/new">New issue</a>
+      <nav aria-label="Views" class="flex flex-col gap-0.5">
+        {{range .Nav}}
+        <a href="{{.Href}}"
+           class="flex items-center justify-between gap-2 rounded-md px-2.5 py-1.5 text-sm transition-colors {{if .Current}}bg-accent-soft font-medium text-accent{{else}}text-ink-muted hover:bg-surface-hover hover:text-ink{{end}}"
+           {{- if .Current}} aria-current="page"{{end}}>
+          <span>{{.Label}}</span>
+          {{if .Badge}}<span class="rounded-chip bg-condition-stuck px-1.5 text-xs font-semibold text-condition-stuck-ink">{{.Badge}}</span>{{end}}
+        </a>
+        {{end}}
+      </nav>
+      {{/* The foot of the sidebar, where the theme control lands. */}}
+      <div class="mt-auto"></div>
+    </div>
+  </aside>
+  <div class="flex min-w-0 flex-1 flex-col">
+    {{/* What the live listener says when the store stops answering its polls:
+         hidden while they succeed, shown by live.js, never rendered without it. */}}
+    <p id="live-status" hidden
+       class="fixed right-4 bottom-4 z-10 rounded-md border border-line bg-condition-stuck px-3 py-1.5 text-xs text-condition-stuck-ink shadow-overlay">Live updates disconnected; retrying…</p>
+    {{/* The view is one element so the live listener can replace it whole with a
+         freshly rendered fragment of the same address — banner and all, since a
+         file repaired outside the browser should stop being complained about. */}}
+    <main id="view" class="min-w-0 flex-1 px-4 py-5 sm:px-6"{{if .Live}} data-live{{end}}>
+    {{template "view" .}}
+    </main>
+  </div>
+</div>
 {{block "scripts" .}}{{end}}
 </body>
 </html>
 
 {{/* view is everything a page redraws when the store changes: what the reader
-     is looking at, and whatever the scan has to say about the files behind it. */}}
+     is looking at, and whatever the scan has to say about the files behind it.
+     The toolbar sits above the content — the per-view controls a page fills in
+     for itself. */}}
 {{define "view"}}
-{{with .Notice}}<p class="notice" role="status">{{.}}</p>{{end}}
+{{with .Notice}}<p class="mb-4 rounded-md border border-line bg-accent-soft px-3 py-2 text-sm text-ink" role="status">{{.}}</p>{{end}}
 {{with .Warnings}}
-<section class="banner" role="status">
+<section class="mb-4 rounded-card border border-line bg-condition-stuck px-3 py-2 text-sm text-condition-stuck-ink" role="status">
   <p>{{len .}} file(s) skipped: not usable issues. Run <code>beaver doctor</code>.</p>
-  <ul>
+  <ul class="mt-1 list-disc pl-5">
     {{range .}}<li><code>{{.Path}}</code>: {{.Reason}}</li>{{end}}
   </ul>
 </section>
 {{end}}
+{{block "toolbar" .}}{{end}}
 {{template "content" .}}
 {{end}}

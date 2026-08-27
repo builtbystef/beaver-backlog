@@ -2,15 +2,16 @@
      its state and target addresses from, marked with the conditions the core
      derives — the same marks the graph's nodes wear. */}}
 {{define "card"}}
-<a class="card" draggable="true" data-issue="{{.ID}}" data-state="{{.State}}"
+<a class="card block rounded-card border border-line bg-surface-raised px-2.5 py-2 shadow-card transition-colors hover:border-accent"
+   draggable="true" data-issue="{{.ID}}" data-state="{{.State}}"
    data-state-url="/issues/{{.ID}}/state" data-start-url="/issues/{{.ID}}/start"
    href="/issues/{{.ID}}">
-  <span class="card-title">{{.Title}}{{template "condition" .Conditions}}</span>
-  <span class="card-meta">
+  <span class="block text-sm text-ink">{{.Title}}{{template "condition" .Conditions}}</span>
+  <span class="mt-1.5 flex flex-wrap items-center gap-1.5">
     <span class="id">{{.ID}}</span>
     {{with .Priority}}{{template "priority" .}}{{end}}
     {{range .Labels}}{{template "label" .}}{{end}}
-    {{with .Assignee}}<span class="assignee">{{.}}</span>{{end}}
+    {{with .Assignee}}<span class="text-xs text-ink-subtle">{{.}}</span>{{end}}
   </span>
 </a>
 {{end}}

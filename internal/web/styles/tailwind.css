@@ -7,6 +7,14 @@
    read the vendored minified htmx and mine it for class names, which is both
    noise and churn. The templates are the only place utilities are written. */
 
+/* The cascade layers, in the order they resolve. `legacy` is app.css, the
+   hand-written sheet still drawing the pages the redesign has not reached: it
+   sits above the reset, so those pages keep their looks, and below the design
+   system's own rules, so a restyled page wins wherever the two meet. The layer
+   goes when app.css does. */
+
+@layer theme, base, legacy, components, utilities;
+
 @import "tailwindcss" source(none);
 @source "../templates";
 
@@ -231,4 +239,96 @@
 
   --radius-card: 0.5rem;
   --radius-chip: 999px;
+}
+
+/* The base every page draws on: what the reset leaves undecided. Nothing here
+   names a colour of its own — the tokens above are the only table. */
+
+@layer base {
+  /* One focus story for everything: the ring only a keyboard summons, never
+     swallowed — a border changing colour is a hint, not a focus indicator. */
+  :focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+  }
+}
+
+/* The vocabulary the views share. These are classes rather than utilities
+   because the name is computed — a state's mark is `state-{{.State}}`, and a
+   template that spelled out every branch would say the palette twice — or
+   because a script adds the class at runtime, where no scanner can see it. */
+
+@layer components {
+  .state,
+  .priority,
+  .label,
+  .mark {
+    align-items: center;
+    border-radius: var(--radius-chip);
+    display: inline-flex;
+    font-size: 0.6875rem;
+    font-weight: 500;
+    line-height: 1.6;
+    padding: 0 0.45rem;
+    white-space: nowrap;
+  }
+
+  .state-todo { background: var(--state-todo); color: var(--state-todo-ink); }
+  .state-in-progress { background: var(--state-in-progress); color: var(--state-in-progress-ink); }
+  .state-done { background: var(--state-done); color: var(--state-done-ink); }
+  .state-cancelled { background: var(--state-cancelled); color: var(--state-cancelled-ink); }
+
+  .priority-urgent { background: var(--priority-urgent); color: var(--priority-urgent-ink); }
+  .priority-high { background: var(--priority-high); color: var(--priority-high-ink); }
+  .priority-medium { background: var(--priority-medium); color: var(--priority-medium-ink); }
+  .priority-low { background: var(--priority-low); color: var(--priority-low-ink); }
+
+  .label {
+    background: var(--surface-hover);
+    border: 1px solid var(--line);
+    color: var(--ink-muted);
+  }
+
+  /* The condition marks sit inline after a title, so they carry the gap the
+     surrounding text does not. */
+  .mark { margin-left: 0.35rem; }
+  .mark-ready { background: var(--condition-ready); color: var(--condition-ready-ink); }
+  .mark-blocked { background: var(--condition-blocked); color: var(--condition-blocked-ink); }
+  .mark-stuck { background: var(--condition-stuck); color: var(--condition-stuck-ink); }
+
+  .id {
+    color: var(--ink-subtle);
+    font-family: var(--font-mono);
+    font-size: 0.6875rem;
+  }
+
+  a.id:hover { color: var(--accent); }
+
+  /* The placeholder for a field with nothing in it — a dash rather than a
+     blank, so an empty cell still reads as answered. */
+  .none { color: var(--ink-subtle); }
+
+  /* Dragging: the card in hand fades, the column under the cursor lights up,
+     and a card waiting on the server dims until the board is redrawn. Every
+     class here is one a script adds, so no template holds it to be scanned. */
+  .card[draggable] { cursor: grab; }
+  .card.dragging { opacity: 0.4; }
+  .card.pending { opacity: 0.6; }
+
+  .column.over {
+    background: var(--accent-soft);
+    border-color: var(--accent);
+  }
+
+  /* A change the reader did not make gets a moment of light when the live view
+     redraws, so the store moving underneath the page is visible rather than
+     uncanny. */
+  @keyframes flash {
+    from {
+      background-color: var(--accent-soft);
+      box-shadow: 0 0 0 3px var(--accent-soft);
+    }
+  }
+
+  .changed { animation: flash 1.6s ease-out; }
 }

@@ -1,17 +1,29 @@
-{{define "content"}}
-<h1>Board</h1>
+{{/* The board: the four lifecycle columns, each a stack of cards a reader can
+     drag between them. The columns are what drag.js reads a drop's target off,
+     and #issues is what a filtered request swaps. */}}
+
+{{define "toolbar"}}
+<div class="mb-4 flex flex-wrap items-center gap-x-3 gap-y-2">
+  <h1 class="m-0 text-lg font-semibold tracking-tight text-ink">Board</h1>
+</div>
 {{template "filters" .Filters}}
-<p class="drop-error" role="alert" hidden></p>
-<div id="issues" class="board">
+{{end}}
+
+{{define "content"}}
+<p class="drop-error mb-3 rounded-md border border-line bg-condition-blocked px-3 py-2 text-sm text-condition-blocked-ink" role="alert" hidden></p>
+<div id="issues" class="board grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
   {{range .Columns}}
-  <section class="column" data-column="{{.State}}">
-    <h2>{{template "state" .State}} <span class="count">{{len .Cards}}</span></h2>
+  <section class="column flex flex-col gap-2 rounded-card border border-line bg-surface p-3" data-column="{{.State}}">
+    <h2 class="m-0 flex items-center gap-2 text-sm font-medium">
+      {{template "state" .State}}
+      <span class="text-xs text-ink-subtle">{{len .Cards}}</span>
+    </h2>
     {{range .Cards}}
     {{template "card" .}}
     {{else}}
-    <p class="empty">Nothing here.</p>
+    <p class="rounded-md border border-dashed border-line px-3 py-6 text-center text-xs text-ink-subtle">Nothing here.</p>
     {{end}}
-    {{if .ShowAllURL}}<a class="show-all" href="{{.ShowAllURL}}">Show all ({{.Hidden}} older)</a>{{end}}
+    {{if .ShowAllURL}}<a class="mt-1 text-xs text-accent hover:underline" href="{{.ShowAllURL}}">Show all ({{.Hidden}} older)</a>{{end}}
   </section>
   {{end}}
 </div>

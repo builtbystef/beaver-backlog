@@ -22,10 +22,8 @@ let scrolling = false;
 function autoscroll() {
   if (!dragged) { scrolling = false; return; }
   if (pointerY !== null) {
-    const topbar = document.querySelector(".topbar");
-    const top = (topbar ? topbar.offsetHeight : 0) + EDGE;
     const bottom = window.innerHeight - EDGE;
-    if (pointerY < top) window.scrollBy(0, -Math.min(24, (top - pointerY) / 3));
+    if (pointerY < EDGE) window.scrollBy(0, -Math.min(24, (EDGE - pointerY) / 3));
     else if (pointerY > bottom) window.scrollBy(0, Math.min(24, (pointerY - bottom) / 3));
   }
   requestAnimationFrame(autoscroll);

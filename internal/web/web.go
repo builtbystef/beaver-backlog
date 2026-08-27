@@ -142,7 +142,7 @@ func (s *server) list(w http.ResponseWriter, r *http.Request) {
 	p := s.page("Issues", listing.Warnings)
 	p.Live = true
 	p.Section = "issues"
-	// The header's box and the bar's text field are one filter, so a list
+	// The sidebar's box and the bar's text field are one filter, so a list
 	// reached by searching says what it was searched for in both places.
 	p.Search = f.Search
 	order := parseOrder(r.URL.Query())
@@ -240,12 +240,12 @@ func (s *server) fail(w http.ResponseWriter, r *http.Request, err error) {
 // must never cost the reader the rest of the store (ADR 0003).
 type page struct {
 	Title string
-	// Section names the topbar entry this page belongs under, so the nav can
+	// Section names the sidebar entry this page belongs under, so the nav can
 	// say where the reader is; empty on a page that is nowhere in particular,
-	// like an error.
+	// like a form or an error.
 	Section string
-	// Search is what the header's box shows, so a filtered list still says what
-	// it was filtered by; empty everywhere the reader has not searched.
+	// Search is what the sidebar's box shows, so a filtered list still says
+	// what it was filtered by; empty everywhere the reader has not searched.
 	Search string
 	// Notice is a one-line confirmation of something that already happened —
 	// what a redirect after a write has to say once the page it wrote about is
@@ -256,6 +256,36 @@ type page struct {
 	// they submit it, whatever the store does meanwhile.
 	Live     bool
 	Warnings []skipped
+}
+
+// navItem is one entry in the shell's sidebar navigation: where it goes, what
+// it says, whether the reader is already there, and the count it wears — only
+// Doctor wears one, and only when there is something to count.
+type navItem struct {
+	Href    string
+	Label   string
+	Current bool
+	Badge   int
+}
+
+// Nav is the sidebar's navigation, the same four views from every page. It is a
+// method on page rather than a field each handler fills, so a view that says
+// which section it belongs to has said everything the shell needs.
+//
+// Doctor carries the number of files the scan skipped, which makes store health
+// an ambient fact rather than a page to remember; a page that did not scan
+// simply shows no badge.
+func (p page) Nav() []navItem {
+	items := []navItem{
+		{Href: "/", Label: "Board"},
+		{Href: "/issues", Label: "Issues"},
+		{Href: "/graph", Label: "Graph"},
+		{Href: "/doctor", Label: "Doctor", Badge: len(p.Warnings)},
+	}
+	for i, section := range []string{"board", "issues", "graph", "doctor"} {
+		items[i].Current = section == p.Section
+	}
+	return items
 }
 
 // skipped is one invalid file named for a reader: its path relative to where the
