@@ -30,6 +30,23 @@ jobs:
         with:
           version: latest
 
+  css:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Rebuild the stylesheet
+        run: ./scripts/build-css.sh
+
+      - name: Fail on drift from the committed stylesheet
+        run: |
+          if ! git diff --quiet --exit-code -- internal/web/assets/tailwind.css; then
+            echo "internal/web/assets/tailwind.css is out of date." >&2
+            echo "Run ./scripts/build-css.sh and commit the result." >&2
+            git --no-pager diff -- internal/web/assets/tailwind.css >&2
+            exit 1
+          fi
+
   test:
     strategy:
       fail-fast: false

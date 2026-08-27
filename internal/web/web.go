@@ -6,8 +6,11 @@
 //
 // Pages are server-rendered html/template with every template and static asset
 // embedded in the binary, so serving needs no build step and no network
-// (ADR 0006). A core service is opened per request — a scan is cheap and the
-// files change underneath the browser — so no issue data outlives a response.
+// (ADR 0006). The design system's stylesheet is compiled from styles/ by a
+// pinned Tailwind CLI at dev time and its output committed, so building needs
+// nothing beyond Go either. A core service is opened per request — a scan is
+// cheap and the files change underneath the browser — so no issue data outlives
+// a response.
 package web
 
 import (
@@ -30,10 +33,13 @@ import (
 //go:embed templates/layout.html templates/pages/*.html templates/partials/*.html
 var templateFS embed.FS
 
-// assets holds the stylesheet and htmx 2.0.4 (vendored, pinned, unmodified from
+// assets holds the stylesheets and htmx 2.0.4 (vendored, pinned, unmodified from
 // unpkg; BSD-0). htmx earns its place because fragment refresh and inline form
 // posts become declarative attributes on server-rendered HTML instead of
 // hand-written fetch-and-swap JavaScript.
+//
+// tailwind.css is generated — the committed output of scripts/build-css.sh over
+// styles/tailwind.css. Edit the source, never this copy.
 //
 //go:embed assets
 var assetFS embed.FS

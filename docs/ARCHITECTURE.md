@@ -54,7 +54,10 @@ invokes a version-control system; committing the files is the operator's job.
   server-rendered `html/template`, with every template and static asset (the
   stylesheet, a vendored, pinned htmx, and hand-written scripts such as the
   board's drag-and-drop) embedded by `go:embed`: serving needs no build step and
-  no network (ADR 0006). Open pages stay live by polling: each page asks a tiny
+  no network (ADR 0006). The design system's stylesheet is the one thing built
+  rather than hand-written — `styles/tailwind.css` compiled by a pinned Tailwind
+  CLI (`scripts/build-css.sh`) into an asset that is committed, so `go build`
+  alone still suffices and CI fails on drift. Open pages stay live by polling: each page asks a tiny
   endpoint about once a second whether the store fingerprint it last saw still
   stands — the fingerprint travels as an ETag, and an unchanged store answers
   304 — and re-fetches its own view when it does not. The polls are deliberately

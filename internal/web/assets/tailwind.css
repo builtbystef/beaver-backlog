@@ -1,0 +1,392 @@
+/*! tailwindcss v4.3.3 | MIT License | https://tailwindcss.com */
+@layer properties;
+@layer theme, base, components, utilities;
+@layer theme {
+  :root, :host {
+    --font-sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+    --font-mono: ui-monospace, SFMono-Regular, Menlo, monospace;
+    --default-font-family: var(--font-sans);
+    --default-mono-font-family: var(--font-mono);
+  }
+}
+@layer base {
+  *, ::after, ::before, ::backdrop, ::file-selector-button {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+    border: 0 solid;
+  }
+  html, :host {
+    line-height: 1.5;
+    -webkit-text-size-adjust: 100%;
+    tab-size: 4;
+    font-family: var(--default-font-family, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', 'Noto Sans', Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji');
+    font-feature-settings: var(--default-font-feature-settings, normal);
+    font-variation-settings: var(--default-font-variation-settings, normal);
+    -webkit-tap-highlight-color: transparent;
+  }
+  hr {
+    height: 0;
+    color: inherit;
+    border-top-width: 1px;
+  }
+  abbr:where([title]) {
+    -webkit-text-decoration: underline dotted;
+    text-decoration: underline dotted;
+  }
+  h1, h2, h3, h4, h5, h6 {
+    font-size: inherit;
+    font-weight: inherit;
+  }
+  a {
+    color: inherit;
+    -webkit-text-decoration: inherit;
+    text-decoration: inherit;
+  }
+  b, strong {
+    font-weight: bolder;
+  }
+  code, kbd, samp, pre {
+    font-family: var(--default-mono-font-family, ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace);
+    font-feature-settings: var(--default-mono-font-feature-settings, normal);
+    font-variation-settings: var(--default-mono-font-variation-settings, normal);
+    font-size: 1em;
+  }
+  small {
+    font-size: 80%;
+  }
+  sub, sup {
+    font-size: 75%;
+    line-height: 0;
+    position: relative;
+    vertical-align: baseline;
+  }
+  sub {
+    bottom: -0.25em;
+  }
+  sup {
+    top: -0.5em;
+  }
+  table {
+    text-indent: 0;
+    border-color: inherit;
+    border-collapse: collapse;
+  }
+  :-moz-focusring:where(:not(iframe)) {
+    outline: auto;
+  }
+  progress {
+    vertical-align: baseline;
+  }
+  summary {
+    display: list-item;
+  }
+  ol, ul, menu {
+    list-style: none;
+  }
+  img, svg, video, canvas, audio, iframe, embed, object {
+    display: block;
+    vertical-align: middle;
+  }
+  img, video {
+    max-width: 100%;
+    height: auto;
+  }
+  button, input, select, optgroup, textarea, ::file-selector-button {
+    font: inherit;
+    font-feature-settings: inherit;
+    font-variation-settings: inherit;
+    letter-spacing: inherit;
+    color: inherit;
+    border-radius: 0;
+    background-color: transparent;
+    opacity: 1;
+  }
+  :where(select:is([multiple], [size])) optgroup {
+    font-weight: bolder;
+  }
+  :where(select:is([multiple], [size])) optgroup option {
+    padding-inline-start: 20px;
+  }
+  ::file-selector-button {
+    margin-inline-end: 4px;
+  }
+  ::placeholder {
+    opacity: 1;
+  }
+  @supports (not (-webkit-appearance: -apple-pay-button))  or (contain-intrinsic-size: 1px) {
+    ::placeholder {
+      color: currentcolor;
+      @supports (color: color-mix(in lab, red, red)) {
+        color: color-mix(in oklab, currentcolor 50%, transparent);
+      }
+    }
+  }
+  textarea {
+    resize: vertical;
+  }
+  ::-webkit-search-decoration {
+    -webkit-appearance: none;
+  }
+  ::-webkit-date-and-time-value {
+    min-height: 1lh;
+    text-align: inherit;
+  }
+  ::-webkit-datetime-edit {
+    display: inline-flex;
+  }
+  ::-webkit-datetime-edit-fields-wrapper {
+    padding: 0;
+  }
+  ::-webkit-datetime-edit, ::-webkit-datetime-edit-year-field, ::-webkit-datetime-edit-month-field, ::-webkit-datetime-edit-day-field, ::-webkit-datetime-edit-hour-field, ::-webkit-datetime-edit-minute-field, ::-webkit-datetime-edit-second-field, ::-webkit-datetime-edit-millisecond-field, ::-webkit-datetime-edit-meridiem-field {
+    padding-block: 0;
+  }
+  ::-webkit-calendar-picker-indicator {
+    line-height: 1;
+  }
+  :-moz-ui-invalid {
+    box-shadow: none;
+  }
+  button, input:where([type='button'], [type='reset'], [type='submit']), ::file-selector-button {
+    appearance: button;
+  }
+  ::-webkit-inner-spin-button, ::-webkit-outer-spin-button {
+    height: auto;
+  }
+  [hidden]:where(:not([hidden='until-found'])) {
+    display: none !important;
+  }
+}
+@layer utilities {
+  .hidden {
+    display: none;
+  }
+  .inline {
+    display: inline;
+  }
+  .transform {
+    transform: var(--tw-rotate-x,) var(--tw-rotate-y,) var(--tw-rotate-z,) var(--tw-skew-x,) var(--tw-skew-y,);
+  }
+  .filter {
+    filter: var(--tw-blur,) var(--tw-brightness,) var(--tw-contrast,) var(--tw-grayscale,) var(--tw-hue-rotate,) var(--tw-invert,) var(--tw-saturate,) var(--tw-sepia,) var(--tw-drop-shadow,);
+  }
+}
+:root {
+  color-scheme: light;
+  --canvas: #f7f7f8;
+  --surface: #ffffff;
+  --surface-raised: #ffffff;
+  --surface-hover: #f1f1f3;
+  --line: #e5e5e8;
+  --line-strong: #d3d3d8;
+  --ink: #18181b;
+  --ink-muted: #5f6169;
+  --ink-subtle: #8b8d96;
+  --ink-on-accent: #ffffff;
+  --accent: #c2521a;
+  --accent-hover: #a84512;
+  --accent-soft: #fbeee6;
+  --state-todo: #eceef1;
+  --state-todo-ink: #4a4d55;
+  --state-in-progress: #e2ecf8;
+  --state-in-progress-ink: #2f5480;
+  --state-done: #e3f0e7;
+  --state-done-ink: #2f6640;
+  --state-cancelled: #eeeaea;
+  --state-cancelled-ink: #6b6060;
+  --priority-urgent: #f9e3e0;
+  --priority-urgent-ink: #9a3b30;
+  --priority-high: #fbeddb;
+  --priority-high-ink: #8f5a1d;
+  --priority-medium: #e9edf3;
+  --priority-medium-ink: #4f5560;
+  --priority-low: #f1f1f3;
+  --priority-low-ink: #6f717a;
+  --condition-blocked: #f7e6e2;
+  --condition-blocked-ink: #a04434;
+  --condition-ready: #e3f0e7;
+  --condition-ready-ink: #2f6640;
+  --condition-stuck: #fbeddb;
+  --condition-stuck-ink: #8f5a1d;
+  --elevation-card: 0 1px 2px rgba(24, 24, 27, 0.06);
+  --elevation-overlay: 0 8px 30px rgba(24, 24, 27, 0.14);
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    color-scheme: dark;
+    --canvas: #0b0b0d;
+    --surface: #141417;
+    --surface-raised: #1b1b1f;
+    --surface-hover: #202024;
+    --line: #26262b;
+    --line-strong: #34343b;
+    --ink: #ededf0;
+    --ink-muted: #9b9ba4;
+    --ink-subtle: #6e6e78;
+    --ink-on-accent: #ffffff;
+    --accent: #e26628;
+    --accent-hover: #f0793d;
+    --accent-soft: #2c1c12;
+    --state-todo: #232329;
+    --state-todo-ink: #a5a6b0;
+    --state-in-progress: #17293d;
+    --state-in-progress-ink: #8fb6e4;
+    --state-done: #16301f;
+    --state-done-ink: #74c48c;
+    --state-cancelled: #2a2426;
+    --state-cancelled-ink: #a49398;
+    --priority-urgent: #35191a;
+    --priority-urgent-ink: #e59891;
+    --priority-high: #322512;
+    --priority-high-ink: #e0b170;
+    --priority-medium: #1f242c;
+    --priority-medium-ink: #9aa6b8;
+    --priority-low: #202024;
+    --priority-low-ink: #8a8c96;
+    --condition-blocked: #35191a;
+    --condition-blocked-ink: #e59891;
+    --condition-ready: #16301f;
+    --condition-ready-ink: #74c48c;
+    --condition-stuck: #322512;
+    --condition-stuck-ink: #e0b170;
+    --elevation-card: 0 1px 2px rgba(0, 0, 0, 0.5);
+    --elevation-overlay: 0 8px 30px rgba(0, 0, 0, 0.6);
+  }
+}
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --canvas: #0b0b0d;
+  --surface: #141417;
+  --surface-raised: #1b1b1f;
+  --surface-hover: #202024;
+  --line: #26262b;
+  --line-strong: #34343b;
+  --ink: #ededf0;
+  --ink-muted: #9b9ba4;
+  --ink-subtle: #6e6e78;
+  --ink-on-accent: #ffffff;
+  --accent: #e26628;
+  --accent-hover: #f0793d;
+  --accent-soft: #2c1c12;
+  --state-todo: #232329;
+  --state-todo-ink: #a5a6b0;
+  --state-in-progress: #17293d;
+  --state-in-progress-ink: #8fb6e4;
+  --state-done: #16301f;
+  --state-done-ink: #74c48c;
+  --state-cancelled: #2a2426;
+  --state-cancelled-ink: #a49398;
+  --priority-urgent: #35191a;
+  --priority-urgent-ink: #e59891;
+  --priority-high: #322512;
+  --priority-high-ink: #e0b170;
+  --priority-medium: #1f242c;
+  --priority-medium-ink: #9aa6b8;
+  --priority-low: #202024;
+  --priority-low-ink: #8a8c96;
+  --condition-blocked: #35191a;
+  --condition-blocked-ink: #e59891;
+  --condition-ready: #16301f;
+  --condition-ready-ink: #74c48c;
+  --condition-stuck: #322512;
+  --condition-stuck-ink: #e0b170;
+  --elevation-card: 0 1px 2px rgba(0, 0, 0, 0.5);
+  --elevation-overlay: 0 8px 30px rgba(0, 0, 0, 0.6);
+}
+@property --tw-rotate-x {
+  syntax: "*";
+  inherits: false;
+}
+@property --tw-rotate-y {
+  syntax: "*";
+  inherits: false;
+}
+@property --tw-rotate-z {
+  syntax: "*";
+  inherits: false;
+}
+@property --tw-skew-x {
+  syntax: "*";
+  inherits: false;
+}
+@property --tw-skew-y {
+  syntax: "*";
+  inherits: false;
+}
+@property --tw-blur {
+  syntax: "*";
+  inherits: false;
+}
+@property --tw-brightness {
+  syntax: "*";
+  inherits: false;
+}
+@property --tw-contrast {
+  syntax: "*";
+  inherits: false;
+}
+@property --tw-grayscale {
+  syntax: "*";
+  inherits: false;
+}
+@property --tw-hue-rotate {
+  syntax: "*";
+  inherits: false;
+}
+@property --tw-invert {
+  syntax: "*";
+  inherits: false;
+}
+@property --tw-opacity {
+  syntax: "*";
+  inherits: false;
+}
+@property --tw-saturate {
+  syntax: "*";
+  inherits: false;
+}
+@property --tw-sepia {
+  syntax: "*";
+  inherits: false;
+}
+@property --tw-drop-shadow {
+  syntax: "*";
+  inherits: false;
+}
+@property --tw-drop-shadow-color {
+  syntax: "*";
+  inherits: false;
+}
+@property --tw-drop-shadow-alpha {
+  syntax: "<percentage>";
+  inherits: false;
+  initial-value: 100%;
+}
+@property --tw-drop-shadow-size {
+  syntax: "*";
+  inherits: false;
+}
+@layer properties {
+  @supports ((-webkit-hyphens: none) and (not (margin-trim: inline))) or ((-moz-orient: inline) and (not (color:rgb(from red r g b)))) {
+    *, ::before, ::after, ::backdrop {
+      --tw-rotate-x: initial;
+      --tw-rotate-y: initial;
+      --tw-rotate-z: initial;
+      --tw-skew-x: initial;
+      --tw-skew-y: initial;
+      --tw-blur: initial;
+      --tw-brightness: initial;
+      --tw-contrast: initial;
+      --tw-grayscale: initial;
+      --tw-hue-rotate: initial;
+      --tw-invert: initial;
+      --tw-opacity: initial;
+      --tw-saturate: initial;
+      --tw-sepia: initial;
+      --tw-drop-shadow: initial;
+      --tw-drop-shadow-color: initial;
+      --tw-drop-shadow-alpha: 100%;
+      --tw-drop-shadow-size: initial;
+    }
+  }
+}

@@ -1,4 +1,5 @@
-/* The web UI's whole stylesheet: one embedded file, no build step (ADR 0006).
+/* The hand-written stylesheet the views draw on today, embedded as one file.
+   The design system replacing it is compiled into tailwind.css (ADR 0006).
 
    Every colour the UI uses is a variable here, dark by default, overridden as
    one block for a reader whose system asks for light — the same names either

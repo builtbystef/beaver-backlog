@@ -1,0 +1,234 @@
+/* The design system's source stylesheet. The Tailwind CLI compiles this into
+   ../assets/tailwind.css, which is committed and embedded — building the binary
+   never needs the CLI or a network (ADR 0006). Regenerate with
+   scripts/build-css.sh after touching this file or the templates.
+
+   Tailwind is told to scan nothing on its own: left to auto-detect, it would
+   read the vendored minified htmx and mine it for class names, which is both
+   noise and churn. The templates are the only place utilities are written. */
+
+@import "tailwindcss" source(none);
+@source "../templates";
+
+/* The palette. Every colour the UI draws is a name here, given a value once per
+   theme, so no rule below this table knows which theme it is drawing.
+
+   Light is the base. A reader whose system asks for dark gets the dark values
+   unless they have chosen light, and a reader who has chosen dark gets them
+   whatever the system says — the three states the theme control offers. */
+
+:root {
+  color-scheme: light;
+
+  /* Neutral surfaces: white panels on a light-gray canvas. */
+  --canvas: #f7f7f8;
+  --surface: #ffffff;
+  --surface-raised: #ffffff;
+  --surface-hover: #f1f1f3;
+  --line: #e5e5e8;
+  --line-strong: #d3d3d8;
+
+  /* Text, from the reading weight down to the quietest label. */
+  --ink: #18181b;
+  --ink-muted: #5f6169;
+  --ink-subtle: #8b8d96;
+  --ink-on-accent: #ffffff;
+
+  /* Beaver orange: the one saturated colour, reserved for brand and for
+     anything the reader can act on. */
+  --accent: #c2521a;
+  --accent-hover: #a84512;
+  --accent-soft: #fbeee6;
+
+  /* Semantic marks: a tinted chip and the ink that stays readable on it. Muted
+     on purpose — a board of them must not read as a board of alerts. */
+  --state-todo: #eceef1;
+  --state-todo-ink: #4a4d55;
+  --state-in-progress: #e2ecf8;
+  --state-in-progress-ink: #2f5480;
+  --state-done: #e3f0e7;
+  --state-done-ink: #2f6640;
+  --state-cancelled: #eeeaea;
+  --state-cancelled-ink: #6b6060;
+
+  --priority-urgent: #f9e3e0;
+  --priority-urgent-ink: #9a3b30;
+  --priority-high: #fbeddb;
+  --priority-high-ink: #8f5a1d;
+  --priority-medium: #e9edf3;
+  --priority-medium-ink: #4f5560;
+  --priority-low: #f1f1f3;
+  --priority-low-ink: #6f717a;
+
+  --condition-blocked: #f7e6e2;
+  --condition-blocked-ink: #a04434;
+  --condition-ready: #e3f0e7;
+  --condition-ready-ink: #2f6640;
+  --condition-stuck: #fbeddb;
+  --condition-stuck-ink: #8f5a1d;
+
+  /* Elevation reads as a shadow in light and as a lighter surface in dark, so
+     it belongs to the palette rather than to the rule that lifts something. */
+  --elevation-card: 0 1px 2px rgba(24, 24, 27, 0.06);
+  --elevation-overlay: 0 8px 30px rgba(24, 24, 27, 0.14);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    color-scheme: dark;
+
+    --canvas: #0b0b0d;
+    --surface: #141417;
+    --surface-raised: #1b1b1f;
+    --surface-hover: #202024;
+    --line: #26262b;
+    --line-strong: #34343b;
+
+    --ink: #ededf0;
+    --ink-muted: #9b9ba4;
+    --ink-subtle: #6e6e78;
+    --ink-on-accent: #ffffff;
+
+    --accent: #e26628;
+    --accent-hover: #f0793d;
+    --accent-soft: #2c1c12;
+
+    --state-todo: #232329;
+    --state-todo-ink: #a5a6b0;
+    --state-in-progress: #17293d;
+    --state-in-progress-ink: #8fb6e4;
+    --state-done: #16301f;
+    --state-done-ink: #74c48c;
+    --state-cancelled: #2a2426;
+    --state-cancelled-ink: #a49398;
+
+    --priority-urgent: #35191a;
+    --priority-urgent-ink: #e59891;
+    --priority-high: #322512;
+    --priority-high-ink: #e0b170;
+    --priority-medium: #1f242c;
+    --priority-medium-ink: #9aa6b8;
+    --priority-low: #202024;
+    --priority-low-ink: #8a8c96;
+
+    --condition-blocked: #35191a;
+    --condition-blocked-ink: #e59891;
+    --condition-ready: #16301f;
+    --condition-ready-ink: #74c48c;
+    --condition-stuck: #322512;
+    --condition-stuck-ink: #e0b170;
+
+    --elevation-card: 0 1px 2px rgba(0, 0, 0, 0.5);
+    --elevation-overlay: 0 8px 30px rgba(0, 0, 0, 0.6);
+  }
+}
+
+:root[data-theme="dark"] {
+  color-scheme: dark;
+
+  --canvas: #0b0b0d;
+  --surface: #141417;
+  --surface-raised: #1b1b1f;
+  --surface-hover: #202024;
+  --line: #26262b;
+  --line-strong: #34343b;
+
+  --ink: #ededf0;
+  --ink-muted: #9b9ba4;
+  --ink-subtle: #6e6e78;
+  --ink-on-accent: #ffffff;
+
+  --accent: #e26628;
+  --accent-hover: #f0793d;
+  --accent-soft: #2c1c12;
+
+  --state-todo: #232329;
+  --state-todo-ink: #a5a6b0;
+  --state-in-progress: #17293d;
+  --state-in-progress-ink: #8fb6e4;
+  --state-done: #16301f;
+  --state-done-ink: #74c48c;
+  --state-cancelled: #2a2426;
+  --state-cancelled-ink: #a49398;
+
+  --priority-urgent: #35191a;
+  --priority-urgent-ink: #e59891;
+  --priority-high: #322512;
+  --priority-high-ink: #e0b170;
+  --priority-medium: #1f242c;
+  --priority-medium-ink: #9aa6b8;
+  --priority-low: #202024;
+  --priority-low-ink: #8a8c96;
+
+  --condition-blocked: #35191a;
+  --condition-blocked-ink: #e59891;
+  --condition-ready: #16301f;
+  --condition-ready-ink: #74c48c;
+  --condition-stuck: #322512;
+  --condition-stuck-ink: #e0b170;
+
+  --elevation-card: 0 1px 2px rgba(0, 0, 0, 0.5);
+  --elevation-overlay: 0 8px 30px rgba(0, 0, 0, 0.6);
+}
+
+/* The utility layer's vocabulary. `inline` keeps the palette above as the only
+   place a colour has a value: a utility resolves the variable at use time, so
+   one set of class names draws whichever theme is live. */
+
+@theme inline {
+  --color-canvas: var(--canvas);
+  --color-surface: var(--surface);
+  --color-surface-raised: var(--surface-raised);
+  --color-surface-hover: var(--surface-hover);
+  --color-line: var(--line);
+  --color-line-strong: var(--line-strong);
+
+  --color-ink: var(--ink);
+  --color-ink-muted: var(--ink-muted);
+  --color-ink-subtle: var(--ink-subtle);
+  --color-ink-on-accent: var(--ink-on-accent);
+
+  --color-accent: var(--accent);
+  --color-accent-hover: var(--accent-hover);
+  --color-accent-soft: var(--accent-soft);
+
+  --color-state-todo: var(--state-todo);
+  --color-state-todo-ink: var(--state-todo-ink);
+  --color-state-in-progress: var(--state-in-progress);
+  --color-state-in-progress-ink: var(--state-in-progress-ink);
+  --color-state-done: var(--state-done);
+  --color-state-done-ink: var(--state-done-ink);
+  --color-state-cancelled: var(--state-cancelled);
+  --color-state-cancelled-ink: var(--state-cancelled-ink);
+
+  --color-priority-urgent: var(--priority-urgent);
+  --color-priority-urgent-ink: var(--priority-urgent-ink);
+  --color-priority-high: var(--priority-high);
+  --color-priority-high-ink: var(--priority-high-ink);
+  --color-priority-medium: var(--priority-medium);
+  --color-priority-medium-ink: var(--priority-medium-ink);
+  --color-priority-low: var(--priority-low);
+  --color-priority-low-ink: var(--priority-low-ink);
+
+  --color-condition-blocked: var(--condition-blocked);
+  --color-condition-blocked-ink: var(--condition-blocked-ink);
+  --color-condition-ready: var(--condition-ready);
+  --color-condition-ready-ink: var(--condition-ready-ink);
+  --color-condition-stuck: var(--condition-stuck);
+  --color-condition-stuck-ink: var(--condition-stuck-ink);
+
+  --shadow-card: var(--elevation-card);
+  --shadow-overlay: var(--elevation-overlay);
+}
+
+/* Typography and spacing carry no theme: one scale in both palettes. */
+
+@theme {
+  --font-sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-mono: ui-monospace, SFMono-Regular, Menlo, monospace;
+
+  --spacing: 0.25rem;
+
+  --radius-card: 0.5rem;
+  --radius-chip: 999px;
+}

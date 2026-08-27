@@ -12,6 +12,8 @@ Run whichever check the change touches as you go, and all of them before ending 
 - Typecheck: `go build ./...`
 - Test: `go test ./...`
 
+Editing `internal/web/styles/tailwind.css` or any web template also means regenerating the design system's stylesheet — `./scripts/build-css.sh` — and committing its output; CI fails on drift.
+
 Run the app locally: `go run ./cmd/beaver <command>` (or `go build ./cmd/beaver` for a `./beaver` binary)
 
 ## Project docs & tracker
