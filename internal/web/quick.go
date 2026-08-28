@@ -3,8 +3,8 @@ package web
 // This file holds the quick view: one issue's key facts as a fragment, drawn
 // over the graph so that inspecting an issue costs the reader neither the page
 // they are on nor the window they had panned to. Nothing here derives a
-// relationship — the core has already done that — and nothing here renders a
-// page: what this address answers is only ever laid over one the browser
+// relationship, since the core has already done that, and nothing here renders
+// a page: what this address answers is only ever laid over one the browser
 // already has.
 
 import (
@@ -45,9 +45,9 @@ func (s *server) quick(w http.ResponseWriter, r *http.Request) {
 
 // quickMissing answers every way this address can fail to name one issue: an
 // unknown reference, a reference naming several, a store that has gone. They
-// all mean the same thing here — there is nothing to draw — so they all get the
-// contract's 404, worded as a fragment, since an error page laid over the graph
-// would be a second copy of the whole application.
+// all mean the same thing here, that there is nothing to draw, so they all get
+// the contract's 404, worded as a fragment, since an error page laid over the
+// graph would be a second copy of the whole application.
 func (s *server) quickMissing(w http.ResponseWriter, ref string) {
 	s.renderTemplate(w, "quick.html", "quick-missing", http.StatusNotFound, ref)
 }

@@ -2,7 +2,7 @@ package web
 
 // This file holds the list's ordering: the translation between the address's
 // sort parameters and a rearranged listing, and back into the column headers
-// that produced it. Ordering is presentation, not a rule — the core's listing
+// that produced it. Ordering is presentation, not a rule: the core's listing
 // order stays the default, and a sorted view is the same issues told to stand
 // differently.
 
@@ -23,7 +23,7 @@ type order struct {
 }
 
 // listColumns are the table's columns left to right. A column without a key
-// offers no ordering — labels are a set, and a set has no first.
+// offers no ordering, since labels are a set and a set has no first.
 var listColumns = []struct {
 	Key   string
 	Label string
@@ -41,8 +41,8 @@ var listColumns = []struct {
 }
 
 // header is one column heading as the template draws it: the label, the
-// address that sorts by it, and — on the one column the address already sorts
-// by — which way the rows run. Sort is the word a table's own vocabulary uses
+// address that sorts by it, and, on the one column the address already sorts
+// by, which way the rows run. Sort is the word a table's own vocabulary uses
 // ("ascending"/"descending"), so the heading tells a reader and a screen reader
 // the same thing from the one field.
 type header struct {
@@ -52,7 +52,7 @@ type header struct {
 }
 
 // parseOrder reads the sort state off the address. A key naming no column is
-// dropped rather than refused — an address is not a form, and a stale bookmark
+// dropped rather than refused: an address is not a form, and a stale bookmark
 // should still draw the list (in the core's order).
 func parseOrder(v url.Values) order {
 	key := strings.TrimSpace(v.Get("sort"))
@@ -65,7 +65,7 @@ func parseOrder(v url.Values) order {
 }
 
 // apply rearranges issues in place. The sort is stable, so issues equal under
-// the chosen column keep the core's order between them — ties break the same
+// the chosen column keep the core's order between them, so ties break the same
 // way on the same store.
 func (o order) apply(issues []issue.Issue) {
 	if o.Key == "" {
@@ -142,7 +142,7 @@ func stateRank(s issue.State) int {
 	return len(boardStates)
 }
 
-// priorityRank orders priorities urgent first, the unprioritized last —
+// priorityRank orders priorities urgent first, the unprioritized last, because
 // "sort by priority" means the pressing work on top.
 func priorityRank(p issue.Priority) int {
 	switch p {

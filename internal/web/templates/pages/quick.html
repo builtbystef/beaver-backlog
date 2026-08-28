@@ -43,7 +43,7 @@
 {{end}}
 
 {{/* Nothing to draw: a reference the store cannot resolve to one issue. The
-     graph never asks for one — its nodes hold exact IDs — so this is what a
+     graph never asks for one, since its nodes hold exact IDs, so this is what a
      typed address gets, and it is a sentence rather than a page. */}}
 {{define "quick-missing"}}
 <p class="p-5 text-sm text-ink-muted">No issue here called <span class="id">{{.}}</span>.</p>

@@ -7,7 +7,7 @@ import (
 
 // cmdNote appends an attributed, timestamped entry under the issue body's
 // "## Notes" section, creating the section on the first note. Notes are
-// append-only — every call writes and bumps `updated` — and are allowed on an
+// append-only, so every call writes and bumps `updated`, and are allowed on an
 // issue in any state, including closed ones.
 func cmdNote(env Env, args []string) int {
 	fs, formatFlag := newFlagSet(env, "note")
@@ -37,7 +37,7 @@ func cmdNote(env Env, args []string) int {
 	}
 
 	// The core takes the actor as a value, so identity is resolved before the
-	// call — after the store is found, so no interactive prompt fires outside a
+	// call, after the store is found, so no interactive prompt fires outside a
 	// store.
 	me, err := resolveActor(env, *asFlag)
 	if err != nil {

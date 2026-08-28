@@ -34,8 +34,8 @@ type Env struct {
 	WorkDir string              // directory the store is resolved from
 	Getenv  func(string) string // environment lookup
 	// Ctx is cancelled when the process is asked to stop. Only a command that
-	// runs until interrupted — serve — waits on it; a nil Ctx never fires, which
-	// is what every one-shot command wants.
+	// runs until interrupted, meaning serve, waits on it; a nil Ctx never fires,
+	// which is what every one-shot command wants.
 	Ctx context.Context
 	// CoreOptions configure the core service the handlers work through. Time and
 	// the identity of new issues are the application's seams, not this

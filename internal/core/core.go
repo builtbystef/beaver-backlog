@@ -1,5 +1,5 @@
 // Package core is Beaver Backlog's application layer: the operations every
-// interface — today's CLI, tomorrow's web UI or SDK — performs on a store. It
+// interface performs on a store, be it today's CLI or tomorrow's web UI or SDK. It
 // owns the rules (what a reference resolves to, which issues a query selects,
 // how they are ordered) and knows nothing about flags, terminals, or exit
 // codes: failures come back as typed errors and skipped files as data, for the
@@ -39,7 +39,7 @@ func (e *UnknownRefError) Error() string { return fmt.Sprintf("no issue matches 
 func (e *UnknownRefError) Unwrap() error { return ErrNotFound }
 
 // AmbiguousRefError reports that a reference names several issues rather than
-// one — the case of a slug two issues share. It carries the candidates (sorted
+// one, the case of a slug two issues share. It carries the candidates (sorted
 // by ID) so a caller can list them, and unwraps to ErrNotFound because the
 // reference still named no single issue.
 type AmbiguousRefError struct {
@@ -59,7 +59,7 @@ func (e *AmbiguousRefError) Unwrap() error { return ErrNotFound }
 
 // Warning reports a file a read skipped because it is not a usable issue: Path
 // names the file and Err says what is wrong with it. Warnings are data, not
-// output — no core operation prints or fails on one, so every interface decides
+// output: no core operation prints or fails on one, so every interface decides
 // for itself how to surface a broken file (ADR 0003).
 type Warning struct {
 	Path string // path to the skipped file
@@ -130,16 +130,16 @@ func (s *Service) ConfiguredProjectName() (string, error) {
 // where it travels to everyone who clones the store. An empty name is refused.
 func (s *Service) SetProjectName(name string) error { return s.store.SetProjectName(name) }
 
-// Fingerprint reports a cheap summary of the store's files — their names,
-// sizes, and modification times — that changes whenever an issue is written,
-// edited, or deleted, whoever did it. An interface watching for changes polls
-// it and compares: equal fingerprints mean nothing has happened worth
-// redrawing. It parses nothing, so it is not a read of the issues themselves
-// and reports no warnings.
+// Fingerprint reports a cheap summary of the store's files, covering their
+// names, sizes, and modification times, that changes whenever an issue is
+// written, edited, or deleted, whoever did it. An interface watching for
+// changes polls it and compares: equal fingerprints mean nothing has happened
+// worth redrawing. It parses nothing, so it is not a read of the issues
+// themselves and reports no warnings.
 func (s *Service) Fingerprint() (string, error) { return s.store.Fingerprint() }
 
 // Detail is one issue together with the relationship facts derived from the
-// rest of the store — what it waits on, whether it is ready, blocked, or stuck,
+// rest of the store: what it waits on, whether it is ready, blocked, or stuck,
 // and the inverse edges that are never stored.
 type Detail struct {
 	Issue        issue.Issue
@@ -147,8 +147,9 @@ type Detail struct {
 	Warnings     []Warning
 }
 
-// Get resolves ref — a full ID, a slug, or an "<id>-<slug>" file name, stale or
-// canonical — to one issue and derives its relationships over the same scan. It
+// Get resolves ref to one issue and derives its relationships over the same
+// scan. A ref is a full ID, a slug, or an "<id>-<slug>" file name, stale or
+// canonical. It
 // returns ErrNotFound for an unknown reference and an *AmbiguousRefError for one
 // that names several issues. Warnings are reported whatever the outcome, so a
 // failed lookup still tells the caller which files were skipped.
@@ -168,7 +169,7 @@ func (s *Service) Get(ref string) (Detail, error) {
 // Outcome is the result of an operation that may modify an issue: the issue as
 // it now stands, the issue as it stood before, whether anything was written, and
 // the files the scan skipped. An operation whose net effect is nothing reports
-// Changed false and leaves the file — and with it the updated timestamp —
+// Changed false and leaves the file, and with it the updated timestamp,
 // exactly as it was.
 //
 // Previous is what a caller describing the change compares against: which field
@@ -216,13 +217,13 @@ func resolve(snap *store.Snapshot, ref string) (issue.Issue, string, error) {
 }
 
 // now is the instant a write records: the service clock in UTC, truncated to
-// the second. Every timestamp the core stamps — an issue's created and updated,
-// a note's time — comes from here, so the policy lives in exactly one place.
+// the second. Every timestamp the core stamps, an issue's created and updated
+// and a note's time, comes from here, so the policy lives in exactly one place.
 func (s *Service) now() time.Time { return s.clock.Now().UTC().Truncate(time.Second) }
 
 // Now is the instant the service's clock reports, in the same form the stamps
-// it writes take. An interface that reasons about recency — the web board's
-// recently-updated window — reads the present from here, so it compares
+// it writes take. An interface that reasons about recency, such as the web
+// board's recently-updated window, reads the present from here, so it compares
 // timestamps against the same clock that wrote them rather than one of its own.
 func (s *Service) Now() time.Time { return s.now() }
 
@@ -235,8 +236,8 @@ func (s *Service) write(path string, iss issue.Issue) (issue.Issue, error) {
 }
 
 // writeAt is write with the instant supplied, for an operation that records the
-// same moment inside the issue as in its `updated` — a note's timestamp, which
-// would otherwise be drawn from a second reading of the clock.
+// same moment inside the issue as in its `updated`, such as a note's timestamp,
+// which would otherwise be drawn from a second reading of the clock.
 func (s *Service) writeAt(path string, iss issue.Issue, now time.Time) (issue.Issue, error) {
 	iss.Updated = now
 	if _, err := s.store.Update(path, iss); err != nil {

@@ -2,7 +2,7 @@
 // (ADR 0006). The script never moves a card itself: it posts what the drop
 // meant and then redraws the board from the server, so what the reader ends up
 // looking at is the files' truth rather than an optimistic guess. That is also
-// why a refusal needs no undo — the card was never moved, so it is already back
+// why a refusal needs no undo: the card was never moved, so it is already back
 // where it belongs when the message appears.
 
 // dragged is the card currently in hand, and body[data-dragging] is the same
@@ -13,7 +13,7 @@ let dragged = null;
 // The browser will not scroll the page itself while a drag is in hand, so a
 // long column would strand its cards with the other columns off-screen. While
 // a card is held, the pointer near the viewport's top or bottom edge scrolls
-// the page — faster the closer to the edge it sits. pointerY is where the
+// the page, faster the closer to the edge it sits. pointerY is where the
 // dragover stream last saw the pointer.
 const EDGE = 90;
 let pointerY = null;
@@ -104,15 +104,15 @@ async function drop(card, state) {
 
 // redraw replaces the columns with a freshly rendered board. It re-fetches the
 // address the reader is actually on rather than reusing the redirect's page, so
-// whatever the query string asks for — a terminal column shown in full — still
-// holds after a drop.
+// whatever the query string asks for, such as a terminal column shown in full,
+// still holds after a drop.
 async function redraw() {
   const res = await fetch(window.location.href, { headers: { "X-Requested-With": "drag" } });
   const board = parse(await res.text()).querySelector(".board");
   if (board) document.querySelector(".board").replaceWith(board);
 }
 
-// message digs the core's own words out of a refusal page — the server renders
+// message digs the core's own words out of a refusal page. The server renders
 // one page for a refused drop whether or not this script is there to read it.
 function message(html) {
   const shown = parse(html).querySelector(".error");

@@ -121,7 +121,7 @@ func TestUpdateClearsWithAnEmptyValue(t *testing.T) {
 }
 
 // Labels and dependencies are sets, not lists: a caller adds and removes
-// entries without having to know — or resend — the ones it does not name, and a
+// entries without having to know, or resend, the ones it does not name, and a
 // value in both sets loses.
 func TestUpdateAppliesSetsWithRemovalWinning(t *testing.T) {
 	root := newStore(t)
@@ -148,7 +148,7 @@ func TestUpdateAppliesSetsWithRemovalWinning(t *testing.T) {
 }
 
 // A dangling edge names an issue no scan can find, so a removal takes the
-// reference as written when nothing answers it — otherwise the only way out of
+// reference as written when nothing answers it. Otherwise the only way out of
 // a dependency on a deleted issue would be to hand-edit the file.
 func TestUpdateRemovesADanglingDependency(t *testing.T) {
 	root := newStore(t)
@@ -241,7 +241,7 @@ func TestUpdateToTheCurrentValuesWritesNothing(t *testing.T) {
 }
 
 // The file name mirrors the title, so retitling moves the issue to the name its
-// new slug implies — and leaves no second file behind under the old one.
+// new slug implies, and leaves no second file behind under the old one.
 func TestUpdateRenamesTheFileOnANewTitle(t *testing.T) {
 	root := newStore(t)
 	seed(t, root, mkIssue("iss001", "Old title"))
@@ -350,9 +350,9 @@ func TestUpdateRefusesAParentCycle(t *testing.T) {
 	}
 }
 
-// Only a cycle the change introduces refuses it. One that arrived some other way
-// — a merge, a hand-edit — is doctor's to report, and refusing every edit to an
-// issue caught in one would leave no way to edit it back out.
+// Only a cycle the change introduces refuses it. One that arrived some other
+// way, by a merge or a hand-edit, is doctor's to report, and refusing every edit
+// to an issue caught in one would leave no way to edit it back out.
 func TestUpdateEditsAnIssueAlreadyInACycle(t *testing.T) {
 	root := newStore(t)
 	seed(t, root, withDeps(mkIssue("aaa111", "One side"), "bbb222"))

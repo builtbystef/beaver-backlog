@@ -5,7 +5,7 @@
 # and commit the result: building beaver needs Go and nothing else, so the CLI
 # below is a developer's tool, never part of `go build` (ADR 0006).
 #
-# The CLI is pinned by version and verified by checksum — a floating "latest"
+# The CLI is pinned by version and verified by checksum; a floating "latest"
 # would rewrite the committed stylesheet on someone else's machine for reasons
 # nobody chose. It is cached outside the repository so the working tree stays
 # clean and a second run costs no download.

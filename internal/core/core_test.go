@@ -141,9 +141,9 @@ func TestReadsReportSkippedFilesAsWarnings(t *testing.T) {
 	assertWarnsAbout(t, "Get", detail.Warnings)
 }
 
-// A fingerprint answers one question — has anything about the files changed
-// since last time — so it must move for a written, edited, or deleted issue and
-// hold still for a store nobody touched.
+// A fingerprint answers one question, whether anything about the files has
+// changed since last time, so it must move for a written, edited, or deleted
+// issue and hold still for a store nobody touched.
 func TestFingerprintMovesOnlyWhenTheFilesDo(t *testing.T) {
 	root := newStore(t)
 	seed(t, root, mkIssue("aaa111", "Groundwork"))
@@ -174,7 +174,7 @@ func TestFingerprintMovesOnlyWhenTheFilesDo(t *testing.T) {
 	}
 }
 
-// A store whose issues directory is gone is an empty store, not a failure — the
+// A store whose issues directory is gone is an empty store, not a failure: the
 // same forgiveness every other read gives it.
 func TestFingerprintOfAStoreWithoutIssues(t *testing.T) {
 	root := newStore(t)

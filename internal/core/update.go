@@ -18,8 +18,8 @@ import (
 // means to change; a pointer to the empty string clears Assignee or Parent.
 //
 // Labels and dependencies arrive as add and remove sets rather than as a
-// replacement list, so a caller that knows about one entry never has to send —
-// and so never silently drops — the ones it does not. An entry named in both
+// replacement list, so a caller that knows about one entry never has to send,
+// and so never silently drops, the ones it does not. An entry named in both
 // sets is removed: a caller that says both has said the entry should be gone.
 type Changes struct {
 	Title *string
@@ -27,7 +27,7 @@ type Changes struct {
 	// verbatim, whatever the new description says.
 	Body *string
 	// Assignee is set as given; the empty string returns the issue to unowned.
-	// There is no ownership guard here — delegation is the point of assigning,
+	// There is no ownership guard here: delegation is the point of assigning,
 	// and Start keeps the only guard.
 	Assignee *string
 	// Priority must be a level or the empty value that clears it.
@@ -44,7 +44,7 @@ type Changes struct {
 }
 
 // CycleError reports a relationship change refused because it would close a
-// cycle — an issue that would wait on itself, directly or through others, or a
+// cycle: an issue that would wait on itself, directly or through others, or a
 // sub-issue that would be its own ancestor. It names the field the change was to
 // and the issues caught in the loop.
 type CycleError struct {
@@ -71,8 +71,8 @@ func ParsePriority(s string) (issue.Priority, error) {
 }
 
 // Update applies a change set to the issue ref names and writes the result. It
-// is the one operation behind every field edit, so the rules — what an empty
-// value clears, how a set is applied, when a write is skipped — are stated once
+// is the one operation behind every field edit, so the rules (what an empty
+// value clears, how a set is applied, when a write is skipped) are stated once
 // however many fields a caller changes at a time.
 //
 // An update whose net effect is nothing writes nothing: the result reports
@@ -112,7 +112,7 @@ func (s *Service) Update(ref string, c Changes) (Outcome, error) {
 	}
 
 	// The title travels with the file name, so a retitled issue is written to the
-	// name its new slug implies — the store drops the old file, leaving the id
+	// name its new slug implies. The store drops the old file, leaving the id
 	// untouched and no second copy behind.
 	written, err := s.write(path, next)
 	if err != nil {
@@ -219,9 +219,9 @@ func differs(before, next issue.Issue) bool {
 }
 
 // checkCycles refuses a relationship change that would close a cycle. Only a
-// cycle this change introduces refuses it: one that arrived some other way — a
-// merge, a hand-edit — is doctor's to report (ADR 0005), and refusing every edit
-// to an issue already caught in one would leave no way to edit it back out.
+// cycle this change introduces refuses it: one that arrived some other way, by
+// a merge or a hand-edit, is doctor's to report (ADR 0005), and refusing every
+// edit to an issue already caught in one would leave no way to edit it back out.
 func checkCycles(snap *store.Snapshot, before, next issue.Issue) error {
 	if slices.Equal(next.DependsOn, before.DependsOn) && next.Parent == before.Parent {
 		return nil

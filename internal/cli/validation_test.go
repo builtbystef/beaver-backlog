@@ -110,7 +110,8 @@ func TestShowWarnsButStillRendersValidIssue(t *testing.T) {
 }
 
 // An unknown frontmatter key is preserved lint, not a validation failure: read
-// paths do not warn about it — reporting a stray/typo'd key is doctor's job.
+// paths do not warn about it, since reporting a stray or typo'd key is doctor's
+// job.
 func TestUnknownFrontmatterKeyIsLintNotInvalid(t *testing.T) {
 	h := beavertest.New(t).Init()
 	h.WriteFile("issues/cst111-custom.md", "---\nid: cst111\ntitle: Custom\nstate: todo\nsprint: 7\n"+stamps+"---\n\nBody.\n")

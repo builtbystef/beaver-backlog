@@ -6,7 +6,7 @@ import (
 )
 
 // Validate reports whether iss is a usable issue: a present, well-formed id and
-// a legal state. Validation is deliberately narrow — everything else a valid
+// a legal state. Validation is deliberately narrow: everything else a valid
 // issue can get wrong (filename drift, unknown keys, non-canonical formatting)
 // is lint for doctor, not a validation failure. The returned error names the
 // specific defect so a caller can pair it with the file name; frontmatter that
@@ -27,8 +27,8 @@ func Validate(iss Issue) error {
 
 // validID reports whether s is a non-empty run of lowercase ASCII letters and
 // digits. It deliberately does not pin the length: a store may hold ids of
-// other lengths, so validity turns on the character set — what keeps an id safe
-// in a filename — alone.
+// other lengths, so validity turns on the character set alone, which is what
+// keeps an id safe in a filename.
 func validID(s string) bool {
 	for _, r := range s {
 		lower := r >= 'a' && r <= 'z'

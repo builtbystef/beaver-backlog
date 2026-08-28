@@ -197,7 +197,7 @@ func TestCommandsRequireStore(t *testing.T) {
 }
 
 // The surface is exactly these fifteen commands, in this order, and the help
-// text is where the tool explains itself — so it lists them and nothing else.
+// text is where the tool explains itself, so it lists them and nothing else.
 func TestUsageListsExactlyTheCommandSet(t *testing.T) {
 	h := beavertest.New(t)
 

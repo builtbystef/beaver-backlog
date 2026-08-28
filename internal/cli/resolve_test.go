@@ -39,8 +39,9 @@ func TestUnknownRefIsNotFound(t *testing.T) {
 	}
 }
 
-// A slug several issues share names no single issue, so it does not resolve — but
-// the error lists the candidate IDs (id-sorted, so deterministic) to pick from.
+// A slug several issues share names no single issue, so it does not resolve,
+// but the error lists the candidate IDs (id-sorted, so deterministic) to pick
+// from.
 func TestSharedSlugListsCandidates(t *testing.T) {
 	h := beavertest.New(t).Init()
 	seed(t, h, "dup222", "Fix bug", issue.StateTodo, beavertest.DefaultNow)

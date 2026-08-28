@@ -7,7 +7,7 @@
 // The server writes every timestamp absolute inside <time datetime="…">; this
 // rewords it as a distance ("2 hours ago") and keeps the absolute form in the
 // tooltip. Re-run on a timer so an open page does not drift stale, and after
-// every redraw — htmx's swaps and the live refresh both land inside #view,
+// every redraw, since htmx's swaps and the live refresh both land inside #view,
 // where the observer below is watching.
 function reword() {
   for (const time of document.querySelectorAll("time[datetime]")) {
@@ -46,7 +46,7 @@ function distance(at) {
 }
 
 // A row that names an issue navigates like the card it mirrors. Only a click
-// on the row's own background counts — a link, a badge with a link in it, or a
+// on the row's own background counts. A link, a badge with a link in it, or a
 // hand selecting text keeps its own meaning.
 document.addEventListener("click", (event) => {
   const row = event.target.closest("tr[data-href]");
@@ -66,7 +66,7 @@ document.addEventListener("input", (event) => {
 
 // A toolbar menu is a <details>, which nothing but a second click on its own
 // button would otherwise close. A click anywhere else, or Escape, closes every
-// open one — what a menu does everywhere else.
+// open one, which is what a menu does everywhere else.
 document.addEventListener("click", (event) => {
   for (const menu of document.querySelectorAll("details.filter-menu[open]")) {
     if (!menu.contains(event.target)) menu.open = false;
@@ -97,7 +97,7 @@ document.addEventListener("input", (event) => {
 // A form serialises every control it holds, so the address a filter change
 // pushes would otherwise carry the boxes nobody typed in and the assignee's
 // "anyone". What is pushed is what a reader bookmarks or sends, so it says only
-// what is narrowing the view — the same address the toolbar's own chips write.
+// what is narrowing the view: the same address the toolbar's own chips write.
 document.addEventListener("htmx:configRequest", (event) => {
   if (!event.detail.elt.closest?.("form[aria-label='Filter issues']")) return;
   const params = event.detail.parameters;
@@ -109,7 +109,7 @@ document.addEventListener("htmx:configRequest", (event) => {
 
 document.addEventListener("DOMContentLoaded", reword);
 setInterval(reword, 60_000);
-// Redraws land wholesale — innerHTML from the live listener, swapped nodes
-// from htmx — so element-level watching would miss them; watching the tree
+// Redraws land wholesale, as innerHTML from the live listener or swapped nodes
+// from htmx, so element-level watching would miss them; watching the tree
 // catches both without knowing either is there.
 new MutationObserver(reword).observe(document.documentElement, { childList: true, subtree: true });

@@ -1,6 +1,6 @@
 {{/* card is one issue on the board: a link to the issue that drag.js also reads
      its state and target addresses from, marked with the conditions the core
-     derives — the same marks the graph's nodes wear. */}}
+     derives, the same marks the graph's nodes wear. */}}
 {{define "card"}}
 <a class="card block rounded-card border border-line bg-surface-raised px-2.5 py-2 shadow-card transition-colors hover:border-accent"
    draggable="true" data-issue="{{.ID}}" data-state="{{.State}}"

@@ -138,8 +138,8 @@ func TestStartJSONCarriesReadinessSignal(t *testing.T) {
 	}
 }
 
-// The relationships object is always present — a ready start reports
-// blocked=false with an empty blocked_on — so a consumer never special-cases a
+// The relationships object is always present, since a ready start reports
+// blocked=false with an empty blocked_on, so a consumer never special-cases a
 // missing key, and there is nothing to warn about.
 func TestStartReadyJSONShowsUnblockedAndDoesNotWarn(t *testing.T) {
 	h := beavertest.New(t).Init()

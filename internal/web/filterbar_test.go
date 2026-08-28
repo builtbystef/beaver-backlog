@@ -56,7 +56,7 @@ func TestFilteredAddressListsWhatTheCoreReturnsForIt(t *testing.T) {
 }
 
 // A filtered address is the whole view: the same one, pasted into a fresh tab,
-// draws the same page — listing and controls alike.
+// draws the same page, listing and controls alike.
 func TestPastedAddressReproducesTheView(t *testing.T) {
 	dir := newStore(t)
 	svc := open(t, dir)
@@ -197,7 +197,7 @@ func hxGet(h http.Handler, path string) *httptest.ResponseRecorder {
 // box and the toolbar's text field agreeing on the one term.
 
 // Every filter the views understand is reachable from the toolbar, and the
-// toolbar stands outside the region a filter request replaces — it is the
+// toolbar stands outside the region a filter request replaces: it is the
 // view's chrome, not part of what filtering redraws.
 func TestToolbarOffersEveryFilterOnEveryView(t *testing.T) {
 	dir := newStore(t)

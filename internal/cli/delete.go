@@ -6,7 +6,7 @@ import (
 	"github.com/builtbystef/beaver-backlog/internal/output"
 )
 
-// cmdDelete removes an issue's file outright — the hard delete for junk, as
+// cmdDelete removes an issue's file outright: the hard delete for junk, as
 // distinct from cancel, which keeps the file as an abandoned record. It does
 // not prompt: resolution already demands an exact reference, and a VCS (when
 // present) retains the history as the undo.

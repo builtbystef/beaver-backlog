@@ -1,4 +1,4 @@
-// Package web is the local web interface over Beaver Backlog's core — the
+// Package web is the local web interface over Beaver Backlog's core: the
 // second interface after the CLI, and no more privileged than it. It turns an
 // HTTP request into a call on the core and renders the result as HTML; it
 // decides nothing about the rules, and it never reaches past the core to the
@@ -8,9 +8,9 @@
 // embedded in the binary, so serving needs no build step and no network
 // (ADR 0006). The design system's stylesheet is compiled from styles/ by a
 // pinned Tailwind CLI at dev time and its output committed, so building needs
-// nothing beyond Go either. A core service is opened per request — a scan is
-// cheap and the files change underneath the browser — so no issue data outlives
-// a response.
+// nothing beyond Go either. A core service is opened per request, because a
+// scan is cheap and the files change underneath the browser, so no issue data
+// outlives a response.
 package web
 
 import (
@@ -39,7 +39,7 @@ var templateFS embed.FS
 // posts become declarative attributes on server-rendered HTML instead of
 // hand-written fetch-and-swap JavaScript.
 //
-// tailwind.css is generated — the committed output of scripts/build-css.sh over
+// tailwind.css is generated: the committed output of scripts/build-css.sh over
 // styles/tailwind.css. Edit the source, never this copy.
 //
 //go:embed assets
@@ -87,7 +87,7 @@ func New(cfg Config) (http.Handler, error) {
 	return mux, nil
 }
 
-// server holds only what every request needs to open the application afresh —
+// server holds only what every request needs to open the application afresh,
 // deliberately no issue data, which would be stale the moment a file changed.
 type server struct {
 	cfg Config
@@ -100,7 +100,7 @@ func (s *server) open() (*core.Service, error) {
 	return core.Open(s.cfg.WorkDir, s.cfg.CoreOptions...)
 }
 
-// board renders the whole backlog as four columns of cards — the home view,
+// board renders the whole backlog as four columns of cards: the home view,
 // where a card is both a link to its issue and a handle to drag between states.
 func (s *server) board(w http.ResponseWriter, r *http.Request) {
 	svc, err := s.open()
@@ -130,7 +130,7 @@ func (s *server) board(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
-// list renders the issues the address selects, in the core's ordering — the
+// list renders the issues the address selects, in the core's ordering, with the
 // same filters the board reads, over a table instead of columns.
 func (s *server) list(w http.ResponseWriter, r *http.Request) {
 	svc, err := s.open()
@@ -161,8 +161,8 @@ func (s *server) list(w http.ResponseWriter, r *http.Request) {
 // relations is the derived-condition index over the whole store, not the
 // filtered view, so a card's "blocked" never depends on whether its blocker
 // made it past the filter bar. A store that cannot answer yields nil, which
-// issue.Relations treats as an index over nothing — the marks simply stay off,
-// never costing the page (ADR 0003).
+// issue.Relations treats as an index over nothing, so the marks simply stay
+// off, never costing the page (ADR 0003).
 func (s *server) relations(svc *core.Service) *issue.Relations {
 	all, err := svc.List(core.Query{})
 	if err != nil {
@@ -245,7 +245,7 @@ func (s *server) fail(w http.ResponseWriter, r *http.Request, err error) {
 // must never cost the reader the rest of the store (ADR 0003).
 type page struct {
 	Title string
-	// Project is what the store's project is called — what the brand slot says
+	// Project is what the store's project is called: what the brand slot says
 	// and what the tab leads with, so two projects served at once are two names
 	// rather than two copies of the application's. Empty only where there is no
 	// store left to name.
@@ -255,12 +255,12 @@ type page struct {
 	// like a form or an error.
 	Section string
 	// Search is the one text filter, shown by the sidebar's box and by the
-	// toolbar's text field alike — they are two windows onto it, never two
+	// toolbar's text field alike; they are two windows onto it, never two
 	// filters. Empty everywhere the reader has not searched.
 	Search string
-	// Notice is a one-line confirmation of something that already happened —
-	// what a redirect after a write has to say once the page it wrote about is
-	// gone. Empty on a page that is simply being read.
+	// Notice is a one-line confirmation of something that already happened: what
+	// a redirect after a write has to say once the page it wrote about is gone.
+	// Empty on a page that is simply being read.
 	Notice string
 	// Live marks a page the change feed may redraw: a view being read, never a
 	// form being filled in. A page the reader is typing into is theirs until
@@ -271,7 +271,7 @@ type page struct {
 
 // navItem is one entry in the shell's sidebar navigation: where it goes, what
 // it says, which glyph it wears, whether the reader is already there, and the
-// count it wears — only Doctor wears one, and only when there is something to
+// count it wears. Only Doctor wears one, and only when there is something to
 // count.
 type navItem struct {
 	Href  string
@@ -430,8 +430,8 @@ func (s *server) renderTemplate(w http.ResponseWriter, name, define string, stat
 	_, _ = buf.WriteTo(w)
 }
 
-// entry is the template a request enters the page through: a fragment request —
-// htmx's swap, or the live listener's redraw — asks for the view's own markup
+// entry is the template a request enters the page through. A fragment request,
+// htmx's swap or the live listener's redraw, asks for the view's own markup
 // and puts it into a page it already has, so answering with the chrome around it
 // would nest a second copy of the whole document.
 func entry(r *http.Request) string {
@@ -441,7 +441,7 @@ func entry(r *http.Request) string {
 	return "layout.html"
 }
 
-// path is the request's path without its leading slash — the form the embedded
+// path is the request's path without its leading slash: the form the embedded
 // asset filesystem and the 404 message both want.
 func path(r *http.Request) string { return strings.TrimPrefix(r.URL.Path, "/") }
 

@@ -5,8 +5,8 @@ import "sort"
 // Cycles returns the dependency cycles in the indexed set: each is the sorted
 // ids of a group of issues mutually reachable through depends_on edges, or a
 // single issue that depends on itself. Only edges among issues in the set
-// count — an edge to an absent id is a dangling reference, not part of any
-// cycle — and cycles are ordered by their smallest id, so the result is
+// count: an edge to an absent id is a dangling reference, not part of any
+// cycle. Cycles are ordered by their smallest id, so the result is
 // deterministic regardless of indexing order.
 func (r *Relations) Cycles() [][]string {
 	// Visit nodes and neighbours in sorted order so the output does not depend
@@ -28,7 +28,7 @@ func (r *Relations) Cycles() [][]string {
 			case dep == id:
 				selfLoop[id] = true
 			case seen[dep]:
-				// already recorded this edge
+				// A repeated edge; the first one already stands.
 			default:
 				if _, present := r.byID[dep]; present {
 					seen[dep] = true

@@ -1,6 +1,6 @@
 {{/* The Issues view: one row per issue under the toolbar that narrows them.
 
-     Everything a filter changes lives inside #issues — the count included, so
+     Everything a filter changes lives inside #issues, the count included, so
      a narrowed list never says the number it held a filter ago. The controls
      themselves stay in the toolbar above, where a swap never reaches them. */}}
 
@@ -17,7 +17,7 @@
 <p class="mb-2 text-xs text-ink-subtle">{{.Count}}</p>
 {{/* The table scrolls inside its own frame: a window too narrow for seven
      columns slides them under the reader's thumb rather than dragging the whole
-     page — and the shell — sideways with them. */}}
+     page, and the shell, sideways with them. */}}
 <div class="overflow-x-auto rounded-card border border-line bg-surface shadow-card">
 <table class="w-full border-collapse text-left text-sm">
   <thead>

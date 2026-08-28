@@ -2,8 +2,8 @@ package web_test
 
 // The quick view as a reader meets it: one issue's key facts drawn over the
 // graph rather than in place of it. What is asserted here is the fragment's
-// surface — the facts it carries, that it is a fragment and not a page, and the
-// way through to the issue — never what blocked or ready mean, which is the
+// surface: the facts it carries, that it is a fragment and not a page, and the
+// way through to the issue. Never what blocked or ready mean, which is the
 // core's to say.
 
 import (
@@ -89,7 +89,7 @@ func TestQuickViewAnswersEveryFieldItPromises(t *testing.T) {
 }
 
 // The quick view is drawn over a page the browser already has, so it is the
-// overlay's own markup and nothing else — the shell around it would be a second
+// overlay's own markup and nothing else; the shell around it would be a second
 // copy of the whole application.
 func TestQuickViewIsAFragmentWithAWayThroughToTheIssue(t *testing.T) {
 	dir := newStore(t)
@@ -113,7 +113,7 @@ func TestQuickViewIsAFragmentWithAWayThroughToTheIssue(t *testing.T) {
 }
 
 // The graph is where the quick view is read, so the picture carries the overlay
-// the script fills — empty on arrival, since what it holds is fetched from the
+// the script fills, empty on arrival, since what it holds is fetched from the
 // node the reader clicked.
 func TestTheGraphCarriesAnEmptyOverlayForTheQuickView(t *testing.T) {
 	dir := newStore(t)

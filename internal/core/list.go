@@ -99,8 +99,8 @@ func (q selection) matches(iss issue.Issue, rel *issue.Relations) bool {
 	return hasAllLabels(iss.Labels, q.Labels)
 }
 
-// containsText reports whether the issue's prose — its title or its body —
-// holds text, ignoring case. An empty text constrains nothing.
+// containsText reports whether the issue's prose, its title or its body, holds
+// text, ignoring case. An empty text constrains nothing.
 func containsText(iss issue.Issue, text string) bool {
 	if text == "" {
 		return true

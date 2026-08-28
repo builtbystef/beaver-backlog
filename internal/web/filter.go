@@ -2,8 +2,8 @@ package web
 
 // This file holds the filter bar the board and the list share: the translation
 // between an address and a core query, and back into the controls that produced
-// it. Nothing here decides what a filter means — ready, blocked, a conjunction
-// of labels, the unprioritized — every one of those is the core's, and each
+// it. Nothing here decides what a filter means: ready, blocked, a conjunction
+// of labels, the unprioritized, every one of those is the core's, and each
 // field below lands in a core.Query untouched. Both directions live together
 // because they are one contract: a view is only bookmarkable while the address
 // the bar writes is the address the bar can read back.
@@ -20,7 +20,7 @@ import (
 
 // The three things the assignee control can ask for. Unassigned is a filter of
 // its own rather than an empty name, because "nobody holds this" and "anybody
-// may" are different questions and a text box cannot tell them apart — hence a
+// may" are different questions and a text box cannot tell them apart, hence a
 // mode beside the name rather than one overloaded field.
 const (
 	assigneeAny        = "any"
@@ -48,9 +48,9 @@ type filters struct {
 }
 
 // parseFilters reads the filter state out of a query string. A value the bar
-// could not have produced — a state outside the lifecycle, a priority that is
-// no level — is dropped rather than refused: an address is not a form, and a
-// stale bookmark should still draw a page.
+// could not have produced, such as a state outside the lifecycle or a priority
+// that is no level, is dropped rather than refused: an address is not a form,
+// and a stale bookmark should still draw a page.
 func parseFilters(v url.Values) filters {
 	f := filters{
 		Ready:        checked(v.Get("ready")),
@@ -65,7 +65,7 @@ func parseFilters(v url.Values) filters {
 	}
 	// Each of the three list filters reads the same two ways: the repeated
 	// parameter a checkbox group posts, and the several values one text box
-	// holds — so a hand-written address works however it was written.
+	// holds, so a hand-written address works however it was written.
 	for _, raw := range v["state"] {
 		for _, one := range values(raw) {
 			if state := issue.State(one); slices.Contains(boardStates, state) {
@@ -86,7 +86,7 @@ func parseFilters(v url.Values) filters {
 	return f
 }
 
-// query is the core query this address asks for — the only place the bar's
+// query is the core query this address asks for: the only place the bar's
 // state turns into a selection, so both views select identically.
 func (f filters) query() core.Query {
 	q := core.Query{
@@ -123,7 +123,7 @@ func (f filters) active() bool {
 // against the address, so the markup compares nothing for itself.
 type filterBar struct {
 	Action string // the view the toolbar narrows
-	// ClearURL is that view with every filter off — but still carrying what the
+	// ClearURL is that view with every filter off, but still carrying what the
 	// bar does not own, because clearing filters is not the same as putting a
 	// column the reader opened in full back behind its window.
 	ClearURL string
@@ -138,7 +138,7 @@ type filterBar struct {
 	Keep      []param // the query the bar does not own, carried through
 	Active    bool
 	// Chips are the active filters said one by one beside the controls, each
-	// with the address that takes just that one off — the current view minus one
+	// with the address that takes just that one off: the current view minus one
 	// filter, so narrowing is visible and undoable in a click.
 	Chips []chip
 	// Refused is the core's own words about a reference the bar carries that
@@ -148,7 +148,7 @@ type filterBar struct {
 
 // menu is one group of toggles behind a button: what the button says, and the
 // checkboxes it opens onto. Whether the button reads as active is the live
-// state of the boxes inside it, which is the stylesheet's to see — a count
+// state of the boxes inside it, which is the stylesheet's to see. A count
 // rendered here would go stale the moment a box was ticked, since narrowing the
 // view redraws the listing and not the controls that asked for it.
 type menu struct {
@@ -178,7 +178,7 @@ type param struct {
 }
 
 // bar builds the controls for this address. current is the whole query string
-// the request arrived with — everything in it the bar does not own comes back as
+// the request arrived with. Everything in it the bar does not own comes back as
 // a hidden field, so submitting a filter never drops a neighbouring control's
 // state, such as the board's column shown in full.
 func (f filters) bar(action string, current url.Values, refused string) filterBar {
@@ -290,7 +290,7 @@ func checked(value string) bool {
 
 // chips words each active filter, pairing it with the address that removes it
 // alone. Every removal address is built from a fresh encoding of the bar's
-// state, mutated for that one chip, with the carried parameters put back — the
+// state, mutated for that one chip, with the carried parameters put back: the
 // same round trip the form itself makes.
 func (f filters) chips(action string, current url.Values) []chip {
 	var out []chip
@@ -354,8 +354,8 @@ func (f filters) removeURL(action string, current url.Values, mutate func(url.Va
 	return action
 }
 
-// encode is the bar's state as the canonical query string it would submit —
-// the inverse of parseFilters, one parameter per value.
+// encode is the bar's state as the canonical query string it would submit: the
+// inverse of parseFilters, one parameter per value.
 func (f filters) encode() url.Values {
 	v := url.Values{}
 	for _, s := range f.States {

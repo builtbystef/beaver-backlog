@@ -2,7 +2,7 @@ package web_test
 
 // The board's write surface: dropping a card on a column. What is asserted here
 // is the mapping from a drop to a core call and from the core's refusal to a
-// status — the lifecycle itself (what a move writes, who may claim what) is the
+// status. The lifecycle itself (what a move writes, who may claim what) is the
 // core's own tests. Drag mechanics are demoed by hand; the endpoints they post
 // to are tested here.
 
@@ -77,7 +77,7 @@ func TestDropOnInProgressClaimsForTheLaunchActor(t *testing.T) {
 	}
 }
 
-// Every move between columns is legal — reclassifying a closed issue between
+// Every move between columns is legal, reclassifying a closed issue between
 // done and cancelled included. The card goes where it was dropped.
 func TestDropReclassifiesAClosedIssue(t *testing.T) {
 	dir := newStore(t)

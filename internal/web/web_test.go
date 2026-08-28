@@ -400,7 +400,7 @@ func matchRows(t *testing.T, body string) map[string]string {
 }
 
 // The one search box: a reference goes to the issue, anything else filters the
-// list — the reader never picks a mode.
+// list; the reader never picks a mode.
 func TestSearchJumpsToAnIssueForAReference(t *testing.T) {
 	dir := newStore(t)
 	target := create(t, open(t, dir), core.Draft{Title: "Fix flag parsing"})
@@ -467,7 +467,7 @@ func newStore(t *testing.T) string {
 	return dir
 }
 
-// newStoreNamed initializes a store inside a directory of a chosen name — the
+// newStoreNamed initializes a store inside a directory of a chosen name, the
 // name being what the project is called, for the pages that have to say it.
 func newStoreNamed(t *testing.T, name string) string {
 	t.Helper()
@@ -527,7 +527,7 @@ func note(t *testing.T, svc *core.Service, ref, text string) {
 }
 
 // addCustomField splices a user-defined frontmatter key into an issue file, the
-// way a hand-edit would — the core has no way to write one.
+// way a hand-edit would, since the core has no way to write one.
 func addCustomField(t *testing.T, dir, id, key, value string) {
 	t.Helper()
 	matches, err := filepath.Glob(filepath.Join(dir, ".beaver", "issues", id+"-*.md"))

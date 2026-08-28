@@ -1,8 +1,8 @@
 package web_test
 
 // The graph as a reader meets it: the whole backlog as one picture. What is
-// asserted here is the surface — a node per issue, an arrow per edge, the
-// containment box, and the markers that make execution status readable — never
+// asserted here is the surface: a node per issue, an arrow per edge, the
+// containment box, and the markers that make execution status readable. Never
 // what blocked or ready mean, which is the core's to say.
 
 import (
@@ -165,7 +165,7 @@ func TestGraphRendersACycleWithADistinctBackEdge(t *testing.T) {
 	svc := open(t, dir)
 	first := create(t, svc, core.Draft{Title: "First"})
 	second := create(t, svc, core.Draft{Title: "Second", DependsOn: []string{first.ID}})
-	// The store refuses a cycle through the core, so close it by hand — exactly
+	// The store refuses a cycle through the core, so close it by hand, exactly
 	// the way a merge or a hand-edit does.
 	addFrontmatterEdge(t, dir, first.ID, second.ID)
 
@@ -188,7 +188,7 @@ func TestGraphRendersACycleWithADistinctBackEdge(t *testing.T) {
 }
 
 // Filtering to a parent cuts the picture down to that cluster: the members the
-// core returns for the query, and nothing else — no stray node, no arrow to
+// core returns for the query, and nothing else: no stray node, no arrow to
 // somewhere off the page.
 func TestGraphFiltersToOneCluster(t *testing.T) {
 	dir := newStore(t)
@@ -282,7 +282,7 @@ func TestGraphCarriesTheInteractionScriptAndItsControls(t *testing.T) {
 	}
 }
 
-// A node is its issue in miniature — the picture is otherwise geometry, so what
+// A node is its issue in miniature. The picture is otherwise geometry, so what
 // a node says is the only way to recognise one without opening it.
 func TestANodeSaysWhatItsIssueIs(t *testing.T) {
 	dir := newStore(t)
@@ -314,7 +314,7 @@ func TestTheLegendNamesEveryMarkThePictureDraws(t *testing.T) {
 	}
 }
 
-// Nothing to draw is a sentence, not an empty frame — and a filter that matches
+// Nothing to draw is a sentence, not an empty frame, and a filter that matches
 // nothing says that rather than claiming the store is empty.
 func TestAGraphWithNothingToDrawSaysSo(t *testing.T) {
 	dir := newStore(t)
@@ -370,7 +370,7 @@ func TestGraphSurvivesAnInvalidFile(t *testing.T) {
 }
 
 // addFrontmatterEdge writes a depends_on edge straight into an issue's
-// frontmatter — the way a merge or a hand-edit closes a loop the core refuses.
+// frontmatter, the way a merge or a hand-edit closes a loop the core refuses.
 func addFrontmatterEdge(t *testing.T, dir, id, dep string) {
 	t.Helper()
 	path := issueFile(t, dir, id)
@@ -393,7 +393,7 @@ var (
 )
 
 // legend reads the picture's vocabulary back as the words it names, one per
-// entry — the swatch beside each is the drawing, not the naming.
+// entry. The swatch beside each is the drawing, not the naming.
 func legend(t *testing.T, body string) []string {
 	t.Helper()
 	m := legendList.FindStringSubmatch(body)

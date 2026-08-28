@@ -1,7 +1,7 @@
 package web
 
 // The filter bar's one piece of logic: what an address asks the core for. Only
-// the mapping is asserted here — what ready, blocked, a label conjunction or the
+// the mapping is asserted here. What ready, blocked, a label conjunction or the
 // unprioritized *mean* is the core's own suite, and this file would only be
 // re-asserting it.
 

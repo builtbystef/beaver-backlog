@@ -53,7 +53,7 @@ func TestDoctorDetectsEveryProblemClass(t *testing.T) {
 	// An open issue whose only dependency was cancelled: waiting can never clear it.
 	seed(t, root, withState(mkIssue("cnl001", "Cancelled Dep"), issue.StateCancelled))
 	seed(t, root, withDeps(mkIssue("stk001", "Stuck Issue"), "cnl001"))
-	// Two files claiming one id — a clash validation cannot catch.
+	// Two files claiming one id, a clash validation cannot catch.
 	seedAt(t, root, "dup-a.md", mkIssue("dup001", "Dup A"))
 	seedAt(t, root, "dup-b.md", mkIssue("dup001", "Dup B"))
 
@@ -75,7 +75,7 @@ func TestDoctorDetectsEveryProblemClass(t *testing.T) {
 			t.Errorf("missing a %s finding; got %v", want, got)
 		}
 	}
-	// The two dangling edges — a depends_on and a parent — are each their own finding.
+	// The two dangling edges, a depends_on and a parent, are each their own finding.
 	if n := countCategory(got, core.CategoryDanglingRef); n != 2 {
 		t.Errorf("dangling findings = %d, want 2 (a depends_on and a parent)", n)
 	}
@@ -175,7 +175,7 @@ func TestDoctorFixRepairsFilenameDrift(t *testing.T) {
 }
 
 // A repair frees the name the next drifted file wants, so passes repeat until
-// none makes progress — a chain a single pass could only half fix.
+// none makes progress, a chain a single pass could only half fix.
 func TestDoctorFixResolvesChainedDrift(t *testing.T) {
 	root := newStore(t)
 	// The first file the repair reaches wants a name the second still holds; only
@@ -256,9 +256,9 @@ func TestDoctorReportsADuplicateIDAndFixesNothing(t *testing.T) {
 	}
 }
 
-// Resemblance to a known field is only ever a guess — a deliberate `status` key
-// sits two edits from `state` — so the class is reported and never counted or
-// removed.
+// Resemblance to a known field is only ever a guess, since a deliberate
+// `status` key sits two edits from `state`, so the class is reported and never
+// counted or removed.
 func TestDoctorTreatsAnUnknownKeyAsAdvisory(t *testing.T) {
 	root := newStore(t)
 	seed(t, root, withCustom(mkIssue("note01", "Deliberate Custom Key"), map[string]any{"status": "shipping"}))
@@ -372,7 +372,7 @@ func countCategory(cats []core.Category, want core.Category) int {
 }
 
 // seedAt writes an issue under an arbitrary file name, so a test can produce a
-// file whose name has drifted from what its frontmatter dictates — or two files
+// file whose name has drifted from what its frontmatter dictates, or two files
 // that claim one id.
 func seedAt(t *testing.T, root, name string, iss issue.Issue) {
 	t.Helper()

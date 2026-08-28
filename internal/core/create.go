@@ -24,8 +24,8 @@ type Draft struct {
 	Parent    string   // reference to the issue this one is a sub-issue of
 }
 
-// Created is a creation's result: the issue as written, the file it landed in —
-// which a caller may want to name — and the files the scan skipped.
+// Created is a creation's result: the issue as written, the file it landed in
+// (which a caller may want to name), and the files the scan skipped.
 type Created struct {
 	Issue    issue.Issue
 	Path     string
@@ -45,7 +45,7 @@ func (e *ValidationError) Error() string { return e.Field + " " + e.Problem }
 // Create mints the issue a draft describes: it validates the draft, resolves
 // the relationship references to ids, draws a collision-safe id, and writes the
 // file with created and updated stamped from the same instant. A reference that
-// names no issue — or several — refuses the whole creation before anything is
+// names no issue, or several, refuses the whole creation before anything is
 // written, so a typo never persists as a dangling edge.
 func (s *Service) Create(d Draft) (Created, error) {
 	if strings.TrimSpace(d.Title) == "" {
@@ -134,7 +134,7 @@ func resolveAll(snap *store.Snapshot, refs []string) ([]string, error) {
 }
 
 // dedupe returns in with later duplicates dropped, preserving first-seen order,
-// and nil when nothing is left — the shape an absent frontmatter list takes.
+// and nil when nothing is left, the shape an absent frontmatter list takes.
 func dedupe(in []string) []string {
 	seen := make(map[string]bool, len(in))
 	var out []string

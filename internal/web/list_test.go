@@ -1,7 +1,7 @@
 package web_test
 
 // The Issues view: the table under the toolbar. What is asserted here is what a
-// reader can observe — how many issues the list says it holds, the order its
+// reader can observe: how many issues the list says it holds, the order its
 // rows stand in, what a column head claims about that order and where following
 // it goes, where a row leads, and the words an empty list has. Never the class
 // names that draw any of it.
@@ -101,7 +101,7 @@ func TestASortedListIsLinkableFiltersAndAll(t *testing.T) {
 	}
 }
 
-// A row is a doorway to the issue it names, the way a card is — and the links
+// A row is a doorway to the issue it names, the way a card is, and the links
 // inside it keep their own meaning, so ui.js has something to tell apart.
 func TestARowNamesTheIssueItLeadsTo(t *testing.T) {
 	dir := newStore(t)
@@ -193,7 +193,7 @@ func listRows(t *testing.T, body string) []string {
 	return out
 }
 
-// titles are the issue titles the rows carry, in the order they stand — what
+// titles are the issue titles the rows carry, in the order they stand: what
 // an ordering by title is read back off.
 func titles(t *testing.T, body string) []string {
 	t.Helper()

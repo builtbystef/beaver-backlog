@@ -51,7 +51,7 @@ func FileName(id, slug string) string {
 	return id + "-" + slug + ".md"
 }
 
-// IDFromFileName extracts the ID portion of a canonical issue file name — the
+// IDFromFileName extracts the ID portion of a canonical issue file name: the
 // text before the first hyphen, or the whole stem when there is none. This reads
 // the filename's idea of the ID; the frontmatter remains authoritative.
 func IDFromFileName(name string) string {

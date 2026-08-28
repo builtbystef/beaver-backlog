@@ -6,22 +6,22 @@ agents with no per-contributor registration. Two separations make that work:
 **The project is shared; identity is personal.** `beaver init` sets up the
 repository (`.beaver/issues/` plus a small committed project config) and never
 records who ran it. Actor identity lives in per-machine user config and is
-never committed — a committed identity would make every cloner inherit the
+never committed; a committed identity would make every cloner inherit the
 initializer's name.
 
 **Humans and agents are identified differently.** A coding agent inherits the
 human's environment, so any ambient identity there names the *human* even while
-an agent runs — using it for the agent would misattribute the work. Agent
+an agent runs, so using it for the agent would misattribute the work. Agent
 harnesses announce themselves in the environment (`AGENT=...`, tool markers like
 `CLAUDECODE=1`), a signal set by the agent with no inheritance footgun.
 Resolution order:
 
-1. `--as <actor>` — explicit, always wins.
-2. `BEAVER_BACKLOG_ACTOR` — programmatic override; never a human's stored
+1. `--as <actor>`: explicit, always wins.
+2. `BEAVER_BACKLOG_ACTOR`: programmatic override; never a human's stored
    identity, because child agent processes inherit the environment.
 3. Agent environment signal, resolving to the agent's name.
 4. Interactive human: user-config identity; if unset, prompt, then save. This
-   step never runs non-interactively — the human's stored identity is only ever
+   step never runs non-interactively: the human's stored identity is only ever
    read when there is a human at the terminal, so an agent that forgets to
    identify itself cannot silently act as the human.
 5. Otherwise (non-interactive, no signal): proceed as a loud generic `agent`.
@@ -30,7 +30,7 @@ Agent detection is heuristic and best-effort; an unknown harness degrades to
 the generic `agent`, not an error.
 
 **Assignment coordinates; it does not lock.** A local-first tool with no
-server cannot make a claim globally atomic — two clones can both claim an
+server cannot make a claim globally atomic, since two clones can both claim an
 issue. So `start`, the verb an actor takes work with, refuses an issue already
 assigned to a *different* actor (`--force` to steal; re-claiming one's own is a
 no-op), but that guard is only as fresh as the working tree; the backstop for a
@@ -39,7 +39,7 @@ the right signal. Semantics:
 
 - `state` and `assignee` are orthogonal: `update --assignee` sets the assignee
   without changing state, and `--unassign` clears it; `start` sets
-  `in-progress` and auto-claims an unowned issue — the only implicit
+  `in-progress` and auto-claims an unowned issue, the only implicit
   assignment.
 - Assigning through `update` is an unguarded overwrite: naming another actor
   is a routine act of coordination, so `start` carries the only steal guard.

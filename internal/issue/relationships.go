@@ -7,12 +7,12 @@ import (
 
 // Relations is a derived, read-only view over a set of issues that answers the
 // relationship questions never stored on disk: which dependencies are unmet,
-// whether an issue is ready, blocked, or stuck, and the inverse edges — what an
+// whether an issue is ready, blocked, or stuck, and the inverse edges: what an
 // issue blocks, and what its children are.
 //
-// Relationships are stored one-sided — depends_on on the dependent, parent on
-// the child — and every answer is computed by scanning, so the stored forward
-// edges are the single source of truth and no inverse can desync. A dependency
+// Relationships are stored one-sided, with depends_on on the dependent and
+// parent on the child. Every answer is computed by scanning, so the stored
+// forward edges are the single source of truth and no inverse can desync. A dependency
 // is satisfied only when its target is done; a cancelled or missing target is
 // unmet and leaves the dependent not ready.
 type Relations struct {
@@ -36,7 +36,7 @@ func NewRelations(issues []Issue) *Relations {
 // it is missing from the store, and its state when present.
 type Blocker struct {
 	ID      string // the depends_on target id
-	Missing bool   // the target is not in the store — a dangling reference
+	Missing bool   // the target is not in the store: a dangling reference
 	State   State  // the target's state; the zero State when Missing
 }
 
@@ -45,8 +45,8 @@ type Blocker struct {
 // target leaves the dependent stuck rather than merely waiting.
 func (b Blocker) Cancelled() bool { return !b.Missing && b.State == StateCancelled }
 
-// BlockedOn returns iss's unmet dependencies — every target that is missing or
-// not done — in stored depends_on order, with a duplicated edge counted once.
+// BlockedOn returns iss's unmet dependencies, every target that is missing or
+// not done, in stored depends_on order, with a duplicated edge counted once.
 // Only direct dependencies are considered: a dependency that is itself blocked
 // is simply not done, so there is no transitive walk.
 func (r *Relations) BlockedOn(iss Issue) []Blocker {
@@ -90,8 +90,8 @@ func (r *Relations) Stuck(iss Issue) bool {
 	return false
 }
 
-// Blocks returns the ids of issues that depend on iss — the derived inverse of
-// depends_on — sorted for deterministic output.
+// Blocks returns the ids of issues that depend on iss, the derived inverse of
+// depends_on, sorted for deterministic output.
 func (r *Relations) Blocks(iss Issue) []string {
 	var out []string
 	for id, other := range r.byID {
@@ -103,8 +103,8 @@ func (r *Relations) Blocks(iss Issue) []string {
 	return out
 }
 
-// Children returns the ids of issues whose parent is iss — the derived inverse
-// of parent — sorted for deterministic output.
+// Children returns the ids of issues whose parent is iss, the derived inverse
+// of parent, sorted for deterministic output.
 func (r *Relations) Children(iss Issue) []string {
 	var out []string
 	for id, other := range r.byID {

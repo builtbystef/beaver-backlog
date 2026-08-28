@@ -8,7 +8,7 @@ import (
 )
 
 // verb is a lifecycle transition as this CLI presents it: the state it sets and
-// the wording for each way the core can answer. Every move is legal — whether a
+// the wording for each way the core can answer. Every move is legal; whether a
 // call changes anything is the core's business.
 type verb struct {
 	name   string      // command name, used in usage diagnostics
@@ -45,7 +45,7 @@ func cmdReopen(env Env, args []string) int { return runTransition(env, args, ver
 
 // runTransition is the shared engine behind done, cancel, and reopen: it parses
 // the invocation, asks the core to move the issue to the verb's target state,
-// and renders whichever answer came back — moved, or already there.
+// and renders whichever answer came back, moved or already there.
 func runTransition(env Env, args []string, v verb) int {
 	fs, formatFlag := newFlagSet(env, v.name)
 	pos, ok := parseArgs(fs, args)

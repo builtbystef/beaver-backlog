@@ -3,7 +3,7 @@ package core
 // This file holds the health engine: the classes of problem a store can hold,
 // the scan that finds every one of them, and the single repair that is
 // mechanically safe. A finding is stated as the facts behind it rather than as a
-// sentence, so an interface words it — and renders the files it names — its own
+// sentence, so an interface words it, and renders the files it names, its own
 // way.
 
 import (
@@ -62,7 +62,7 @@ func (c Category) String() string {
 
 // Advisory reports whether findings of this class are informational: reported,
 // but never counted as problems. Unknown-key is advisory because resemblance is
-// only a guess — a deliberate custom field like `status` sits within typo
+// only a guess: a deliberate custom field like `status` sits within typo
 // distance of `state` and must not make a healthy store read as unhealthy.
 func (c Category) Advisory() bool { return c == CategoryUnknownKey }
 
@@ -81,7 +81,7 @@ type Finding struct {
 	Fixed   bool     // whether this scan did
 
 	Err       error    // Invalid: why the file is not a usable issue
-	Canonical string   // FilenameDrift: the <id>-<slug> name the file should hold — and, once fixed, the name it does
+	Canonical string   // FilenameDrift: the <id>-<slug> name the file should hold, and once fixed the name it does
 	Key       string   // UnknownKey: the frontmatter key that looks like a typo
 	Resembles string   // UnknownKey: the known field it resembles
 	Value     string   // UnknownValue: the value no level recognizes
@@ -107,7 +107,7 @@ type Report struct {
 	Findings []Finding
 }
 
-// Problems counts the findings that still stand — neither repaired by this scan
+// Problems counts the findings that still stand, neither repaired by this scan
 // nor advisory. It is what a caller calling the store unhealthy turns on.
 func (r Report) Problems() int {
 	return r.count(func(f Finding) bool { return !f.Fixed && !f.Category.Advisory() })
@@ -141,7 +141,7 @@ func (r Report) count(pred func(Finding) bool) int {
 // Doctor scans the store and reports everything wrong with it: files that are
 // not usable issues, ids claimed twice, relationship anomalies, per-file lint,
 // and filenames drifted from the canonical <id>-<slug>. With fix set it repairs
-// the drift — the one class a machine can resolve without guessing — and never
+// the drift, the one class a machine can resolve without guessing, and never
 // removes data or touches a validation error.
 //
 // Unlike every other read, an unusable file is a finding here rather than a
@@ -192,7 +192,7 @@ func byPath(valid []located) map[string]issue.Issue {
 }
 
 // repair renames each drifted file to the canonical name its frontmatter
-// implies, through the store, which refuses to overwrite another file — so a
+// implies, through the store, which refuses to overwrite another file, so a
 // repair never destroys data. Passes repeat while any makes progress, so chained
 // drifts that free each other's names all resolve; a destination that stays
 // occupied (a mutual swap) is left standing and reported, never forced.
@@ -394,8 +394,9 @@ func duplicatedIDs(valid []located) map[string]bool {
 
 // sortFindings orders findings by category (most serious first), then by the
 // files and ids they name, then by the facts that tell two findings of one class
-// on one file apart — the two dangling edges out of a single issue. The order is
-// total, so a report never depends on the order the directory was read in.
+// on one file apart, such as the two dangling edges out of a single issue. The
+// order is total, so a report never depends on the order the directory was read
+// in.
 func sortFindings(fs []Finding) {
 	sort.Slice(fs, func(i, j int) bool { return sortKey(fs[i]) < sortKey(fs[j]) })
 }

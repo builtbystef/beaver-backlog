@@ -11,12 +11,13 @@ import (
 	"github.com/builtbystef/beaver-backlog/internal/issue"
 )
 
-// node builds one todo issue for a layout fixture.
+// fixture builds one todo issue for a layout test.
 func fixture(id string, dependsOn ...string) issue.Issue {
 	return issue.Issue{ID: id, Title: id, State: issue.StateTodo, DependsOn: dependsOn}
 }
 
-// rows and layers read a laid-out graph back by issue id.
+// placement reads a laid-out graph back by issue id, as the layer and row each
+// node landed in.
 func placement(t *testing.T, g graph) (layers, rows map[string]int) {
 	t.Helper()
 	layers, rows = map[string]int{}, map[string]int{}
@@ -28,7 +29,7 @@ func placement(t *testing.T, g graph) (layers, rows map[string]int) {
 }
 
 // The spec's worked example: C depends on B depends on A, so A sits in layer 0,
-// B in 1, C in 2 — left to right, prerequisite first.
+// B in 1, C in 2, left to right, prerequisite first.
 func TestLayersFollowDependencyDepth(t *testing.T) {
 	g := layout([]issue.Issue{fixture("c", "b"), fixture("a"), fixture("b", "a")})
 

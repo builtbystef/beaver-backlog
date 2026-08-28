@@ -51,7 +51,7 @@ func TestServeOutsideAStoreExitsNotFound(t *testing.T) {
 
 // A busy default port is not an error: serve scans forward so a second
 // project's serve coexists with the first. If our own bind of 2328 fails,
-// something else already holds it — either way the port is taken, which is
+// something else already holds it. Either way the port is taken, which is
 // exactly the setup this test needs.
 func TestServeScansForwardWhenTheDefaultPortIsTaken(t *testing.T) {
 	h := beavertest.New(t).Init()

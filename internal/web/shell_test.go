@@ -1,10 +1,10 @@
 package web_test
 
 // The app shell: the sidebar every page renders beside, what its navigation
-// offers, and the two things the shell itself has to say — the banner naming
+// offers, and the two things the shell itself has to say: the banner naming
 // the files the scan skipped, and the notice a redirect after a write leaves
-// behind. What is asserted here is structure a reader can observe — a
-// navigation entry, a badge's number, the term still in the search box — never
+// behind. What is asserted here is structure a reader can observe: a
+// navigation entry, a badge's number, the term still in the search box. Never
 // the class names that draw it.
 
 import (
@@ -148,7 +148,7 @@ func TestNoticeAfterAWriteReachesTheReader(t *testing.T) {
 }
 
 // The brand slot names the project the reader is looking at rather than the
-// application they opened — two projects served at once are two names. Every
+// application they opened; two projects served at once are two names. Every
 // page says it, the one that names nothing included.
 func TestBrandSlotNamesTheProjectOnEveryPage(t *testing.T) {
 	h, pages := shellPagesIn(t, newStoreNamed(t, "orbital-mechanics"))
@@ -197,7 +197,7 @@ func TestBrandSlotLeadsToTheBoard(t *testing.T) {
 }
 
 // The tab is how two projects open at once are told apart, so the project comes
-// first — a narrow tab strip cuts the end off, never the front.
+// first: a narrow tab strip cuts the end off, never the front.
 func TestPageTitleNamesTheProjectFirst(t *testing.T) {
 	h, pages := shellPagesIn(t, newStoreNamed(t, "orbital-mechanics"))
 

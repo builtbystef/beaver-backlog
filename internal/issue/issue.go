@@ -1,6 +1,6 @@
-// Package issue defines Beaver Backlog's core domain type — the Issue — together with
-// its on-disk Markdown representation (YAML frontmatter + body), its identity
-// (a short random ID), and the slug derived from its title.
+// Package issue defines Beaver Backlog's core domain type, the Issue, together
+// with its on-disk Markdown representation (YAML frontmatter + body), its
+// identity (a short random ID), and the slug derived from its title.
 //
 // An Issue file is the single source of truth; the ID stored in the frontmatter
 // is authoritative and the filename only mirrors it.

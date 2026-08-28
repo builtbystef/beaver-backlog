@@ -10,7 +10,7 @@ import (
 
 // The token stylesheet is the design system's colour table: one set of names
 // given a value once per palette, so nothing below it knows which theme it is
-// drawing. These are the three blocks that carry a palette — the light base,
+// drawing. These are the three blocks that carry a palette: the light base,
 // the dark a system preference asks for, and the dark a reader chose.
 var paletteBlocks = map[string]*regexp.Regexp{
 	"light":       regexp.MustCompile(`(?m)^:root\s*\{([^}]*)\}`),
@@ -72,7 +72,7 @@ func TestEveryPaletteDeclaresTheSameTokens(t *testing.T) {
 }
 
 // customProperties lists, sorted, the custom properties a declaration block
-// sets — the block's contribution to the one set of names.
+// sets: the block's contribution to the one set of names.
 func customProperties(block string) []string {
 	var out []string
 	for _, decl := range strings.Split(block, ";") {

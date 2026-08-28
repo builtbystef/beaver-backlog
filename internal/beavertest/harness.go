@@ -59,7 +59,7 @@ type Harness struct {
 }
 
 // New returns a harness backed by a fresh temp directory. The store is not yet
-// initialized — call Init or Run("init"). The user-config directory is a
+// initialized, so call Init or Run("init"). The user-config directory is a
 // distinct temp dir, keeping identity apart from the project store.
 func New(t *testing.T) *Harness {
 	t.Helper()

@@ -1,8 +1,9 @@
 package web
 
 // This file holds the detail view: one issue as the browser sees it. Nothing
-// here derives a relationship or resolves a reference — the core has already
-// done both — so the only work is naming the pieces the template lays out.
+// here derives a relationship or resolves a reference, since the core has
+// already done both, so the only work is naming the pieces the template lays
+// out.
 
 import (
 	"encoding/json"
@@ -83,7 +84,7 @@ func (s *server) detail(w http.ResponseWriter, r *http.Request) {
 }
 
 // renderDetail draws one issue's page. The note box travels in because a
-// refused note is this same page again — the log the reader was writing to, with
+// refused note is this same page again: the log the reader was writing to, with
 // their words still in the box.
 func (s *server) renderDetail(w http.ResponseWriter, r *http.Request, got core.Detail, note noteForm, status int) {
 	p := s.page(got.Issue.Title, got.Warnings)
@@ -120,7 +121,7 @@ func noteViews(notes []issue.Note) []noteView {
 }
 
 // moves lists the state changes the lifecycle allows from the issue's current
-// state — the same table Transition enforces, phrased as buttons. Start is the
+// state, the same table Transition enforces, phrased as buttons. Start is the
 // odd one out: beginning work also claims the issue, so it posts to its own
 // route (and the core, not this list, still has the final word on every move).
 func moves(iss issue.Issue) []move {

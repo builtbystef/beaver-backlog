@@ -1,4 +1,4 @@
-// Package userconfig owns Beaver Backlog's per-machine user configuration — the
+// Package userconfig owns Beaver Backlog's per-machine user configuration: the
 // personal settings that live outside the project and are never committed,
 // most importantly the saved actor identity. It is separate from the committed
 // project config so that cloning a repository never makes a contributor
@@ -35,7 +35,7 @@ type Config struct {
 // Path is the config file's location within dir.
 func Path(dir string) string { return filepath.Join(dir, fileName) }
 
-// Load reads the user config from dir. A missing file — or an empty dir path —
+// Load reads the user config from dir. A missing file, or an empty dir path,
 // yields a zero Config and no error: having no saved identity yet is a normal
 // state.
 func Load(dir string) (Config, error) {

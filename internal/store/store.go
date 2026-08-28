@@ -53,7 +53,7 @@ func (e *SharedSlugError) Unwrap() error { return ErrNotFound }
 
 // Warning reports a file a scan skipped because it is not a valid issue:
 // Path names the file and Err says what is wrong with it. The store never
-// fails a whole read on one bad file — it skips it and reports it here.
+// fails a whole read on one bad file; it skips it and reports it here.
 type Warning struct {
 	Path string // path to the skipped file
 	Err  error  // the specific reason it is not a usable issue
@@ -104,7 +104,7 @@ func (s *Store) IssuesDir() string { return filepath.Join(s.root, "issues") }
 func (s *Store) ConfigPath() string { return filepath.Join(s.root, "config.yml") }
 
 // Init creates a store under workDir: the .beaver/issues directory and a
-// project config carrying the format version. It is idempotent — re-running
+// project config carrying the format version. It is idempotent: re-running
 // never clobbers an existing config. created reports whether the store
 // directory was newly made.
 func Init(workDir string) (root string, created bool, err error) {
@@ -153,8 +153,9 @@ func Discover(workDir string) (*Store, error) {
 }
 
 // List returns the paths of all issue files, sorted for deterministic ordering.
-// A missing issues directory is treated as an empty store, not an error — a
-// half-merged or hand-edited store is a normal, recoverable state. Other read
+// A missing issues directory is treated as an empty store rather than an
+// error, since a half-merged or hand-edited store is a normal, recoverable
+// state. Other read
 // errors still surface.
 func (s *Store) List() ([]string, error) {
 	entries, err := os.ReadDir(s.IssuesDir())
@@ -180,7 +181,7 @@ func (s *Store) List() ([]string, error) {
 // sorted order. Two fingerprints that differ mean something about the files
 // changed; two that match mean a reader can be left alone. It is deliberately
 // cheap enough to repeat on a timer, which is what a watcher-free live view
-// needs — no file is parsed and no issue is built.
+// needs: no file is parsed and no issue is built.
 //
 // A missing issues directory fingerprints as an empty store, like every other
 // read, and a file that vanishes mid-scan is simply one the next scan will
@@ -226,7 +227,7 @@ func (s *Store) ReadAll() ([]issue.Issue, error) {
 }
 
 // IDTaken reports whether an issue with the given ID already exists, matching
-// on the authoritative frontmatter ID — the same identity Resolve matches on.
+// on the authoritative frontmatter ID, the same identity Resolve matches on.
 func (s *Store) IDTaken(id string) (bool, error) {
 	items, err := s.scan()
 	if err != nil {
@@ -311,9 +312,9 @@ func (s *Store) Delete(path string) error {
 // Resolve turns a user-supplied reference into a single issue, matched on the
 // authoritative frontmatter identity, never on the filename (which may have
 // drifted). Matching is exact, in four forms tried in order: a full ID, the
-// canonical "<id>-<slug>" name, the title's canonical slug, and — strictly last,
-// so it never shadows the others — the id part of a stale "<id>-<oldslug>" file
-// name (".md" suffix tolerated).
+// canonical "<id>-<slug>" name, the title's canonical slug, and finally the id
+// part of a stale "<id>-<oldslug>" file name (".md" suffix tolerated). That
+// last form is tried strictly last, so it never shadows the others.
 //
 // A slug shared by several issues names no single issue and yields a
 // *SharedSlugError (Unwraps to ErrNotFound, carries the candidates); an unknown
@@ -507,9 +508,10 @@ func fileExists(p string) bool {
 	return err == nil && !fi.IsDir()
 }
 
-// sameFile reports whether a and b are the same file on disk — true for two
-// case-only-different names on a case-insensitive filesystem, where comparing
-// the path strings would say false. It returns false if either cannot be stat'd.
+// sameFile reports whether a and b are the same file on disk. It is true for
+// two case-only-different names on a case-insensitive filesystem, where
+// comparing the path strings would say false. It returns false if either
+// cannot be stat'd.
 func sameFile(a, b string) bool {
 	fa, err := os.Stat(a)
 	if err != nil {

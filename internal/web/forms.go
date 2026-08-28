@@ -1,7 +1,7 @@
 package web
 
 // This file holds the write surface: create, edit, note, and delete as HTML
-// forms. Every handler here does the same three things — read the fields a
+// forms. Every handler here does the same three things: read the fields a
 // browser posted, hand them to one core operation, and turn the answer into
 // either a redirect or the form again with the core's refusal on it. No rule
 // about what a change means lives here; a form is a way of phrasing a call.
@@ -37,8 +37,8 @@ type refOption struct {
 }
 
 // createForm is what the create form posts. Every field is text as the browser
-// sent it — the core does the interpreting, so a refusal can hand back exactly
-// what was typed rather than a cleaned-up version of it.
+// sent it, because the core does the interpreting, so a refusal can hand back
+// exactly what was typed rather than a cleaned-up version of it.
 type createForm struct {
 	Title       string
 	Description string
@@ -60,8 +60,8 @@ type editPage struct {
 }
 
 // editForm is the whole change set an edit can make. The labels and
-// dependencies the issue already carries are checkboxes — unchecking one is how
-// the form says "remove" — and the text fields beside them are how it says
+// dependencies the issue already carries are checkboxes, so unchecking one is
+// how the form says "remove", and the text fields beside them are how it says
 // "add", which is exactly the add-and-remove shape the core's change set takes.
 type editForm struct {
 	Title        string
@@ -101,15 +101,16 @@ type noteForm struct {
 // unprioritized value the core spells "none".
 var priorityLevels = []string{"none", "urgent", "high", "medium", "low"}
 
-// createForm renders an empty create form — the one page reached from every
+// createFormPage renders an empty create form: the one page reached from every
 // other, so a new issue is always one click away.
 func (s *server) createFormPage(w http.ResponseWriter, r *http.Request) {
 	s.renderCreate(w, r, createForm{}, "", http.StatusOK)
 }
 
 // create mints the issue the form describes and sends the reader to it. A
-// refusal — an empty title, a bad priority, a reference naming no issue — is
-// the form again with the core's words on it, still holding what was typed.
+// refusal, whether an empty title, a bad priority, or a reference naming no
+// issue, is the form again with the core's words on it, still holding what was
+// typed.
 func (s *server) create(w http.ResponseWriter, r *http.Request) {
 	svc, err := s.open()
 	if err != nil {
@@ -153,7 +154,7 @@ func (s *server) create(w http.ResponseWriter, r *http.Request) {
 }
 
 // editFormPage renders the edit form over the issue the URL names, with every
-// label and dependency it holds checked — the form as "change nothing".
+// label and dependency it holds checked: the form as "change nothing".
 func (s *server) editFormPage(w http.ResponseWriter, r *http.Request) {
 	svc, err := s.open()
 	if err != nil {
@@ -226,8 +227,8 @@ func (s *server) update(w http.ResponseWriter, r *http.Request) {
 }
 
 // changes turns the posted form into the core's change set. A field the form
-// did not carry is left alone rather than cleared, so a partial form — the note
-// box's page, a future inline editor — can never blank what it never showed.
+// did not carry is left alone rather than cleared, so a partial form (the note
+// box's page, a future inline editor) can never blank what it never showed.
 func (f editForm) changes(r *http.Request) (core.Changes, error) {
 	c := core.Changes{}
 	if r.PostForm.Has("title") {
@@ -300,7 +301,7 @@ func (s *server) addNote(w http.ResponseWriter, r *http.Request) {
 }
 
 // remove deletes the issue's file outright and returns the reader to the board,
-// which says what went — the file is gone and version control is the only undo,
+// which says what went. The file is gone and version control is the only undo,
 // so the confirmation is the whole receipt.
 func (s *server) remove(w http.ResponseWriter, r *http.Request) {
 	svc, err := s.open()
@@ -343,8 +344,8 @@ func (s *server) renderEdit(w http.ResponseWriter, r *http.Request, iss issue.Is
 }
 
 // refOptions is every issue a reference field could name, offered as
-// completions, minus the issue the form is about — an issue never depends on
-// or parents itself. A store that cannot answer offers nothing: the fields
+// completions, minus the issue the form is about, since an issue never depends
+// on or parents itself. A store that cannot answer offers nothing: the fields
 // stay plain text, never costing the form (ADR 0003).
 func (s *server) refOptions(except string) []refOption {
 	svc, err := s.open()
@@ -384,8 +385,8 @@ func (s *server) failRef(w http.ResponseWriter, r *http.Request, ref string, war
 
 // refusal reports what to show inline when the core refused the form's content,
 // and false when the failure is not the form's to fix. Content is anything the
-// reader typed — a field the rules reject, a reference naming no issue or
-// several, a relationship that would close a cycle — so all of it comes back as
+// reader typed: a field the rules reject, a reference naming no issue or
+// several, a relationship that would close a cycle. All of it comes back as
 // the form rather than as an error page.
 func refusal(err error) (string, bool) {
 	var (
@@ -409,7 +410,7 @@ func keeping(current, kept []string) []choice {
 	return choices
 }
 
-// dropped is the values a checkbox group left unchecked — the removals.
+// dropped is the values a checkbox group left unchecked: the removals.
 func dropped(choices []choice) []string {
 	var out []string
 	for _, c := range choices {
@@ -420,8 +421,9 @@ func dropped(choices []choice) []string {
 	return out
 }
 
-// values splits a text field holding several entries — labels, references — on
-// commas or whitespace, which are the two ways anyone writes a short list.
+// values splits a text field holding several entries, such as labels or
+// references, on commas or whitespace, which are the two ways anyone writes a
+// short list.
 func values(s string) []string {
 	return strings.FieldsFunc(s, func(r rune) bool { return r == ',' || unicode.IsSpace(r) })
 }

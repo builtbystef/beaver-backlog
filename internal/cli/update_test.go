@@ -12,7 +12,7 @@ import (
 	"github.com/builtbystef/beaver-backlog/internal/issue"
 )
 
-// The command surface is what these tests pin — flag parsing, exclusivity, usage
+// The command surface is what these tests pin: flag parsing, exclusivity, usage
 // errors, rendering, exit codes, and one happy path. What a change set does to an
 // issue is the core's, and is covered at the core seam.
 

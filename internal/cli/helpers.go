@@ -46,8 +46,8 @@ func open(env Env) (*core.Service, error) {
 
 // coreError maps a failure from the core onto this CLI's diagnostic and exit
 // code. The reference a failure is about travels in the error itself, so a
-// command that resolved several — create, with its edges — still reports the one
-// at fault.
+// command that resolved several, such as create with its edges, still reports
+// the one at fault.
 func coreError(env Env, err error) int {
 	// Both ref errors unwrap to ErrNotFound, so they must be matched before the
 	// generic not-found branch swallows them.

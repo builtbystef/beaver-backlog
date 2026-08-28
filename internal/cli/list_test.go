@@ -206,7 +206,7 @@ func TestListParentAndSearchFlags(t *testing.T) {
 }
 
 // A --parent ref naming no issue is a not-found, the same as any other bad
-// reference — never an empty listing.
+// reference, never an empty listing.
 func TestListUnknownParentIsNotFound(t *testing.T) {
 	h := beavertest.New(t).Init()
 	seed(t, h, "aaa111", "Extract core", issue.StateTodo, beavertest.DefaultNow)

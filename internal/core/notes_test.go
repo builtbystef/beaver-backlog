@@ -10,7 +10,7 @@ import (
 )
 
 // The entry is appended in the shape the notes convention reads back, under a
-// section the first note creates — and the body it was added to is untouched.
+// section the first note creates, and the body it was added to is untouched.
 func TestNoteAppendsAnAttributedTimestampedEntry(t *testing.T) {
 	root := newStore(t)
 	seed(t, root, withBody(mkIssue("iss001", "Some work"), "Original **description** stays.\n"))
@@ -59,7 +59,7 @@ func TestNoteAppendsAnAttributedTimestampedEntry(t *testing.T) {
 }
 
 // An entry records a moment rather than a state to converge on, so the same note
-// twice is two notes — under one section.
+// twice is two notes, under one section.
 func TestNoteIsNeverANoOp(t *testing.T) {
 	root := newStore(t)
 	seed(t, root, mkIssue("iss001", "Handoff"))

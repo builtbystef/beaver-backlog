@@ -160,7 +160,7 @@ func TestResolveExactIDBeatsCoincidentSlug(t *testing.T) {
 	}
 }
 
-// The slug is the title's canonical slug, never the filename's — a drifted
+// The slug is the title's canonical slug, never the filename's, so a drifted
 // filename neither creates a phantom match nor hides the real one.
 func TestResolveSlugUsesTitleNotFilename(t *testing.T) {
 	root := newStore(t)
@@ -175,7 +175,7 @@ func TestResolveSlugUsesTitleNotFilename(t *testing.T) {
 	}
 }
 
-// An empty reference matches nothing — not even an issue whose title slugifies
+// An empty reference matches nothing, not even an issue whose title slugifies
 // to the empty string. That issue stays reachable by its ID.
 func TestResolveEmptyRefMatchesNothing(t *testing.T) {
 	root := newStore(t)
@@ -617,7 +617,7 @@ func writeRaw(t *testing.T, root, name, content string) {
 
 // Every store is in a project with a name, without anyone configuring one: the
 // name of the directory the store sits in. Discovering from a subdirectory
-// changes nothing — the name belongs to the store, not to where the caller was
+// changes nothing: the name belongs to the store, not to where the caller was
 // standing when it was found.
 func TestProjectNameIsTheDirectoryHoldingTheStore(t *testing.T) {
 	root := filepath.Join(t.TempDir(), "orbital-mechanics")

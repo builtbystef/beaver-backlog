@@ -2,7 +2,7 @@ package web_test
 
 // One issue's page as it renders: the lifecycle actions beside its title, the
 // field list, the prose, the derived relationships, and the note box. What is
-// asserted here is structure a reader can observe — a button's word and where
+// asserted here is structure a reader can observe: a button's word and where
 // it posts, a field's answer, a heading the Markdown produced. Never the class
 // names that draw any of it.
 
@@ -208,8 +208,8 @@ func offeredMoves(t *testing.T, body string) map[string]pageMove {
 	return moves
 }
 
-// answeredFields reads every named field off a rendered page — the issue's own
-// and the relationships alike — as the words a reader sees against each name.
+// answeredFields reads every named field off a rendered page, the issue's own
+// and the relationships alike, as the words a reader sees against each name.
 func answeredFields(t *testing.T, body string) map[string]string {
 	t.Helper()
 	fields := map[string]string{}

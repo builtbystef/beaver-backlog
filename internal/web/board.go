@@ -1,7 +1,7 @@
 package web
 
 // This file holds the board's one piece of presentation logic: turning a
-// listing into columns. Nothing here is a rule — column membership is just the
+// listing into columns. Nothing here is a rule: column membership is just the
 // issue's state and card order is the listing's own, so the only decision the
 // board makes for itself is how far back its terminal columns reach.
 
@@ -30,8 +30,8 @@ type boardPage struct {
 }
 
 // column is one state's stack of cards. Hidden counts what the window is keeping
-// out of sight and ShowAllURL is the address that reveals it — both empty for a
-// column that is showing everything it has.
+// out of sight and ShowAllURL is the address that reveals it. Both are empty
+// for a column that is showing everything it has.
 type column struct {
 	State      issue.State
 	Cards      []card
@@ -45,7 +45,7 @@ type card struct {
 	Conditions conditionMarks
 }
 
-// conditionMarks are the core's derived conditions as a view draws them — the
+// conditionMarks are the core's derived conditions as a view draws them: the
 // same three the graph's nodes carry, so a card and a node say the same thing.
 type conditionMarks struct {
 	Ready   bool

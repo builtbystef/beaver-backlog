@@ -1,7 +1,7 @@
 package web_test
 
 // The write surface: what each form route lands in the file on disk, and how a
-// refusal comes back. Rules — what a change set means, when a cycle is refused —
+// refusal comes back. Rules (what a change set means, when a cycle is refused)
 // belong to the core's own tests; what is asserted here is the mapping from a
 // posted form to a core call and from a core error to a status.
 
@@ -230,7 +230,7 @@ func TestDeleteRemovesTheFileAndRedirectsHome(t *testing.T) {
 }
 
 // Every refusal the core can hand back comes out as the form again, with the
-// core's own words on it — never a blank page and never a 500.
+// core's own words on it, never a blank page and never a 500.
 func TestRefusalsRerenderTheFormWith422(t *testing.T) {
 	dir := newStore(t)
 	svc := open(t, dir)
@@ -323,7 +323,7 @@ func post(h http.Handler, path string, form url.Values) *httptest.ResponseRecord
 	return res
 }
 
-// fetch reads an issue back through the core — the file on disk as the next
+// fetch reads an issue back through the core: the file on disk as the next
 // reader sees it.
 func fetch(t *testing.T, svc *core.Service, ref string) issue.Issue {
 	t.Helper()
@@ -364,7 +364,7 @@ func readIssueFile(t *testing.T, dir, id string) string {
 	return string(raw)
 }
 
-// notesSection is the raw text of a file's notes section, heading included —
+// notesSection is the raw text of a file's notes section, heading included:
 // the bytes an edit must leave alone.
 func notesSection(t *testing.T, file string) string {
 	t.Helper()

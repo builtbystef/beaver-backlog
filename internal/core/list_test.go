@@ -93,8 +93,8 @@ func TestListReadyTreatsAMissingDependencyAsUnmet(t *testing.T) {
 	}
 }
 
-// Blocked is the ready queue's other half — unstarted work that cannot begin —
-// so it is scoped to todo, and started work stays out however blocked it is.
+// Blocked is the ready queue's other half, unstarted work that cannot begin, so
+// it is scoped to todo, and started work stays out however blocked it is.
 func TestListBlockedSelectsOnlyTodo(t *testing.T) {
 	root := newStore(t)
 	seed(t, root, withState(mkIssue("dep111", "Dependency"), issue.StateCancelled))
@@ -183,8 +183,8 @@ func TestListCombinesFilters(t *testing.T) {
 	}
 }
 
-// The order is priority first, then oldest first, then the id — the last so
-// issues minted at the same instant still come back reproducibly.
+// The order is priority first, then oldest first, then the id. The id comes
+// last so issues minted at the same instant still come back reproducibly.
 func TestListOrdersByPriorityThenAgeThenID(t *testing.T) {
 	root := newStore(t)
 	seed(t, root, withPriority(atTime(mkIssue("low111", "Low but oldest"), fixedTime), issue.PriorityLow))
@@ -256,7 +256,7 @@ func TestListParentSelectsDirectChildrenOnly(t *testing.T) {
 }
 
 // The parent ref resolves like every other reference, so a slug or a file name
-// works — and a reference that names nothing is an error, not an empty listing
+// works, and a reference that names nothing is an error, not an empty listing
 // that reads as "this parent has no children".
 func TestListParentResolvesRefsAndRejectsUnknownOnes(t *testing.T) {
 	root := newStore(t)
@@ -279,8 +279,8 @@ func TestListParentResolvesRefsAndRejectsUnknownOnes(t *testing.T) {
 	}
 }
 
-// Text is one substring test over the whole of an issue's prose — title and
-// body alike — and case never decides a match.
+// Text is one substring test over the whole of an issue's prose, title and body
+// alike, and case never decides a match.
 func TestListTextMatchesTitleOrBodyCaseInsensitively(t *testing.T) {
 	root := newStore(t)
 	seedFamily(t, root)

@@ -9,9 +9,9 @@ import (
 	"github.com/builtbystef/beaver-backlog/internal/core"
 )
 
-// The point of the whole slice: a write nobody in the browser made — the CLI,
-// an agent, a git pull — changes the answer at /changed, which is how an open
-// page learns to re-fetch its view.
+// The point of the whole slice: a write nobody in the browser made, whether by
+// the CLI, an agent, or a git pull, changes the answer at /changed, which is
+// how an open page learns to re-fetch its view.
 func TestAStoreWriteChangesTheAnswerAtChanged(t *testing.T) {
 	dir := newStore(t)
 	h := newHandler(t, dir)
@@ -41,8 +41,9 @@ func TestAQuietStoreAnswersNotModified(t *testing.T) {
 	}
 }
 
-// A poll with nothing to compare — the page just opened — is answered with the
-// current validator, never a redraw signal it would have no baseline for.
+// A poll with nothing to compare, because the page just opened, is answered
+// with the current validator, never a redraw signal it would have no baseline
+// for.
 func TestTheFirstPollEstablishesABaseline(t *testing.T) {
 	dir := newStore(t)
 	h := newHandler(t, dir)
@@ -69,7 +70,7 @@ func TestNoEventStreamRemainsToHoldAConnection(t *testing.T) {
 }
 
 // The read views carry the mark the live script refreshes, and the forms do
-// not — a page being typed into must never be redrawn under the typist.
+// not: a page being typed into must never be redrawn under the typist.
 func TestOnlyReadViewsAreMarkedLive(t *testing.T) {
 	dir := newStore(t)
 	target := create(t, open(t, dir), core.Draft{Title: "Fix flag parsing"})
@@ -87,7 +88,7 @@ func TestOnlyReadViewsAreMarkedLive(t *testing.T) {
 	}
 }
 
-// The listener ships with the page — every view loads it, and it is served.
+// The listener ships with the page: every view loads it, and it is served.
 func TestEveryPageLoadsTheLiveListener(t *testing.T) {
 	dir := newStore(t)
 	h := newHandler(t, dir)

@@ -16,15 +16,16 @@ go vet ./...
 gofmt -l .              # must print nothing
 ```
 
-CI runs exactly these four checks on every push and pull request; a change is
-mergeable only when all of them pass.
+CI runs these checks on every push and pull request, along with
+`golangci-lint`, a stylesheet-drift check, linting of the install scripts, and
+a snapshot release build. A change is mergeable only when all of them pass.
 
 ## Project layout
 
 ```
-internal/core/       the application: the rules every interface shares — the
+internal/core/       the application: the rules every interface shares (the
                      lifecycle, creation, the multi-field update, the log,
-                     deletion, and doctor's health engine — free of flags,
+                     deletion, and doctor's health engine), free of flags,
                      terminals, and exit codes
 cmd/beaver/          the binary: wires the real process to the CLI engine
 internal/cli/        the command-line interface over the core: one file per
@@ -33,6 +34,8 @@ internal/cli/        the command-line interface over the core: one file per
                      everything (args, stdio, TTY-ness, working directory,
                      environment, user-config dir) through an Env struct so
                      tests can substitute all of it
+internal/web/        the local web UI over the core: server-rendered
+                     templates and embedded assets, served by beaver serve
 internal/issue/      the issue model: parsing, serializing, validation,
                      relationships
 internal/store/      the .beaver store: discovery, scanning, writing, config
@@ -41,6 +44,8 @@ internal/userconfig/ per-machine user config (actor identity)
 internal/clock/      injectable time source
 internal/beavertest/ the end-to-end test harness the command surface is tested
                      through
+internal/ci/         tests only: the contract the GitHub Actions workflows
+                     must keep
 ```
 
 ## Before you write code
@@ -48,8 +53,8 @@ internal/beavertest/ the end-to-end test harness the command surface is tested
 - Read [`docs/GLOSSARY.md`](docs/GLOSSARY.md) and use its vocabulary in code, comments,
   and docs: _issue_ (not task or ticket), _state_ (not status), _actor_ (not
   user), _label_ (not tag), _note_ (not comment).
-- Skim [`docs/adr/`](docs/adr/) — five short records covering the decisions
-  that aren't obvious from the code. The load-bearing ones: the Markdown files
+- Skim [`docs/adr/`](docs/adr/): six short records covering the decisions that
+  aren't obvious from the code. The load-bearing ones: the Markdown files
   are the only source of truth; frontmatter is machine-owned while the body is
   human-owned and unknown frontmatter keys are preserved verbatim; everyday
   commands skip-and-warn on invalid files rather than fail, and `doctor --fix`
@@ -60,7 +65,7 @@ internal/beavertest/ the end-to-end test harness the command surface is tested
 1. Fork and create a branch from `main`.
 2. Keep the test suite green and add tests for what you change, at the seam the
    change belongs to: a rule is tested against `internal/core`, and the command
-   surface — parsing, usage errors, rendering, exit codes — end-to-end through
+   surface (parsing, usage errors, rendering, exit codes) end-to-end through
    `internal/beavertest`. See the test policy in
    [`docs/CODING_STANDARDS.md`](docs/CODING_STANDARDS.md); look at any existing
    `_test.go` in `internal/core` or `internal/cli` for the pattern.

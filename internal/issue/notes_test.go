@@ -50,7 +50,7 @@ func TestAppendNoteAppendsUnderExistingSection(t *testing.T) {
 	}
 }
 
-// What AppendNote writes, ParseNotes reads back — author, time, and text, in
+// What AppendNote writes, ParseNotes reads back: author, time, and text, in
 // order, across multiple entries.
 func TestAppendParseRoundTrip(t *testing.T) {
 	body := ""
@@ -133,7 +133,7 @@ func TestSetDescriptionPreservesTheNotesSection(t *testing.T) {
 }
 
 // With no notes section the whole body is the description, so it is replaced
-// outright — verbatim, since there is no join to tidy.
+// outright and verbatim, since there is no join to tidy.
 func TestSetDescriptionReplacesABodyWithoutNotes(t *testing.T) {
 	if got := SetDescription("Old stuff.\n", "New stuff.\n"); got != "New stuff.\n" {
 		t.Errorf("SetDescription = %q, want the new description verbatim", got)

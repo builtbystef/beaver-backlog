@@ -2,8 +2,8 @@ package web
 
 // This file holds the doctor page: the store's health report as a reader sees
 // it, and the one repair that is mechanically safe. What is wrong, which class
-// each wrong belongs to, and which of them a machine may fix are all the core's
-// — this file only words the findings and renders the files they name.
+// each wrong belongs to, and which of them a machine may fix are all the
+// core's; this file only words the findings and renders the files they name.
 //
 // Unusable files are findings here rather than the banner they are everywhere
 // else: the whole point of the scan is to report them, so a broken file is
@@ -37,7 +37,7 @@ type doctorPage struct {
 type findingView struct {
 	Category string // the core's machine name, which the markup carries
 	Label    string // the class in words
-	Class    string // "problem", "advisory", or "fixed" — how it reads on the page
+	Class    string // "problem", "advisory", or "fixed": how it reads on the page
 	Paths    []string
 	IDs      []string
 	Detail   string
@@ -116,7 +116,7 @@ func findingClass(f core.Finding) string {
 	}
 }
 
-// findingLabel is the class of a finding in words — the badge the page leads
+// findingLabel is the class of a finding in words: the badge the page leads
 // each finding with.
 func findingLabel(c core.Category) string {
 	switch c {

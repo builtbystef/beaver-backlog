@@ -19,9 +19,9 @@ import (
 //  5. non-interactive      a loud generic `agent` when nothing above matched
 //
 // The human's stored identity (step 4) is consulted only in an interactive
-// session — a non-interactive run never borrows it — and a human's identity is
-// never placed in BEAVER_BACKLOG_ACTOR, which a child agent would inherit and act
-// under.
+// session, since a non-interactive run never borrows it, and a human's identity
+// is never placed in BEAVER_BACKLOG_ACTOR, which a child agent would inherit and
+// act under.
 
 // genericAgent is the fallback name when no signal identifies the actor and the
 // session is non-interactive.
@@ -50,20 +50,21 @@ type actor struct {
 // setup, and warns on stderr when it falls back to the generic agent. It errors
 // only when interactive setup cannot complete.
 func resolveActor(env Env, asFlag string) (actor, error) {
-	// 1. --as — explicit and always decisive.
+	// 1. --as: explicit and always decisive.
 	if name := strings.TrimSpace(asFlag); name != "" {
 		return actor{name, sourceFlag}, nil
 	}
-	// 2. BEAVER_BACKLOG_ACTOR — the programmatic override agents and CI set for themselves.
+	// 2. BEAVER_BACKLOG_ACTOR: the programmatic override agents and CI set for
+	//    themselves.
 	if name := strings.TrimSpace(env.Getenv("BEAVER_BACKLOG_ACTOR")); name != "" {
 		return actor{name, sourceEnv}, nil
 	}
-	// 3. Agent detection — set by the harness, not the human, so it carries no
+	// 3. Agent detection: set by the harness, not the human, so it carries no
 	// inheritance footgun.
 	if name, ok := knownAgent(env.Getenv); ok {
 		return actor{name, sourceAgent}, nil
 	}
-	// 4. Interactive human — gated on an interactive session, because a
+	// 4. Interactive human: gated on an interactive session, because a
 	// non-interactive run must never borrow the human's identity.
 	if env.StdinIsTTY {
 		cfg, err := userconfig.Load(env.UserConfigDir)

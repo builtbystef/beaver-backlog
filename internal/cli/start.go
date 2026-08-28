@@ -13,14 +13,14 @@ import (
 // Start is where ownership and the lifecycle meet: it begins work and claims the
 // issue in one move, and it carries the only ownership guard left on the command
 // surface. Assignment everywhere else is an unguarded update of the assignee
-// field, because it is advisory coordination rather than a lock — the guard here
+// field, because it is advisory coordination rather than a lock. The guard here
 // is best-effort too, since concurrent claims on two branches surface as a merge
 // conflict on the `assignee:` line rather than as silent double-ownership.
 
 // cmdStart moves an issue to in-progress, auto-claiming an unowned one for the
 // current actor and refusing one held by a different actor unless --force steals
 // it. A closed issue is resurrected into active work in the same move. Unmet
-// dependencies produce a warning, never a refusal — starting blocked work is
+// dependencies produce a warning, never a refusal: starting blocked work is
 // sometimes the right call.
 func cmdStart(env Env, args []string) int {
 	fs, formatFlag := newFlagSet(env, "start")
@@ -47,7 +47,7 @@ func cmdStart(env Env, args []string) int {
 	}
 
 	// The core takes the actor as a value, so identity is resolved before the
-	// call — after the store is found, so no interactive prompt fires outside a
+	// call, after the store is found, so no interactive prompt fires outside a
 	// store.
 	me, err := resolveActor(env, *asFlag)
 	if err != nil {

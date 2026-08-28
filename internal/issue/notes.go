@@ -13,9 +13,9 @@ import (
 // write and read halves of that convention, and they agree on one format so a
 // note round-trips.
 //
-// The format is a "## Notes" section whose entries each open with an attribution
-// line — "**<author>** — <timestamp>" — followed by the note text, up to the next
-// attribution line or the end of the body:
+// The format is a "## Notes" section whose entries each open with an
+// attribution line, "**<author>** — <timestamp>", followed by the note text,
+// up to the next attribution line or the end of the body:
 //
 //	## Notes
 //
@@ -71,8 +71,9 @@ func renderNote(n Note) string {
 // by description, leaving the notes section byte-identical. A body with no notes
 // section is description alone: the whole body was the description.
 //
-// The log is not the writer's to rewrite — an entry is another actor's words —
-// so a caller replacing what an issue says never touches what was said about it.
+// The log is not the writer's to rewrite, since an entry is another actor's
+// words, so a caller replacing what an issue says never touches what was said
+// about it.
 func SetDescription(body, description string) string {
 	start, ok := notesStart(body)
 	if !ok {
@@ -92,7 +93,7 @@ func SetDescription(body, description string) string {
 // above the notes section, with the blank line that separates them trimmed. A
 // body with no notes section is all description.
 //
-// It is SetDescription's reader — the half a renderer needs to show the
+// It is SetDescription's reader: the half a renderer needs to show the
 // description and the parsed notes without printing the log's raw text twice.
 func Description(body string) string {
 	start, ok := notesStart(body)
@@ -159,8 +160,8 @@ func notesRegion(body string) (string, bool) {
 	return entries, true
 }
 
-// notesStart returns the offset at which the notes section begins — the first
-// byte of its "## Notes" header line — and whether the body has one. It is an
+// notesStart returns the offset at which the notes section begins, the first
+// byte of its "## Notes" header line, and whether the body has one. It is an
 // offset rather than a line index so a caller can keep the section's bytes
 // exactly as they are.
 func notesStart(body string) (int, bool) {

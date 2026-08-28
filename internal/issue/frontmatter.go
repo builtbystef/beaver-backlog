@@ -101,9 +101,9 @@ func Unmarshal(data []byte) (Issue, error) {
 	}, nil
 }
 
-// splitFrontmatter separates the YAML frontmatter — the block between the
-// opening "---" fence on the first line and the next "---" fence — from the
-// body, dropping a single blank separator line.
+// splitFrontmatter separates the YAML frontmatter from the body, dropping a
+// single blank separator line. The frontmatter is the block between the opening
+// "---" fence on the first line and the next "---" fence.
 func splitFrontmatter(data []byte) (front, body []byte, err error) {
 	s := bytes.TrimPrefix(data, []byte("\ufeff")) // drop a UTF-8 BOM if present
 

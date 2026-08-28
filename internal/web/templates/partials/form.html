@@ -1,6 +1,6 @@
 {{/* The fragments the forms share. */}}
 
-{{/* options renders a select's option list from []{Value, Label, Selected} —
+{{/* options renders a select's option list from []{Value, Label, Selected},
      the shape the priority and assignee dropdowns already share. */}}
 {{define "options"}}{{range .}}<option value="{{.Value}}"{{if .Selected}} selected{{end}}>{{.Label}}</option>{{end}}{{end}}
 
@@ -23,8 +23,8 @@
      edit form must not drift apart on it.
 
      Each renders an attribute value, not an element, because the elements
-     differ in everything else — what they post, what they complete against,
-     which one takes the focus on arrival. */}}
+     differ in everything else: what they post, what they complete against,
+     and which one takes the focus on arrival. */}}
 
 {{/* field-label: the quiet uppercase name above a control. */}}
 {{define "field-label"}}text-xs font-medium tracking-wide text-ink-muted uppercase{{end}}

@@ -14,8 +14,8 @@ Conventions this project holds beyond what linters and formatters enforce. Revie
 ## Tests
 
 - **The core seam is the primary behavior suite.** A rule about what an
-  operation means — what it writes, what it refuses, what it leaves alone —
-  is tested against `internal/core`, where the rule lives, once.
+  operation means, meaning what it writes, what it refuses, and what it leaves
+  alone, is tested against `internal/core`, where the rule lives, once.
 - **CLI tests cover the surface, not the rules.** Through the end-to-end
   harness in `internal/beavertest`: flag parsing, arity and usage errors,
   flag-exclusivity errors, human and JSON rendering, exit-code mapping, and one
@@ -24,7 +24,7 @@ Conventions this project holds beyond what linters and formatters enforce. Revie
   `_test.go` in `internal/cli`.
 - Tests substitute the world through the `Env` struct (args, stdio and their
   TTY-ness, working directory, environment lookup, user-config dir) and the core
-  options it forwards (clock, ID source) — never with global state or real user
+  options it forwards (clock, ID source), never with global state or real user
   config.
 
 ## Error handling
@@ -39,6 +39,6 @@ Conventions this project holds beyond what linters and formatters enforce. Revie
 
 - Prefer what the project already has: an installed library or the standard
   library before a new dependency. The module currently needs only three, and
-  building needs nothing beyond Go — keep it that way.
+  building needs nothing beyond Go. Keep it that way.
 - A new production dependency needs a stated reason in the issue that
-  introduces it — never as the default answer to a small problem.
+  introduces it, never as the default answer to a small problem.

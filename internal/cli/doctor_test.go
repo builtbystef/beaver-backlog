@@ -54,7 +54,7 @@ func TestDoctorDetectsEachProblemClass(t *testing.T) {
 	// Stuck on a cancelled dependency: an open issue whose dependency can never be met.
 	seedDep(t, h, "cnl001", "Cancelled Dep", issue.StateCancelled, nil, "")
 	seedDep(t, h, "stk001", "Stuck Issue", issue.StateTodo, []string{"cnl001"}, "")
-	// Two files claiming one id — a clash validation cannot catch.
+	// Two files claiming one id, a clash validation cannot catch.
 	seedAt(t, h, "dup-a.md", "dup001", "Dup A", issue.StateTodo)
 	seedAt(t, h, "dup-b.md", "dup001", "Dup B", issue.StateTodo)
 
@@ -152,9 +152,9 @@ func TestDoctorFixNeverRemovesUnknownKey(t *testing.T) {
 	}
 }
 
-// A likely-typo'd key is only ever a guess — a deliberate custom key like `status`
-// sits within typo distance of `state` — so it is reported as an advisory note but
-// must never fail doctor.
+// A likely-typo'd key is only ever a guess, since a deliberate custom key like
+// `status` sits within typo distance of `state`, so it is reported as an
+// advisory note but must never fail doctor.
 func TestDoctorUnknownKeyIsAdvisory(t *testing.T) {
 	h := beavertest.New(t).Init()
 	seedCustom(t, h, "note01", "Deliberate Custom Key", map[string]any{"status": "shipping"})
@@ -201,8 +201,8 @@ func TestDoctorAdvisoryDoesNotMaskProblems(t *testing.T) {
 }
 
 // An unrecognized priority loads fine but silently matches no --priority filter,
-// so doctor flags it — and never fixes it, since mapping it to a real level would
-// be guessing.
+// so doctor flags it, and never fixes it, since mapping it to a real level
+// would be guessing.
 func TestDoctorFlagsUnknownPriorityValue(t *testing.T) {
 	h := beavertest.New(t).Init()
 	h.WriteFile("issues/pri001-typo-priority.md",
@@ -226,7 +226,7 @@ func TestDoctorFlagsUnknownPriorityValue(t *testing.T) {
 }
 
 // An issue with no timestamps is usable but sorts as the oldest in every list, so
-// doctor surfaces it — and never invents a date.
+// doctor surfaces it, and never invents a date.
 func TestDoctorFlagsMissingTimestamps(t *testing.T) {
 	h := beavertest.New(t).Init()
 	h.WriteFile("issues/nots01-no-stamps.md", "---\nid: nots01\ntitle: No Stamps\nstate: todo\n---\n")
@@ -303,7 +303,7 @@ func TestDoctorFlagsParentCycles(t *testing.T) {
 }
 
 // Renaming either duplicate-id file onto the canonical name would clobber the
-// other, so --fix leaves both alone — and offers no drift repair for a contested id.
+// other, so --fix leaves both alone, and offers no drift repair for a contested id.
 func TestDoctorDuplicateIDIsReportedNotFixed(t *testing.T) {
 	h := beavertest.New(t).Init()
 	seedAt(t, h, "dup-a.md", "dup001", "Dup A", issue.StateTodo)

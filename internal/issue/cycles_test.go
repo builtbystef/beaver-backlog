@@ -42,7 +42,7 @@ func TestCyclesTwoNodeCycle(t *testing.T) {
 }
 
 func TestCyclesSelfDependency(t *testing.T) {
-	// A self-dependency is a cycle of one — the case Tarjan alone would miss.
+	// A self-dependency is a cycle of one, the case Tarjan alone would miss.
 	got := cyclesOf(dep("aaaaaa", "aaaaaa"))
 	want := [][]string{{"aaaaaa"}}
 	if !reflect.DeepEqual(got, want) {

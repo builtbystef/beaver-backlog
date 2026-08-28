@@ -1,4 +1,4 @@
-{{/* The inline fragments the pages share — one define per fragment, so a badge
+{{/* The inline fragments the pages share, one define per fragment, so a badge
      or link changes in one place. Each renders a single element with no
      surrounding whitespace; spacing and any with/else wrapping around an empty
      value stay with the caller, because pages disagree on both. */}}
@@ -9,7 +9,7 @@
 
 {{define "label"}}<span class="label">{{.}}</span>{{end}}
 
-{{/* none is the placeholder for a field with nothing in it — a dash rather than
+{{/* none is the placeholder for a field with nothing in it: a dash rather than
      a blank, so an empty cell still reads as answered. */}}
 {{define "none"}}<span class="none">–</span>{{end}}
 

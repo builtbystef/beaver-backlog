@@ -1,8 +1,8 @@
 package web
 
 // This file holds what a dropped card means: the two routes a drag posts to.
-// Neither decides anything about the lifecycle — which move is legal and whose
-// claim stands are the core's, and the web never steals — so all that happens
+// Neither decides anything about the lifecycle. Which move is legal and whose
+// claim stands are the core's, and the web never steals, so all that happens
 // here is turning a column into a core call and the core's answer into a status
 // the board's script can act on.
 
@@ -24,7 +24,7 @@ var dropTargets = map[string]issue.State{
 	string(issue.StateCancelled): issue.StateCancelled,
 }
 
-// setState moves the issue to the column it was dropped on — the same
+// setState moves the issue to the column it was dropped on: the same
 // transition the CLI's done, cancel, and reopen make. A drop back on the card's
 // own column is the core's idempotent no-op, which writes nothing.
 func (s *server) setState(w http.ResponseWriter, r *http.Request) {
@@ -54,8 +54,8 @@ func (s *server) setState(w http.ResponseWriter, r *http.Request) {
 }
 
 // start claims the issue for the actor the server was launched as and puts it
-// in progress — the in-progress column's drop. It never forces: stealing an
-// issue another actor holds stays a deliberate act at the CLI.
+// in progress, which is the in-progress column's drop. It never forces:
+// stealing an issue another actor holds stays a deliberate act at the CLI.
 func (s *server) start(w http.ResponseWriter, r *http.Request) {
 	svc, err := s.open()
 	if err != nil {
@@ -72,7 +72,7 @@ func (s *server) start(w http.ResponseWriter, r *http.Request) {
 }
 
 // returnTo is where a state change sends the reader afterwards: the local page
-// the form named, or the board — the drag's home — when it named none. Only a
+// the form named, or the board (the drag's home) when it named none. Only a
 // path of this site's own is followed, so a crafted form cannot bounce a
 // reader off to elsewhere.
 func returnTo(r *http.Request) string {
@@ -85,8 +85,8 @@ func returnTo(r *http.Request) string {
 }
 
 // failDrop words a refused drop. An issue someone else holds is a conflict with
-// the store's current truth — the card goes back where it was and the reader is
-// told why — while anything else is the shared failure page.
+// the store's current truth, so the card goes back where it was and the reader
+// is told why, while anything else is the shared failure page.
 func (s *server) failDrop(w http.ResponseWriter, r *http.Request, ref string, warnings []core.Warning, err error) {
 	var claimed *core.ClaimedError
 	if errors.As(err, &claimed) {

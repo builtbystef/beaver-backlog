@@ -55,7 +55,7 @@ func TestCreateWritesTheDraft(t *testing.T) {
 }
 
 // A draft that does not describe an issue that can exist is refused by field,
-// with nothing written — the caller phrases the refusal its own way.
+// with nothing written; the caller phrases the refusal its own way.
 func TestCreateValidatesTheDraft(t *testing.T) {
 	cases := []struct {
 		name  string
@@ -109,7 +109,7 @@ func TestCreateResolvesAndDedupesEdges(t *testing.T) {
 }
 
 // A typo must not persist as a dangling edge, so the whole creation is refused
-// before any file is written — and the error names the reference at fault, which
+// before any file is written, and the error names the reference at fault, which
 // the caller never had to track.
 func TestCreateRefusesAnUnresolvableEdge(t *testing.T) {
 	cases := map[string]core.Draft{
@@ -172,7 +172,7 @@ func TestCreateReportsSkippedFiles(t *testing.T) {
 // --- helpers ---
 
 // openWith returns a service whose writes stamp writeTime and whose new issues
-// draw the given ids in order, repeating the last — so a test can name the id a
+// draw the given ids in order, repeating the last, so a test can name the id a
 // creation mints, and hand minting a collision to retry past.
 func openWith(t *testing.T, dir string, ids ...string) *core.Service {
 	t.Helper()

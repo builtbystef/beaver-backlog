@@ -124,9 +124,9 @@ func promptForProjectName(env Env, fallback string, in *bufio.Reader) (string, e
 	return "", nil
 }
 
-// seedIdentity establishes the runner's saved identity when init can — an
-// interactive session with none saved yet — and returns the name it saved, or
-// "" when it does nothing. It never fails init: a declined or unreadable prompt
+// seedIdentity establishes the runner's saved identity when init can, meaning
+// in an interactive session with none saved yet, and returns the name it saved,
+// or "" when it does nothing. It never fails init: a declined or unreadable prompt
 // only warns and leaves the store initialized.
 func seedIdentity(env Env, in *bufio.Reader) string {
 	if !env.StdinIsTTY {

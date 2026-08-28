@@ -47,7 +47,7 @@ func TestCreateResolvesAndDedupesEdges(t *testing.T) {
 	h := beavertest.New(t).Init()
 	base := h.DecodeJSON(h.MustRun("create", "Shared base").Stdout)["id"].(string)
 
-	// Reference the same issue three ways — by slug, twice by id — in one create.
+	// Reference the same issue three ways in one create: by slug, then twice by id.
 	out := h.DecodeJSON(h.MustRun("create", "Uses the base",
 		"--depends-on", "shared-base", // the slug
 		"--depends-on", base+","+base, // the id, twice, comma-joined

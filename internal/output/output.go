@@ -84,7 +84,7 @@ func WriteList(w io.Writer, issues []issue.Issue, f Format) error {
 }
 
 // writeTable renders issues as an aligned human table. The column set is not a
-// contract — the machine shape lives in JSON. The free-form title goes last so
+// contract; the machine shape lives in JSON. The free-form title goes last so
 // its variable width cannot misalign the rest.
 func writeTable(w io.Writer, issues []issue.Issue) error {
 	if len(issues) == 0 {
@@ -295,7 +295,7 @@ func writeHuman(w io.Writer, iss issue.Issue) error {
 }
 
 // writeHumanHead renders the title line and the aligned "key  value" block of
-// an issue's own fields — everything that precedes the body.
+// an issue's own fields, meaning everything that precedes the body.
 func writeHumanHead(b *strings.Builder, iss issue.Issue) {
 	fmt.Fprintf(b, "%s  %s\n\n", iss.ID, iss.Title)
 

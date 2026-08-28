@@ -135,8 +135,8 @@ Marked ix2guj done
 ```
 
 State changes are verbs of their own (`start`, `done`, `cancel`, `reopen`);
-every other field — title, description, assignee, priority, labels,
-relationships — changes through `beaver update`.
+every other field (title, description, assignee, priority, labels,
+relationships) changes through `beaver update`.
 
 ## The web UI
 
@@ -144,20 +144,19 @@ relationships — changes through `beaver update`.
 port 2328 by default and scans forward if that port is occupied (override it
 with `--port`). No daemon and no build step; stop it with Ctrl-C.
 
-- **Board** — issues as cards in state columns; drag a card to move it.
-- **List** — the same issues as a table, sharing one filter bar with the board
+- **Board**: issues as cards in state columns; drag a card to move it.
+- **List**: the same issues as a table, sharing one filter bar with the board
   (label, priority, assignee, text search).
-- **Graph** — the dependency graph as a server-rendered picture: layered
-  layout, parent clusters, dependency arrows; pan, zoom, and filter it.
-- **Issue pages** — rendered Markdown descriptions and notes, every field
+- **Graph**: the dependency graph as a server-rendered picture, with a layered
+  layout, parent clusters, and dependency arrows; pan, zoom, and filter it.
+- **Issue pages**: rendered Markdown descriptions and notes, every field
   editable, plus creating new issues in the browser.
-- **Doctor** — store health as a page, with the same safe repair as
+- **Doctor**: store health as a page, with the same safe repair as
   `doctor --fix`.
 
-Open pages notice when the store changes underneath them — a pull, a hand
-edit, another actor — and redraw themselves. Every control is a plain HTML
-form first, so the UI keeps working with JavaScript disabled; scripts only
-add polish on top. The UI follows your system's light or dark theme, and
+Open pages notice when the store changes underneath them, whether from a pull,
+a hand edit, or another actor, and redraw themselves. The UI follows your
+system's light or dark theme, with a control in the sidebar to override it, and
 writes are attributed just like CLI writes (`beaver serve --as <actor>`).
 
 ### Screenshots
@@ -202,7 +201,7 @@ root cause: form strips ! before hashing
 The frontmatter is machine-owned (Beaver Backlog keeps it formatted,
 and unknown keys you add by hand are preserved verbatim, never interpreted);
 the issue body is yours (Beaver Backlog only ever appends notes to it). State is one of
-`todo`, `in-progress`, `done`, or `cancelled` — cancelled meaning deliberately
+`todo`, `in-progress`, `done`, or `cancelled`; cancelled means deliberately
 abandoned, kept visible so nobody re-files it. Any state may move to any
 other; the tracker records reality rather than enforcing a workflow.
 
@@ -236,28 +235,28 @@ nothing at all if they net out to no change:
 | `--title <text>`                       | The title, renaming the file to the fresh slug (the ID is fixed) |
 | `--body <text>` / `--body-file <path>` | The description, leaving the `## Notes` section untouched        |
 | `--assignee <actor>` / `--unassign`    | The assignee                                                     |
-| `--priority <level>`                   | Priority (`urgent`–`low`, or `none` to clear)                    |
+| `--priority <level>`                   | Priority (`urgent` to `low`, or `none` to clear)                 |
 | `--label <spec>`                       | Labels: `bug` or `+bug` adds, `-bug` removes; repeatable, CSV    |
 | `--depends-on <spec>`                  | Blocking edges, by ref, with the same `+`/`-` syntax             |
 | `--parent <ref>` / `--no-parent`       | The parent issue                                                 |
 
-A `<ref>` is an issue's ID, its slug, or its file name — resolved by exact
-match only, never by prefix or fuzzy match. Run `beaver help` for full usage.
+A `<ref>` is an issue's ID, its slug, or its file name, resolved by exact match
+only, never by prefix or fuzzy match. Run `beaver help` for full usage.
 
 ## For scripts and agents
 
 Output format auto-detects: human-readable tables on a terminal, JSON when
-piped (override with `--format human|json`). Exit codes are stable — `0`
+piped (override with `--format human|json`). Exit codes are stable: `0`
 success, `1` runtime failure, `2` usage error, `3` issue or store not found.
 
-Every mutation is attributed to an **actor** — a free-form name; humans and
+Every mutation is attributed to an **actor**, a free-form name; humans and
 agents are treated identically. Identity resolves from `--as`, then the
 `BEAVER_BACKLOG_ACTOR` environment variable, then per-machine user config (a
 human is prompted once, in a terminal). Set `BEAVER_BACKLOG_ACTOR` in an agent's
 environment and every claim and note it makes is attributed correctly.
 
-A complete issue — title, description, and metadata — is one command: pass a
-short description inline with `--body`, or pipe multi-line Markdown through
+A complete issue, with title, description, and metadata, is one command: pass
+a short description inline with `--body`, or pipe multi-line Markdown through
 `--body-file -` (a path works too) and skip the shell quoting:
 
 ```console
@@ -269,7 +268,7 @@ Created t4y1gv  Login form rejects valid passwords
   .beaver/issues/t4y1gv-login-form-rejects-valid-passwords.md
 ```
 
-Routine upkeep is likewise one command rather than a sequence — `update` takes
+Routine upkeep is likewise one command rather than a sequence: `update` takes
 every field it changes at once, and reports the result in the same single-issue
 JSON shape the lifecycle verbs use:
 
@@ -294,7 +293,7 @@ EOF
 Updated t4y1gv
 ```
 
-**Editing the issue file directly is equally first-class** — the files are the
+**Editing the issue file directly is equally first-class.** The files are the
 source of truth, and that is the interactive path this tool deliberately does
 not wrap in a command. Three rules keep a hand edit safe:
 
@@ -302,16 +301,16 @@ not wrap in a command. Three rules keep a hand edit safe:
   journal; rewriting or dropping another actor's entries breaks the contract.
   Edit the description above it, and add your own entries only through
   `beaver note`.
-- **Never change the `id` field** — it is the issue's identity, and the
+- **Never change the `id` field.** It is the issue's identity, and the
   filename merely mirrors it.
 - **Follow up with `beaver note <ref> "<what you changed>"`.** A hand edit
   alone does not bump the `updated` timestamp; a note both journals the change
   for other actors and bumps it.
 
 `beaver doctor` is the net under all of it: run it after a hand edit and it
-reports anything the edit left behind. Whatever drifts anyway — say a filename
-gone stale after a hand-retitle — is lint, not corruption, and
-`doctor --fix` repairs it.
+reports anything the edit left behind. Whatever drifts anyway, say a filename
+gone stale after a hand-retitle, is lint, not corruption, and `doctor --fix`
+repairs it.
 
 ## Coordinating parallel work
 
@@ -323,7 +322,7 @@ merge surfaces the clash. Push claims early and integrate often.
 
 Give each concurrent agent its **own working tree** (a separate `git worktree`
 or clone). Two agents sharing one checkout can silently overwrite each other's
-edits — that configuration is unsupported.
+edits; that configuration is unsupported.
 
 Issues relate through `depends_on` and `parent`, stored one-sided on the
 dependent or child. `beaver list --ready` shows what is actionable now (todo,
@@ -333,22 +332,22 @@ every dependency done); `--blocked` shows what is waiting.
 
 Distributed, hand-editable files can drift: filenames out of sync with titles,
 dangling references after a bad merge, dependency cycles, typo'd frontmatter
-keys. Everyday commands degrade gracefully — an invalid file is skipped with a
-warning, never a crash — and `beaver doctor` reports everything it finds.
+keys. Everyday commands degrade gracefully, skipping an invalid file with a
+warning rather than crashing, and `beaver doctor` reports everything it finds.
 `doctor --fix` repairs only what is unambiguous (like drifted filenames) and
 never removes data.
 
 ## Documentation
 
-- [`docs/GLOSSARY.md`](docs/GLOSSARY.md) — the project's language: what an
-  issue, actor, claim, and note precisely mean.
-- [`docs/TRACKER.md`](docs/TRACKER.md) — the conventions this repository uses
-  to track its own work with Beaver Backlog.
-- [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) — the modules and the seams
+- [`docs/GLOSSARY.md`](docs/GLOSSARY.md): what an issue, actor, claim, and
+  note precisely mean.
+- [`docs/TRACKER.md`](docs/TRACKER.md): the conventions this repository uses to
+  track its own work with Beaver Backlog.
+- [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md): the modules and the seams
   between them.
-- [`docs/CODING_STANDARDS.md`](docs/CODING_STANDARDS.md) — the coding and test
+- [`docs/CODING_STANDARDS.md`](docs/CODING_STANDARDS.md): the coding and test
   conventions used by contributors.
-- [`docs/adr/`](docs/adr/) — the architecture decisions behind the design and
+- [`docs/adr/`](docs/adr/): the architecture decisions behind the design and
   their tradeoffs.
 
 ## Status
@@ -361,8 +360,8 @@ minimum and called out clearly.
 
 ## Contributing
 
-Contributions are welcome — see [`CONTRIBUTING.md`](CONTRIBUTING.md) for how
-to build, test, and submit changes.
+Contributions are welcome. See [`CONTRIBUTING.md`](CONTRIBUTING.md) for how to
+build, test, and submit changes.
 
 ## License
 

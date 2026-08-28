@@ -11,15 +11,15 @@ import (
 
 // This file holds update, the one command behind every mutation that is not a
 // state change: title, description, assignee, priority, labels, dependencies,
-// and parent, any number of them in a single invocation. What a change set means
-// — what an empty value clears, how a set is applied, whether anything changed
-// at all — is the core's; what stays here is turning flags into a core.Changes
-// and wording what came back.
+// and parent, any number of them in a single invocation. What a change set
+// means (what an empty value clears, how a set is applied, whether anything
+// changed at all) is the core's; what stays here is turning flags into a
+// core.Changes and wording what came back.
 //
 // A flag's presence, not its value, marks a field for change, so an update that
 // empties a field is told apart from one that leaves it alone. The clearing
-// flags say it in words rather than by an empty value — --unassign, --no-parent,
-// and `--priority none` — so an empty --assignee is a mistyped invocation, not a
+// flags say it in words rather than by an empty value (--unassign, --no-parent,
+// and `--priority none`), so an empty --assignee is a mistyped invocation, not a
 // silent release.
 
 // mutationFlags are update's field flags. At least one must be named: an update
@@ -160,8 +160,8 @@ func cmdUpdate(env Env, args []string) int {
 	return reportIssue(env, format, out.Issue, line)
 }
 
-// updateError maps update's own refusal — a relationship change that would close
-// a cycle — onto its diagnostic and exit code. The store is sound and the
+// updateError maps update's own refusal, a relationship change that would close
+// a cycle, onto its diagnostic and exit code. The store is sound and the
 // reference resolved; what was asked for is an issue graph that cannot exist, so
 // it is a usage error like any other bad invocation.
 func updateError(env Env, err error) int {
@@ -198,7 +198,7 @@ type setChange struct{ add, remove []string }
 
 // parseSetChange splits a set flag's values by their prefix: a bare or
 // "+"-prefixed value adds, a "-"-prefixed one removes. Both halves travel to the
-// core, which decides what survives — a value named in both is removed — so a
+// core, which decides what survives (a value named in both is removed), so a
 // caller can add and drop entries in one invocation without resending the ones
 // it does not know about.
 func parseSetChange(name string, values []string) (setChange, error) {

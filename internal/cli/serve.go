@@ -28,7 +28,7 @@ const shutdownGrace = 5 * time.Second
 
 // cmdServe runs the local web UI in the foreground until the process is
 // interrupted. It resolves the actor once, here at launch, so every write the
-// browser makes is attributed to whoever started the server — the browser has no
+// browser makes is attributed to whoever started the server; the browser has no
 // identity of its own. The socket is loopback-only and there is no option to
 // widen it: the UI is one person's view of their own files, with no auth to put
 // in front of it.
@@ -81,7 +81,7 @@ func cmdServe(env Env, args []string) int {
 }
 
 // listenLoopback binds the loopback socket for the web UI. A port the user
-// chose is honored or fails outright — they asked for that port and no other.
+// chose is honored or fails outright: they asked for that port and no other.
 // The default port instead scans forward to the next free one, so serves for
 // several projects coexist without anyone picking ports; the note tells the
 // user why the URL is not the usual one.
@@ -103,8 +103,8 @@ func listenLoopback(env Env, port int, chosen bool) (net.Listener, error) {
 }
 
 // serveUntilInterrupt runs the server until the environment's context is
-// cancelled — the interrupt the binary translates — then lets in-flight requests
-// finish before returning.
+// cancelled, which is the interrupt the binary translates, then lets in-flight
+// requests finish before returning.
 func serveUntilInterrupt(env Env, ln net.Listener, handler http.Handler) int {
 	ctx := env.Ctx
 	if ctx == nil {

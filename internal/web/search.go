@@ -1,9 +1,9 @@
 package web
 
 // This file holds the one search box's whole behaviour: which of the two things
-// a query means. The decision is the core's, not the interface's — whether the
-// text resolves as a reference is exactly what Get answers — so all that
-// happens here is turning that answer into an address.
+// a query means. The decision is the core's, not the interface's, because
+// whether the text resolves as a reference is exactly what Get answers, so all
+// that happens here is turning that answer into an address.
 
 import (
 	"errors"
@@ -16,8 +16,8 @@ import (
 
 // search sends the reader wherever their query meant to go: an exact reference
 // to that issue, anything else to the list filtered by the text. A query that
-// matches nothing is still a filter — an empty list is an answer, not an error —
-// so this route never renders a failure of its own.
+// matches nothing is still a filter, since an empty list is an answer rather
+// than an error, so this route never renders a failure of its own.
 //
 // A reference several issues share redirects to the detail route all the same,
 // which is where the choice between them is offered.

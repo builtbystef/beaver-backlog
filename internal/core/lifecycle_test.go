@@ -12,7 +12,7 @@ import (
 	"github.com/builtbystef/beaver-backlog/internal/issue"
 )
 
-// writeTime is when the tests below pretend writes happen — well after the
+// writeTime is when the tests below pretend writes happen: well after the
 // instant seeded issues carry, so a bumped `updated` is unmistakable and a
 // stray write cannot hide behind an unchanged timestamp.
 var writeTime = fixedTime.Add(48 * time.Hour)
@@ -83,7 +83,7 @@ func TestTransitionToAClosedStateKeepsTheAssignee(t *testing.T) {
 
 // Entering todo clears the assignee: todo is the unowned pile, and whoever
 // picks the issue up next claims it by starting it. This holds wherever the
-// issue came from — a closed state or active work.
+// issue came from, a closed state or active work.
 func TestTransitionToTodoClearsTheAssignee(t *testing.T) {
 	for _, from := range []issue.State{issue.StateInProgress, issue.StateDone, issue.StateCancelled} {
 		t.Run(string(from), func(t *testing.T) {
@@ -112,7 +112,7 @@ func TestTransitionToTodoClearsTheAssignee(t *testing.T) {
 }
 
 // A transition to the state an issue already holds is an idempotent no-op: it
-// reports the issue unchanged and leaves the file — and its `updated` — alone.
+// reports the issue unchanged and leaves the file, and its `updated`, alone.
 func TestTransitionToTheCurrentStateWritesNothing(t *testing.T) {
 	root := newStore(t)
 	seed(t, root, withState(mkIssue("iss001", "Some work"), issue.StateDone))
@@ -138,7 +138,8 @@ func TestTransitionToTheCurrentStateWritesNothing(t *testing.T) {
 
 // The assignee clearing belongs to entering todo, not to being asked for it: a
 // transition to the state an issue already holds is a pure no-op, so an
-// already-todo issue keeps its assignee — unassigning is update's, not reopen's.
+// already-todo issue keeps its assignee, since unassigning is update's job, not
+// reopen's.
 func TestTransitionToTodoOfATodoIssueKeepsTheAssignee(t *testing.T) {
 	root := newStore(t)
 	seed(t, root, withAssignee(mkIssue("iss001", "Claimed but unstarted"), "alice"))
@@ -304,7 +305,7 @@ func TestStartResurrectsAClosedIssue(t *testing.T) {
 
 // Unmet dependencies are data, never a refusal: starting blocked work is
 // sometimes the right call, so the work begins and the caller is handed what it
-// began in spite of — including a dangling reference no issue answers.
+// began in spite of, including a dangling reference no issue answers.
 func TestStartReportsUnmetDependenciesAndStillBegins(t *testing.T) {
 	root := newStore(t)
 	seed(t, root, withState(mkIssue("dep001", "Prerequisite"), issue.StateInProgress))
@@ -335,7 +336,7 @@ func TestStartReportsUnmetDependenciesAndStillBegins(t *testing.T) {
 }
 
 // The dependency report belongs to work beginning: an issue already in progress
-// had its turn when it started, so a later start reports none — while the
+// had its turn when it started, so a later start reports none, while the
 // relationship view still shows it blocked.
 func TestStartReportsNoDependenciesWhenWorkAlreadyBegan(t *testing.T) {
 	root := newStore(t)

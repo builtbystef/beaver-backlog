@@ -10,13 +10,13 @@ import (
 )
 
 // Note appends an entry to the issue ref names, attributed to actor and stamped
-// with the moment it is recorded — the same instant the write records as
+// with the moment it is recorded, the same instant the write records as
 // `updated`, so the log and the file agree on when it happened. Notes are
 // allowed on an issue in any state, closed ones included: a for-the-record note
 // on finished work is legitimate, and the log never gates on lifecycle.
 //
 // A note is never a no-op. Every call writes, because an entry is a record of a
-// moment rather than a state to converge on — two identical notes are two
+// moment rather than a state to converge on: two identical notes are two
 // notes.
 func (s *Service) Note(ref, actor, text string) (Outcome, error) {
 	text = strings.TrimSpace(text)

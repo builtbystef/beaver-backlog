@@ -5,7 +5,7 @@ package core
 import "github.com/builtbystef/beaver-backlog/internal/issue"
 
 // Deleted is a deletion's result: the issue that was removed, the file it was
-// removed from — which a caller may want to name — and the files the scan
+// removed from (which a caller may want to name), and the files the scan
 // skipped.
 type Deleted struct {
 	Issue    issue.Issue
@@ -13,7 +13,7 @@ type Deleted struct {
 	Warnings []Warning
 }
 
-// Delete removes the issue ref names from the store outright — the hard delete
+// Delete removes the issue ref names from the store outright: the hard delete
 // for junk, as distinct from cancelling it, which keeps the file as an abandoned
 // record. The store keeps no other copy, so the operator's version control is
 // the only undo.
