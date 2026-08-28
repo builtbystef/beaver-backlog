@@ -234,8 +234,14 @@
   .mt-3 {
     margin-top: calc(var(--spacing) * 3);
   }
+  .mt-5 {
+    margin-top: calc(var(--spacing) * 5);
+  }
   .mt-auto {
     margin-top: auto;
+  }
+  .mb-1 {
+    margin-bottom: var(--spacing);
   }
   .mb-2 {
     margin-bottom: calc(var(--spacing) * 2);
@@ -245,6 +251,9 @@
   }
   .mb-4 {
     margin-bottom: calc(var(--spacing) * 4);
+  }
+  .mb-5 {
+    margin-bottom: calc(var(--spacing) * 5);
   }
   .ml-1 {
     margin-left: var(--spacing);
@@ -389,6 +398,9 @@
   .grid-cols-\[5\.5rem_1fr\] {
     grid-template-columns: 5.5rem 1fr;
   }
+  .grid-cols-\[5rem_minmax\(0\,1fr\)\] {
+    grid-template-columns: 5rem minmax(0,1fr);
+  }
   .flex-col {
     flex-direction: column;
   }
@@ -449,11 +461,20 @@
   .gap-x-6 {
     column-gap: calc(var(--spacing) * 6);
   }
+  .gap-y-1 {
+    row-gap: var(--spacing);
+  }
   .gap-y-1\.5 {
     row-gap: calc(var(--spacing) * 1.5);
   }
   .gap-y-2 {
     row-gap: calc(var(--spacing) * 2);
+  }
+  .gap-y-2\.5 {
+    row-gap: calc(var(--spacing) * 2.5);
+  }
+  .gap-y-3 {
+    row-gap: calc(var(--spacing) * 3);
   }
   .truncate {
     overflow: hidden;
@@ -504,6 +525,10 @@
     border-bottom-style: var(--tw-border-style);
     border-bottom-width: 1px;
   }
+  .border-l-2 {
+    border-left-style: var(--tw-border-style);
+    border-left-width: 2px;
+  }
   .border-dashed {
     --tw-border-style: dashed;
     border-style: dashed;
@@ -522,6 +547,9 @@
   }
   .border-line {
     border-color: var(--line);
+  }
+  .border-line-strong {
+    border-color: var(--line-strong);
   }
   .border-state-cancelled-ink {
     border-color: var(--state-cancelled-ink);
@@ -643,6 +671,9 @@
   .pt-5 {
     padding-top: calc(var(--spacing) * 5);
   }
+  .pl-3 {
+    padding-left: calc(var(--spacing) * 3);
+  }
   .pl-5 {
     padding-left: calc(var(--spacing) * 5);
   }
@@ -703,6 +734,9 @@
   .tracking-wide {
     --tw-tracking: var(--tracking-wide);
     letter-spacing: var(--tracking-wide);
+  }
+  .break-words {
+    overflow-wrap: break-word;
   }
   .whitespace-nowrap {
     white-space: nowrap;
@@ -870,6 +904,11 @@
     .md\:border-b-0 {
       border-bottom-style: var(--tw-border-style);
       border-bottom-width: 0px;
+    }
+  }
+  @media (width >= 64rem) {
+    .lg\:grid-cols-\[minmax\(0\,1fr\)_18rem\] {
+      grid-template-columns: minmax(0,1fr) 18rem;
     }
   }
   @media (width >= 80rem) {
@@ -1054,6 +1093,11 @@
     background: var(--state-cancelled);
     color: var(--state-cancelled-ink);
   }
+  .state-missing {
+    background: none;
+    border: 1px dashed var(--line-strong);
+    color: var(--ink-subtle);
+  }
   .priority-urgent {
     background: var(--priority-urgent);
     color: var(--priority-urgent-ink);
@@ -1074,9 +1118,6 @@
     background: var(--surface-hover);
     border: 1px solid var(--line);
     color: var(--ink-muted);
-  }
-  .mark {
-    margin-left: 0.35rem;
   }
   .mark-ready {
     background: var(--condition-ready);
@@ -1100,6 +1141,100 @@
   }
   .none {
     color: var(--ink-subtle);
+  }
+  .markdown {
+    color: var(--ink);
+    line-height: 1.6;
+  }
+  .markdown > :first-child {
+    margin-top: 0;
+  }
+  .markdown > :last-child {
+    margin-bottom: 0;
+  }
+  .markdown h1, .markdown h2, .markdown h3, .markdown h4, .markdown h5, .markdown h6 {
+    font-size: 1rem;
+    font-weight: 600;
+    margin: 1.25rem 0 0.5rem;
+  }
+  .markdown h1 {
+    font-size: 1.15rem;
+  }
+  .markdown h2 {
+    font-size: 1.05rem;
+  }
+  .markdown p, .markdown ul, .markdown ol, .markdown table {
+    margin: 0 0 0.75rem;
+  }
+  .markdown ul, .markdown ol {
+    padding-left: 1.5rem;
+  }
+  .markdown ul {
+    list-style: disc;
+  }
+  .markdown ol {
+    list-style: decimal;
+  }
+  .markdown li > ul, .markdown li > ol {
+    margin-bottom: 0;
+  }
+  .markdown li:has(> input[type="checkbox"]) {
+    list-style: none;
+    margin-left: -1.25rem;
+  }
+  .markdown input[type="checkbox"] {
+    accent-color: var(--accent);
+    margin-right: 0.35rem;
+  }
+  .markdown a {
+    color: var(--accent);
+    text-decoration: underline;
+  }
+  .markdown code {
+    background: var(--surface-hover);
+    border-radius: 4px;
+    font-family: var(--font-mono);
+    font-size: 0.875em;
+    padding: 0.05rem 0.3rem;
+  }
+  .markdown pre {
+    background: var(--canvas);
+    border: 1px solid var(--line);
+    border-radius: var(--radius-card);
+    margin: 0 0 0.75rem;
+    overflow-x: auto;
+    padding: 0.75rem 1rem;
+  }
+  .markdown pre code {
+    background: none;
+    font-size: 0.8125rem;
+    padding: 0;
+  }
+  .markdown blockquote {
+    border-left: 3px solid var(--line-strong);
+    color: var(--ink-muted);
+    margin: 0 0 0.75rem;
+    padding-left: 1rem;
+  }
+  .markdown table {
+    border-collapse: collapse;
+  }
+  .markdown th, .markdown td {
+    border: 1px solid var(--line);
+    padding: 0.3rem 0.6rem;
+    text-align: left;
+  }
+  .markdown th {
+    color: var(--ink-muted);
+    font-weight: 600;
+  }
+  .markdown img {
+    max-width: 100%;
+  }
+  .markdown hr {
+    border: none;
+    border-top: 1px solid var(--line);
+    margin: 1rem 0;
   }
   .card[draggable] {
     cursor: grab;

@@ -17,7 +17,11 @@
 
 {{/* condition says what the core derives about an issue's dependencies, at
      most one word: stuck outranks blocked, which it is a subset of, and ready
-     is the go signal. Nothing renders for an issue with nothing to say. */}}
+     is the go signal. Nothing renders for an issue with nothing to say.
+
+     The leading space is the gap after whatever the mark follows, and the only
+     one: the chip carries no margin, so a caller that starts a line with the
+     mark gets it flush. */}}
 {{define "condition"}}{{if .Stuck}} <span class="mark mark-stuck" title="waiting on a cancelled issue">stuck</span>{{else if .Blocked}} <span class="mark mark-blocked" title="waiting on an unfinished dependency">blocked</span>{{else if .Ready}} <span class="mark mark-ready" title="every dependency is done">ready</span>{{end}}{{end}}
 
 {{define "stamp"}}{{if .IsZero}}{{template "none"}}{{else}}<time datetime="{{.Format "2006-01-02T15:04:05Z07:00"}}">{{.Format "2006-01-02 15:04"}} UTC</time>{{end}}{{end}}

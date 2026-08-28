@@ -66,8 +66,6 @@
 
   h1 { font-size: 1.35rem; font-weight: 650; letter-spacing: -0.015em; margin: 0 0 1rem; }
 
-  .empty { color: var(--muted); }
-
   code {
     background: var(--panel);
     border-radius: 4px;
@@ -76,114 +74,6 @@
   }
 
   a { color: var(--accent); }
-
-  /* Issue detail: a column of sections, each an aligned key/value block or prose. */
-
-  .detail { max-width: 60rem; }
-
-  .detail h2 {
-    border-bottom: 1px solid var(--line);
-    color: var(--muted);
-    font-size: 0.8rem;
-    font-weight: 600;
-    letter-spacing: 0.04em;
-    margin: 1.5rem 0 0.75rem;
-    padding-bottom: 0.35rem;
-    text-transform: uppercase;
-  }
-
-  .fields {
-    display: grid;
-    gap: 0.4rem 1rem;
-    grid-template-columns: max-content 1fr;
-    margin: 0;
-  }
-
-  .fields dt { color: var(--muted); }
-  .fields dd { margin: 0; }
-
-  .blocker { margin-right: 0.75rem; white-space: nowrap; }
-
-  .state-missing { background: var(--danger); }
-
-  .detail pre {
-    background: var(--panel);
-    border: 1px solid var(--line);
-    border-radius: 6px;
-    margin: 0;
-    padding: 0.75rem 1rem;
-    white-space: pre-wrap;
-    word-wrap: break-word;
-  }
-
-  /* Rendered Markdown: an issue's description and each note, as prose. Sized a
-     step quieter than the page's own headings, because a body's "# Heading" is
-     the issue's outline, not the page's. */
-
-  .markdown { line-height: 1.55; }
-
-  .markdown > :first-child { margin-top: 0; }
-  .markdown > :last-child { margin-bottom: 0; }
-
-  /* The detail page's own section headings are h2s too, so a body's headings
-     must take back what .detail h2 quietens — prose headings read as prose. */
-  .markdown h1, .markdown h2, .markdown h3, .markdown h4, .markdown h5, .markdown h6 {
-    border: none;
-    color: var(--text);
-    font-size: 1rem;
-    letter-spacing: normal;
-    margin: 1.25rem 0 0.5rem;
-    padding: 0;
-    text-transform: none;
-  }
-  .markdown h1 { font-size: 1.15rem; }
-  .markdown h2 { font-size: 1.05rem; }
-
-  .markdown p, .markdown ul, .markdown ol, .markdown table { margin: 0 0 0.75rem; }
-
-  .markdown ul, .markdown ol { padding-left: 1.5rem; }
-
-  .markdown li > ul, .markdown li > ol { margin-bottom: 0; }
-
-  .markdown pre {
-    background: var(--panel);
-    border: 1px solid var(--line);
-    border-radius: 6px;
-    margin: 0 0 0.75rem;
-    overflow-x: auto;
-    padding: 0.75rem 1rem;
-  }
-
-  .markdown pre code { background: none; padding: 0; }
-
-  .markdown blockquote {
-    border-left: 3px solid var(--line);
-    color: var(--muted);
-    margin: 0 0 0.75rem;
-    padding-left: 1rem;
-  }
-
-  .markdown table { border-collapse: collapse; }
-
-  .markdown th, .markdown td {
-    border: 1px solid var(--line);
-    padding: 0.3rem 0.6rem;
-    text-align: left;
-  }
-
-  .markdown img { max-width: 100%; }
-
-  .markdown hr { border: none; border-top: 1px solid var(--line); margin: 1rem 0; }
-
-  .note { margin-bottom: 0.75rem; }
-
-  .note-meta {
-    color: var(--muted);
-    font-size: 0.8rem;
-    margin: 0 0 0.3rem;
-  }
-
-  .note-meta .author { color: var(--text); font-weight: 600; }
 
   .matches { line-height: 2; }
 
@@ -195,33 +85,6 @@
     padding: 0.6rem 1rem;
   }
 
-  .note-form { margin: 0 0 1rem; }
-
-  .note-form label {
-    color: var(--muted);
-    display: block;
-    font-size: 0.8rem;
-    letter-spacing: 0.04em;
-    margin-bottom: 0.3rem;
-    text-transform: uppercase;
-  }
-
-  .note-form textarea {
-    background: var(--panel);
-    border: 1px solid var(--line);
-    border-radius: 6px;
-    color: var(--text);
-    font: inherit;
-    padding: 0.4rem 0.6rem;
-    width: 100%;
-  }
-
-  .note-form textarea:focus {
-    border-color: var(--accent);
-    box-shadow: 0 0 0 3px var(--accent-soft);
-    outline: none;
-  }
-
   .actions {
     align-items: center;
     display: flex;
@@ -229,8 +92,6 @@
     gap: 0.6rem 1rem;
     margin: 0 0 1rem;
   }
-
-  .actions form { margin: 0; }
 
   button {
     background: var(--panel-raised);
@@ -246,25 +107,18 @@
 
   button:hover { background: var(--accent-soft); border-color: var(--accent); }
 
-  /* The one act each surface is for — create, save, note, repair, the first
-     state move — wears the accent; its neighbours stay quiet. */
-  .note-form button[type="submit"],
-  .repair button[type="submit"],
-  .actions > form:first-child button:not(.danger) {
+  /* The one act each surface is for — here, only doctor's repair — wears the
+     accent; its neighbours stay quiet. */
+  .repair button[type="submit"] {
     background: var(--accent);
     border-color: var(--accent);
     color: #fff8e7;
   }
 
-  .note-form button[type="submit"]:hover,
-  .repair button[type="submit"]:hover,
-  .actions > form:first-child button:not(.danger):hover {
+  .repair button[type="submit"]:hover {
     background: var(--accent-hover);
     border-color: var(--accent-hover);
   }
-
-  button.danger { border-color: var(--danger); }
-  button.danger:hover { background: var(--danger-bg); }
 
   .hint { color: var(--muted); font-size: 0.85rem; }
 

@@ -1,97 +1,151 @@
-{{define "content"}}
+{{/* One issue's page: what it says down the middle, what it is off to the
+     side. The prose and the log are the reading, so they take the width; the
+     fields and the relationships are reference, so they sit in a rail beside
+     them and drop underneath it on a narrow window. */}}
+
+{{/* The vocabulary this page repeats, as defines rather than four copies of a
+     class list: a panel's shape and the name over it are one decision each. */}}
+{{define "panel"}}rounded-card border border-line bg-surface p-5 shadow-card{{end}}
+
+{{define "panel-title"}}mb-3 text-xs font-medium tracking-wide text-ink-muted uppercase{{end}}
+
+{{define "toolbar"}}
 {{$iss := .Issue}}
-<article class="detail">
-  <h1>{{$iss.Title}}</h1>
-  <div class="actions">
-    {{range .Moves}}
-    <form method="post" action="{{.Action}}">
-      {{with .State}}<input type="hidden" name="state" value="{{.}}">{{end}}
+<div class="mb-5 flex flex-wrap items-start justify-between gap-x-4 gap-y-3">
+  <div class="min-w-0">
+    <h1 class="m-0 text-lg font-semibold tracking-tight text-ink">{{$iss.Title}}</h1>
+    <p class="mt-1"><span class="id">{{$iss.ID}}</span></p>
+  </div>
+  {{/* The lifecycle's moves, then the two acts that are not moves. The first
+       move wears the accent: it is what this surface is for from where the
+       issue stands, and the rest are alternatives to it. */}}
+  <div class="flex flex-wrap items-center gap-2">
+    {{range $i, $m := .Moves}}
+    <form method="post" action="{{$m.Action}}">
+      {{with $m.State}}<input type="hidden" name="state" value="{{.}}">{{end}}
       <input type="hidden" name="back" value="/issues/{{$iss.ID}}">
-      <button type="submit">{{.Label}}</button>
+      <button class="{{if eq $i 0}}{{template "primary-action"}}{{else}}{{template "quiet-action"}}{{end}}" type="submit">{{$m.Label}}</button>
     </form>
     {{end}}
-    <a href="/issues/{{$iss.ID}}/edit">Edit</a>
+    <a class="{{template "quiet-action"}}" href="/issues/{{$iss.ID}}/edit">Edit</a>
     <form method="post" action="/issues/{{$iss.ID}}/delete" data-confirm="confirm-delete">
-      <button type="submit" class="danger">Delete</button>
+      <button class="{{template "destructive-action"}}" type="submit">Delete</button>
     </form>
   </div>
-  {{/* The guard in front of the one act with no undo (confirm.js): the form
-       above opens this instead of posting, and posts only if it closes on
-       "confirm".
+</div>
+{{end}}
 
-       The ground, the border and the centring are spelt out for the same
-       reasons the quick view's overlay spells them out: an unstyled <dialog>
-       falls to the legacy sheet and to a reset that zeroes the margin a modal
-       is centred by. */}}
-  <dialog id="confirm-delete"
-          class="m-auto w-[min(26rem,calc(100vw-2rem))] rounded-card border border-line bg-surface p-0 text-ink shadow-overlay backdrop:bg-black/50">
-    <form class="flex flex-col gap-2 p-5" method="dialog">
-      <p class="text-sm text-ink">Delete <span class="id">{{$iss.ID}}</span>, {{$iss.Title}}?</p>
-      <p class="{{template "field-hint"}}">The file is removed outright; version control is the only undo.</p>
-      <div class="mt-2 flex flex-wrap items-center justify-end gap-2">
-        <button class="{{template "quiet-action"}}" value="cancel">Cancel</button>
-        <button class="cursor-pointer rounded-md border border-destructive-ink bg-destructive px-3 py-1.5 text-sm font-medium text-destructive-ink hover:bg-destructive-hover" value="confirm">Delete</button>
+{{define "content"}}
+{{$iss := .Issue}}
+{{/* The guard in front of the one act with no undo (confirm.js): the form
+     above opens this instead of posting, and posts only if it closes on
+     "confirm".
+
+     The ground, the border and the centring are spelt out for the same
+     reasons the quick view's overlay spells them out: an unstyled <dialog>
+     falls to the legacy sheet and to a reset that zeroes the margin a modal
+     is centred by. */}}
+<dialog id="confirm-delete"
+        class="m-auto w-[min(26rem,calc(100vw-2rem))] rounded-card border border-line bg-surface p-0 text-ink shadow-overlay backdrop:bg-black/50">
+  <form class="flex flex-col gap-2 p-5" method="dialog">
+    <p class="text-sm text-ink">Delete <span class="id">{{$iss.ID}}</span>, {{$iss.Title}}?</p>
+    <p class="{{template "field-hint"}}">The file is removed outright; version control is the only undo.</p>
+    <div class="mt-2 flex flex-wrap items-center justify-end gap-2">
+      <button class="{{template "quiet-action"}}" value="cancel">Cancel</button>
+      <button class="{{template "destructive-action"}}" value="confirm">Delete</button>
+    </div>
+  </form>
+</dialog>
+
+<div class="grid items-start gap-5 lg:grid-cols-[minmax(0,1fr)_18rem]">
+  <div class="flex flex-col gap-5">
+    <section class="{{template "panel"}}">
+      <h2 class="{{template "panel-title"}}">Description</h2>
+      {{with .Description}}<div class="markdown">{{.}}</div>{{else}}<p class="text-sm text-ink-subtle">No description.</p>{{end}}
+    </section>
+
+    <section class="{{template "panel"}}">
+      <h2 class="{{template "panel-title"}}">Notes</h2>
+      {{/* The log reads as a column of entries rather than a list of boxes:
+           each is ruled off down its left edge, which is enough to tell one
+           from the next inside a panel that is already a box. */}}
+      <div class="flex flex-col gap-4">
+        {{range .Notes}}
+        <article class="border-l-2 border-line-strong pl-3">
+          <p class="mb-1 text-xs text-ink-muted"><span class="font-medium text-ink">{{.Author}}</span> {{template "stamp" .Time}}</p>
+          <div class="markdown">{{.Text}}</div>
+        </article>
+        {{else}}
+        <p class="text-sm text-ink-subtle">No notes yet.</p>
+        {{end}}
       </div>
-    </form>
-  </dialog>
-  <dl class="fields">
-    <dt>ID</dt><dd class="id">{{$iss.ID}}</dd>
-    <dt>State</dt><dd>{{template "state" $iss.State}}</dd>
-    <dt>Priority</dt><dd>{{with $iss.Priority}}{{template "priority" .}}{{else}}{{template "none"}}{{end}}</dd>
-    <dt>Labels</dt><dd>{{range $iss.Labels}}{{template "label" .}} {{else}}{{template "none"}}{{end}}</dd>
-    <dt>Assignee</dt><dd>{{with $iss.Assignee}}{{.}}{{else}}{{template "none"}}{{end}}</dd>
-    <dt>Created</dt><dd>{{template "stamp" $iss.Created}}</dd>
-    <dt>Updated</dt><dd>{{template "stamp" $iss.Updated}}</dd>
-    {{range .Custom}}
-    <dt>{{.Key}}</dt><dd>{{.Value}}</dd>
-    {{end}}
-  </dl>
+      <form class="mt-5 flex flex-col gap-1.5 border-t border-line pt-5" method="post" action="/issues/{{$iss.ID}}/notes">
+        {{template "form-error" .Note.Error}}
+        <label class="{{template "field-label"}}" for="note-text">Add a note</label>
+        <textarea class="{{template "field-box"}} leading-relaxed" id="note-text" name="text" rows="4">{{.Note.Text}}</textarea>
+        <div class="mt-2 flex"><button class="{{template "primary-action"}}" type="submit">Add note</button></div>
+      </form>
+    </section>
+  </div>
 
-  <section class="description">
-    <h2>Description</h2>
-    {{with .Description}}<div class="markdown">{{.}}</div>{{else}}<p class="empty">No description.</p>{{end}}
-  </section>
+  {{/* The reference rail. Every row is answered, a dash standing in for the
+       fields the issue does not fill, so a quiet issue reads as told rather
+       than half-drawn. */}}
+  <aside class="flex flex-col gap-5">
+    <section class="{{template "panel"}}">
+      <h2 class="{{template "panel-title"}}">Fields</h2>
+      <dl class="grid grid-cols-[5rem_minmax(0,1fr)] items-baseline gap-x-3 gap-y-2.5 text-sm">
+        <dt class="text-ink-muted">ID</dt>
+        <dd><span class="id">{{$iss.ID}}</span></dd>
+        <dt class="text-ink-muted">State</dt>
+        <dd>{{template "state" $iss.State}}</dd>
+        <dt class="text-ink-muted">Priority</dt>
+        <dd>{{with $iss.Priority}}{{template "priority" .}}{{else}}{{template "none"}}{{end}}</dd>
+        <dt class="text-ink-muted">Labels</dt>
+        <dd class="flex flex-wrap items-baseline gap-1.5">{{range $iss.Labels}}{{template "label" .}}{{else}}{{template "none"}}{{end}}</dd>
+        <dt class="text-ink-muted">Assignee</dt>
+        <dd class="text-ink">{{with $iss.Assignee}}{{.}}{{else}}{{template "none"}}{{end}}</dd>
+        <dt class="text-ink-muted">Created</dt>
+        <dd class="text-ink-muted">{{template "stamp" $iss.Created}}</dd>
+        <dt class="text-ink-muted">Updated</dt>
+        <dd class="text-ink-muted">{{template "stamp" $iss.Updated}}</dd>
+        {{/* The frontmatter keys Beaver Backlog does not define: shown as
+             written, since nothing here knows what they mean. */}}
+        {{range .Custom}}
+        <dt class="text-ink-muted break-words">{{.Key}}</dt>
+        <dd class="text-ink break-words">{{with .Value}}{{.}}{{else}}{{template "none"}}{{end}}</dd>
+        {{end}}
+      </dl>
+    </section>
 
-  <section class="relationships">
-    <h2>Relationships</h2>
-    <dl class="fields">
-      <dt>Status</dt><dd>
-        {{if .Rel.Stuck}}stuck: waiting on a cancelled issue
-        {{else if .Rel.Ready}}ready
-        {{else if .Rel.Blocked}}blocked
-        {{else}}{{template "none"}}{{end}}
-      </dd>
-      <dt>Parent</dt><dd>{{with $iss.Parent}}{{template "reflink" .}}{{else}}{{template "none"}}{{end}}</dd>
-      <dt>Depends on</dt><dd>{{range $iss.DependsOn}}{{template "reflink" .}} {{else}}{{template "none"}}{{end}}</dd>
-      <dt>Waiting on</dt><dd>
-        {{range .Rel.BlockedOn}}
-        <span class="blocker">{{template "reflink" .ID}}
-          {{if .Missing}}{{template "state" "missing"}}
-          {{else}}{{template "state" .State}}{{end}}
-        </span>
-        {{else}}{{template "none"}}{{end}}
-      </dd>
-      <dt>Blocks</dt><dd>{{range .Rel.Blocks}}{{template "reflink" .}} {{else}}{{template "none"}}{{end}}</dd>
-      <dt>Children</dt><dd>{{range .Rel.Children}}{{template "reflink" .}} {{else}}{{template "none"}}{{end}}</dd>
-    </dl>
-  </section>
-
-  <section class="notes">
-    <h2>Notes</h2>
-    {{range .Notes}}
-    <article class="note">
-      <p class="note-meta"><span class="author">{{.Author}}</span> {{template "stamp" .Time}}</p>
-      <div class="markdown">{{.Text}}</div>
-    </article>
-    {{else}}
-    <p class="empty">No notes yet.</p>
-    {{end}}
-    <form class="note-form" method="post" action="/issues/{{$iss.ID}}/notes">
-      <label for="note-text">Add a note</label>
-      <textarea id="note-text" name="text" rows="4">{{.Note.Text}}</textarea>
-      {{template "form-error" .Note.Error}}
-      <p class="actions"><button type="submit">Add note</button></p>
-    </form>
-  </section>
-</article>
+    <section class="{{template "panel"}}">
+      <h2 class="{{template "panel-title"}}">Relationships</h2>
+      <dl class="grid grid-cols-[5rem_minmax(0,1fr)] items-baseline gap-x-3 gap-y-2.5 text-sm">
+        {{/* What the core derives, in the same mark a card wears. Stuck
+             outranks blocked, which it is a subset of; an issue with nothing
+             to say still answers. */}}
+        <dt class="text-ink-muted">Status</dt>
+        <dd>{{if or .Rel.Ready .Rel.Blocked}}{{template "condition" .Rel}}{{else}}{{template "none"}}{{end}}</dd>
+        <dt class="text-ink-muted">Parent</dt>
+        <dd>{{with $iss.Parent}}{{template "reflink" .}}{{else}}{{template "none"}}{{end}}</dd>
+        <dt class="text-ink-muted">Depends on</dt>
+        <dd class="flex flex-wrap items-baseline gap-x-2 gap-y-1">{{range $iss.DependsOn}}{{template "reflink" .}}{{else}}{{template "none"}}{{end}}</dd>
+        <dt class="text-ink-muted">Waiting on</dt>
+        <dd class="flex flex-wrap items-baseline gap-x-2 gap-y-1">
+          {{range .Rel.BlockedOn}}
+          {{/* A dependency the store cannot resolve has no state to show, so
+               it says that instead of nothing. */}}
+          <span class="inline-flex items-baseline gap-1.5 whitespace-nowrap">{{template "reflink" .ID}}
+            {{if .Missing}}{{template "state" "missing"}}{{else}}{{template "state" .State}}{{end}}
+          </span>
+          {{else}}{{template "none"}}{{end}}
+        </dd>
+        <dt class="text-ink-muted">Blocks</dt>
+        <dd class="flex flex-wrap items-baseline gap-x-2 gap-y-1">{{range .Rel.Blocks}}{{template "reflink" .}}{{else}}{{template "none"}}{{end}}</dd>
+        <dt class="text-ink-muted">Children</dt>
+        <dd class="flex flex-wrap items-baseline gap-x-2 gap-y-1">{{range .Rel.Children}}{{template "reflink" .}}{{else}}{{template "none"}}{{end}}</dd>
+      </dl>
+    </section>
+  </aside>
+</div>
 {{end}}

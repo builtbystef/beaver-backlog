@@ -49,3 +49,8 @@
 {{define "primary-action"}}cursor-pointer rounded-md bg-accent px-3 py-1.5 text-sm font-medium text-ink-on-accent hover:bg-accent-hover{{end}}
 
 {{define "quiet-action"}}cursor-pointer rounded-md border border-line bg-surface px-3 py-1.5 text-sm text-ink-muted hover:border-line-strong hover:text-ink{{end}}
+
+{{/* destructive-action: the act with no undo, which looks like nothing else in
+     the UI. The button that opens the confirmation and the one inside it that
+     answers it are the same act, so they wear the same face. */}}
+{{define "destructive-action"}}cursor-pointer rounded-md border border-destructive-ink bg-destructive px-3 py-1.5 text-sm font-medium text-destructive-ink hover:bg-destructive-hover{{end}}
