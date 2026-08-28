@@ -1,0 +1,34 @@
+# Releasing is one act: push a v* tag and this publishes the archives, the
+# checksums, and generated notes for it. What gets built lives in
+# .goreleaser.yaml, the same configuration CI checks on every pull request;
+# internal/ci asserts this file's structure, so no tag is needed to verify it.
+name: Release
+
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: write # the release, and nothing else
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0 # tags and history, so the version and notes are derived correctly
+
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version-file: go.mod
+
+      - uses: goreleaser/goreleaser-action@f06c13b6b1a9625abc9e6e439d9c05a8f2190e94 # v7.2.3
+        with:
+          install-only: true
+          version: v2.18.0
+
+      - name: Publish the release
+        run: goreleaser release --clean
+        env:
+          GITHUB_TOKEN: ${{ github.token }}

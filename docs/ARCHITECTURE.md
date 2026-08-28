@@ -83,6 +83,9 @@ invokes a version-control system; committing the files is the operator's job.
 - `internal/beavertest/` — the end-to-end harness the command *surface* is
   tested through: it drives the CLI engine via a fake `Env`. Rule behavior is
   tested at the core seam instead (see the coding standards).
+- `internal/ci/` — tests only, no product code: the GitHub Actions workflows'
+  contract, so the release workflow is verified by `go test ./...` rather than
+  by pushing a tag.
 
 ## Seams
 
