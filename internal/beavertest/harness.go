@@ -54,6 +54,7 @@ type Harness struct {
 	StdinIsTTY    bool              // the interactivity signal that gates human identity setup (default false)
 	StdinText     string            // interactive input fed to prompts (the identity prompt)
 	NewID         func() string     // ID generator override; nil uses the real one
+	Build         cli.Build         // build metadata the binary reports; zero value is an uninjected build
 	Ctx           context.Context   // stands in for the interrupt a long-running command stops on; nil never fires
 }
 
@@ -94,6 +95,7 @@ func (h *Harness) Run(args ...string) Result {
 		StdoutIsTTY:   h.IsTTY,
 		StdinIsTTY:    h.StdinIsTTY,
 		UserConfigDir: h.UserConfigDir,
+		Build:         h.Build,
 	})
 	return Result{Code: code, Stdout: stdout.String(), Stderr: stderr.String()}
 }

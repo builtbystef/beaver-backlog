@@ -12,6 +12,18 @@ import (
 	"github.com/builtbystef/beaver-backlog/internal/cli"
 )
 
+// Build metadata, injected at link time by the release build:
+//
+//	go build -ldflags "-X main.version=1.0.0 -X main.commit=abc1234 -X main.date=2026-08-27" ./cmd/beaver
+//
+// A plain `go build` leaves them empty, which the version command reports as a
+// dev build. They are the only place the binary learns what it is.
+var (
+	version string
+	commit  string
+	date    string
+)
+
 func main() {
 	// Interrupt reaches the engine as a cancelled context, so a foreground
 	// command (serve) can shut itself down cleanly instead of being killed
@@ -32,6 +44,7 @@ func main() {
 		StdoutIsTTY:   term.IsTerminal(int(os.Stdout.Fd())),
 		StdinIsTTY:    term.IsTerminal(int(os.Stdin.Fd())),
 		UserConfigDir: userConfigDir(),
+		Build:         cli.Build{Version: version, Commit: commit, Date: date},
 	}))
 }
 

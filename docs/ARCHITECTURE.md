@@ -42,7 +42,7 @@ invokes a version-control system; committing the files is the operator's job.
   command, plus shared plumbing. Each handler parses its invocation, calls the
   core, renders the result, and maps typed failures to exit codes; the wording
   of a message, a path shown relative to where the command ran, and the choice
-  of human or JSON are its own. Fourteen commands — the lifecycle verbs are the
+  of human or JSON are its own. Fifteen commands — the lifecycle verbs are the
   only path to a state change, and `update` is the only path to every other
   field. The engine takes everything it touches through an `Env` struct.
 - `internal/web/` — the local web interface over the core: `beaver serve`'s
@@ -90,7 +90,8 @@ invokes a version-control system; committing the files is the operator's job.
   the engine and the world, and it carries only what an *interface* owns — the
   args, the three streams plus whether stdin and stdout are terminals, the
   working directory the store is resolved from, an environment lookup, the
-  user-config directory, and the cancellation an interrupt arrives as (what
+  user-config directory, the build metadata the linker injected into the binary
+  (what `version` reports), and the cancellation an interrupt arrives as (what
   `serve` shuts down on). New external effects of that kind go through it, never
   around it. Effects the application owns instead — time, the identity of new
   issues — are not fields here at all: they travel as the core options `Env`

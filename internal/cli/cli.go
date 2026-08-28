@@ -45,6 +45,9 @@ type Env struct {
 	StdoutIsTTY   bool   // whether stdout is an interactive terminal
 	StdinIsTTY    bool   // whether stdin is interactive; gates human identity setup
 	UserConfigDir string // per-machine user-config dir; identity lives here, never committed
+	// Build is what the running binary knows about itself, injected at link
+	// time. The zero value is an uninjected build, which reports version "dev".
+	Build Build
 }
 
 // Run dispatches one command and returns its exit code. It never calls os.Exit;
@@ -84,6 +87,8 @@ func Run(env Env) int {
 		return cmdServe(env, args)
 	case "whoami":
 		return cmdWhoami(env, args)
+	case "version":
+		return cmdVersion(env, args)
 	case "help", "-h", "--help":
 		printUsage(env.Stdout)
 		return exitOK
@@ -112,6 +117,7 @@ usage:
   beaver doctor               check store health (repair lint with --fix)
   beaver serve                serve the local web UI until interrupted
   beaver whoami               print the actor Beaver Backlog resolves you as
+  beaver version              print the version, commit, and date of this build
 
 common flags (after the command):
   --format human|json         override output format (default: auto-detect)

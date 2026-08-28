@@ -169,7 +169,7 @@ other; the tracker records reality rather than enforcing a workflow.
 
 ## Commands
 
-Fourteen of them, and they fit on one screen:
+Fifteen of them, and they fit on one screen:
 
 | Command                      | What it does                                                                                                   |
 | ---------------------------- | -------------------------------------------------------------------------------------------------------------- |
@@ -187,6 +187,7 @@ Fourteen of them, and they fit on one screen:
 | `beaver doctor`              | Check store health; `--fix` repairs what is safe to repair                                                     |
 | `beaver serve`               | Serve the local web UI on loopback until interrupted (`--port`, `--as`)                                        |
 | `beaver whoami`              | Print the actor you resolve as                                                                                 |
+| `beaver version`             | Print the version, commit, and date of this build                                                              |
 
 `update` takes as many fields as you like in one invocation, and writes
 nothing at all if they net out to no change:

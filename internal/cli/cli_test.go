@@ -196,7 +196,7 @@ func TestCommandsRequireStore(t *testing.T) {
 	}
 }
 
-// The surface is exactly these fourteen commands, in this order, and the help
+// The surface is exactly these fifteen commands, in this order, and the help
 // text is where the tool explains itself — so it lists them and nothing else.
 func TestUsageListsExactlyTheCommandSet(t *testing.T) {
 	h := beavertest.New(t)
@@ -204,7 +204,7 @@ func TestUsageListsExactlyTheCommandSet(t *testing.T) {
 	got := usageCommands(h.MustRun("help").Stdout)
 	want := []string{
 		"init", "create", "list", "show", "start", "done", "cancel", "reopen",
-		"update", "note", "delete", "doctor", "serve", "whoami",
+		"update", "note", "delete", "doctor", "serve", "whoami", "version",
 	}
 	if !slices.Equal(got, want) {
 		t.Errorf("help lists %v, want %v", got, want)
