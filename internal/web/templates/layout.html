@@ -12,9 +12,6 @@
      redrawn on the tokens. */}}
 <link rel="stylesheet" href="/assets/tailwind.css">
 <link rel="stylesheet" href="/assets/app.css">
-{{/* The .js mark lets the stylesheet hide controls that only duplicate what a
-     script already does — set before first paint, so nothing flickers away. */}}
-<script>document.documentElement.classList.add("js")</script>
 <script src="/assets/htmx.min.js" defer></script>
 <script src="/assets/confirm.js" defer></script>
 <script src="/assets/live.js" defer></script>
@@ -30,8 +27,10 @@
       <a class="inline-flex w-fit rounded-md focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent" href="/">
         <img class="h-10 w-auto" src="/assets/logo.svg" alt="Beaver Backlog" width="126" height="56">
       </a>
+      {{/* The one text filter, the other window onto it being the toolbar's text
+           field; ui.js keeps the two agreeing while a view is being narrowed. */}}
       <form action="/search" method="get" role="search">
-        <input class="w-full rounded-md border border-line bg-canvas px-2.5 py-1.5 text-sm text-ink placeholder:text-ink-subtle focus:border-accent focus:outline-none"
+        <input id="shell-search" class="w-full rounded-md border border-line bg-canvas px-2.5 py-1.5 text-sm text-ink placeholder:text-ink-subtle focus:border-accent focus:outline-none"
                type="search" name="q" value="{{.Search}}" placeholder="Reference or text…" aria-label="Search issues">
       </form>
       <a class="rounded-md bg-accent px-3 py-1.5 text-center text-sm font-medium text-ink-on-accent hover:bg-accent-hover" href="/issues/new">New issue</a>

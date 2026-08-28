@@ -1,6 +1,11 @@
-{{define "content"}}
-<h1>Graph</h1>
+{{define "toolbar"}}
+<div class="mb-4 flex flex-wrap items-center gap-x-3 gap-y-2">
+  <h1 class="m-0 text-lg font-semibold tracking-tight text-ink">Graph</h1>
+</div>
 {{template "filters" .Filters}}
+{{end}}
+
+{{define "content"}}
 <div id="issues" class="graph-view">
   <div class="graph-controls">
     <button type="button" data-graph-reset>Reset view</button>

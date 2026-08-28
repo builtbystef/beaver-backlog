@@ -234,6 +234,19 @@
   --shadow-overlay: var(--elevation-overlay);
 }
 
+/* The look a toolbar menu wears while its filters are on, so a closed menu
+   still says it is narrowing the view. It is a utility rather than a rule of
+   its own because the template applies it through a variant that reads the
+   controls inside the menu: what the menu says about itself has to follow the
+   boxes live, since narrowing the view redraws the listing and not the bar
+   that asked for it — a count rendered by the server would be a filter ago. */
+
+@utility filter-on {
+  background: var(--accent-soft);
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
 /* Typography and spacing carry no theme: one scale in both palettes. */
 
 @theme {

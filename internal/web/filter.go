@@ -119,38 +119,53 @@ func (f filters) active() bool {
 		f.AssigneeMode != assigneeAny || f.Parent != "" || f.Search != ""
 }
 
-// filterBar is the bar as a template draws it: every control already marked
+// filterBar is the toolbar as a template draws it: every control already marked
 // against the address, so the markup compares nothing for itself.
 type filterBar struct {
-	Action     string // where the form goes without JavaScript: the view it filters
-	States     []toggle
-	Ready      bool
-	Blocked    bool
-	Labels     string // the label conjunction as one field of words
-	Priorities []toggle
-	Assignees  []option
-	Actor      string
-	Parent     string
-	Search     string
-	Keep       []param // the query the bar does not own, carried through
-	Active     bool
-	// Chips are the active filters said one by one above the bar, each with the
-	// address that takes just that one off — the current view minus one filter,
-	// so narrowing is visible and undoable without opening the controls.
+	Action string // the view the toolbar narrows
+	// ClearURL is that view with every filter off — but still carrying what the
+	// bar does not own, because clearing filters is not the same as putting a
+	// column the reader opened in full back behind its window.
+	ClearURL string
+	// Menus are the toggle groups the toolbar keeps behind a button each, so a
+	// vocabulary this wide still reads as one bar.
+	Menus     []menu
+	Assignees []option
+	Actor     string
+	Labels    string // the label conjunction as one field of words
+	Parent    string
+	Search    string
+	Keep      []param // the query the bar does not own, carried through
+	Active    bool
+	// Chips are the active filters said one by one beside the controls, each
+	// with the address that takes just that one off — the current view minus one
+	// filter, so narrowing is visible and undoable in a click.
 	Chips []chip
 	// Refused is the core's own words about a reference the bar carries that
 	// names no issue, said beside the box that holds it.
 	Refused string
 }
 
-// chip is one active filter as the summary line shows it.
+// menu is one group of toggles behind a button: what the button says, and the
+// checkboxes it opens onto. Whether the button reads as active is the live
+// state of the boxes inside it, which is the stylesheet's to see — a count
+// rendered here would go stale the moment a box was ticked, since narrowing the
+// view redraws the listing and not the controls that asked for it.
+type menu struct {
+	Label   string
+	Toggles []toggle
+}
+
+// chip is one active filter as the toolbar shows it.
 type chip struct {
 	Label     string
 	RemoveURL string
 }
 
-// toggle is one checkbox: what it posts and whether the address has it on.
+// toggle is one checkbox: what it posts, under which name, and whether the
+// address has it on.
 type toggle struct {
+	Name  string
 	Value string
 	Label string
 	On    bool
@@ -167,29 +182,61 @@ type param struct {
 // a hidden field, so submitting a filter never drops a neighbouring control's
 // state, such as the board's column shown in full.
 func (f filters) bar(action string, current url.Values, refused string) filterBar {
-	b := filterBar{
-		Action:     action,
-		Ready:      f.Ready,
-		Blocked:    f.Blocked,
-		Labels:     strings.Join(f.Labels, " "),
-		Priorities: priorityToggles(f.Priorities),
-		Assignees:  assigneeOptions(f.AssigneeMode),
-		Actor:      f.Actor,
-		Parent:     f.Parent,
-		Search:     f.Search,
-		Keep:       carried(current),
-		Active:     f.active(),
-		Chips:      f.chips(action, current),
-		Refused:    refused,
+	return filterBar{
+		Action:   action,
+		ClearURL: unfiltered(action, current),
+		Menus: []menu{
+			{Label: "State", Toggles: stateToggles(f.States)},
+			{Label: "Condition", Toggles: conditionToggles(f.Ready, f.Blocked)},
+			{Label: "Priority", Toggles: priorityToggles(f.Priorities)},
+		},
+		Assignees: assigneeOptions(f.AssigneeMode),
+		Actor:     f.Actor,
+		Labels:    strings.Join(f.Labels, " "),
+		Parent:    f.Parent,
+		Search:    f.Search,
+		Keep:      carried(current),
+		Active:    f.active(),
+		Chips:     f.chips(action, current),
+		Refused:   refused,
 	}
-	for _, state := range boardStates {
-		b.States = append(b.States, toggle{
+}
+
+// unfiltered is the view with nothing narrowing it, keeping every parameter the
+// bar does not own.
+func unfiltered(action string, current url.Values) string {
+	v := url.Values{}
+	for _, p := range carried(current) {
+		v.Add(p.Name, p.Value)
+	}
+	if q := v.Encode(); q != "" {
+		return action + "?" + q
+	}
+	return action
+}
+
+// stateToggles is the lifecycle group: the same four states the board columns
+// are, in the same order.
+func stateToggles(on []issue.State) []toggle {
+	toggles := make([]toggle, len(boardStates))
+	for i, state := range boardStates {
+		toggles[i] = toggle{
+			Name:  "state",
 			Value: string(state),
 			Label: string(state),
-			On:    slices.Contains(f.States, state),
-		})
+			On:    slices.Contains(on, state),
+		}
 	}
-	return b
+	return toggles
+}
+
+// conditionToggles is the derived-condition group. Each is a filter of its own
+// rather than a value of one, which is why the two carry different names.
+func conditionToggles(ready, blocked bool) []toggle {
+	return []toggle{
+		{Name: "ready", Value: "1", Label: "ready", On: ready},
+		{Name: "blocked", Value: "1", Label: "blocked", On: blocked},
+	}
 }
 
 // priorityToggles is the priority group: the four levels and the unprioritized
@@ -202,7 +249,7 @@ func priorityToggles(on []issue.Priority) []toggle {
 		if level == "none" {
 			label = "unprioritized"
 		}
-		toggles[i] = toggle{Value: level, Label: label, On: err == nil && slices.Contains(on, selected)}
+		toggles[i] = toggle{Name: "priority", Value: level, Label: label, On: err == nil && slices.Contains(on, selected)}
 	}
 	return toggles
 }

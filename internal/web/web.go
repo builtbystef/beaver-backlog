@@ -115,6 +115,9 @@ func (s *server) board(w http.ResponseWriter, r *http.Request) {
 	p := s.page("Board", listing.Warnings)
 	p.Live = true
 	p.Section = "board"
+	// The sidebar's box and the toolbar's text field are one filter, so every
+	// view the toolbar narrows says the same term in both places.
+	p.Search = f.Search
 	if id := r.URL.Query().Get("deleted"); id != "" {
 		p.Notice = "Deleted issue " + id + "."
 	}
@@ -142,8 +145,6 @@ func (s *server) list(w http.ResponseWriter, r *http.Request) {
 	p := s.page("Issues", listing.Warnings)
 	p.Live = true
 	p.Section = "issues"
-	// The sidebar's box and the bar's text field are one filter, so a list
-	// reached by searching says what it was searched for in both places.
 	p.Search = f.Search
 	order := parseOrder(r.URL.Query())
 	order.apply(listing.Issues)
@@ -244,8 +245,9 @@ type page struct {
 	// say where the reader is; empty on a page that is nowhere in particular,
 	// like a form or an error.
 	Section string
-	// Search is what the sidebar's box shows, so a filtered list still says
-	// what it was filtered by; empty everywhere the reader has not searched.
+	// Search is the one text filter, shown by the sidebar's box and by the
+	// toolbar's text field alike — they are two windows onto it, never two
+	// filters. Empty everywhere the reader has not searched.
 	Search string
 	// Notice is a one-line confirmation of something that already happened —
 	// what a redirect after a write has to say once the page it wrote about is

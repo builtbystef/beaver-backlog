@@ -66,14 +66,14 @@ func TestBarReflectsTheAddressItWasBuiltFrom(t *testing.T) {
 	}
 	bar := parseFilters(values).bar("/issues", nil, "")
 
-	if !on(bar.States, "todo") || on(bar.States, "done") {
-		t.Errorf("state checkboxes = %v, want only todo checked", bar.States)
+	if !on(bar, "state", "todo") || on(bar, "state", "done") {
+		t.Errorf("state checkboxes = %v, want only todo checked", toggles(bar, "state"))
 	}
-	if !bar.Ready || bar.Blocked {
-		t.Errorf("ready = %v, blocked = %v, want ready alone", bar.Ready, bar.Blocked)
+	if !on(bar, "ready", "1") || on(bar, "blocked", "1") {
+		t.Errorf("condition checkboxes = %v, want ready alone", toggles(bar, "ready"))
 	}
-	if !on(bar.Priorities, "high") {
-		t.Errorf("priority checkboxes = %v, want high checked", bar.Priorities)
+	if !on(bar, "priority", "high") {
+		t.Errorf("priority checkboxes = %v, want high checked", toggles(bar, "priority"))
 	}
 	if bar.Labels != "spec web" {
 		t.Errorf("labels = %q, want %q", bar.Labels, "spec web")
@@ -113,8 +113,22 @@ func TestBarCarriesTheQueryItDoesNotOwn(t *testing.T) {
 	}
 }
 
-func on(toggles []toggle, value string) bool {
-	for _, t := range toggles {
+// toggles are the bar's checkboxes posting under one name, wherever the menus
+// happen to have put them.
+func toggles(bar filterBar, name string) []toggle {
+	var out []toggle
+	for _, m := range bar.Menus {
+		for _, t := range m.Toggles {
+			if t.Name == name {
+				out = append(out, t)
+			}
+		}
+	}
+	return out
+}
+
+func on(bar filterBar, name, value string) bool {
+	for _, t := range toggles(bar, name) {
 		if t.Value == value {
 			return t.On
 		}

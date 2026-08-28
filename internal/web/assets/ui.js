@@ -1,8 +1,8 @@
 // Small comforts over the rendered page, hand-written and dependency-free
 // (ADR 0006): timestamps said as distances, table rows that click like the
-// links they hold, and note boxes that grow with what is typed into them. Each
-// is decoration over markup that already works — without this script the times
-// are absolute, the title cell is still a link, and a textarea still scrolls.
+// links they hold, note boxes that grow with what is typed into them, toolbar
+// menus that close when the reader looks away, and the two windows onto the one
+// text filter kept agreeing.
 
 // The server writes every timestamp absolute inside <time datetime="…">; this
 // rewords it as a distance ("2 hours ago") and keeps the absolute form in the
@@ -62,6 +62,49 @@ document.addEventListener("input", (event) => {
   if (!(box instanceof HTMLTextAreaElement)) return;
   box.style.height = "auto";
   box.style.height = Math.min(box.scrollHeight + 2, window.innerHeight * 0.6) + "px";
+});
+
+// A toolbar menu is a <details>, which nothing but a second click on its own
+// button would otherwise close. A click anywhere else, or Escape, closes every
+// open one — what a menu does everywhere else.
+document.addEventListener("click", (event) => {
+  for (const menu of document.querySelectorAll("details.filter-menu[open]")) {
+    if (!menu.contains(event.target)) menu.open = false;
+  }
+});
+
+document.addEventListener("keydown", (event) => {
+  if (event.key !== "Escape") return;
+  for (const menu of document.querySelectorAll("details.filter-menu[open]")) menu.open = false;
+});
+
+// The sidebar's box and the toolbar's text field are one filter, so a term
+// typed in either is the term in both. Only the toolbar's field is told the
+// value changed: writing the term back into the sidebar is display, and telling
+// both would ask for the same view twice.
+document.addEventListener("input", (event) => {
+  const shell = document.getElementById("shell-search");
+  const field = document.getElementById("filter-search");
+  if (!shell || !field) return;
+  const from = event.target;
+  if (from !== shell && from !== field) return;
+  const other = from === shell ? field : shell;
+  if (other.value === from.value) return;
+  other.value = from.value;
+  if (other === field) other.dispatchEvent(new Event("input", { bubbles: true }));
+});
+
+// A form serialises every control it holds, so the address a filter change
+// pushes would otherwise carry the boxes nobody typed in and the assignee's
+// "anyone". What is pushed is what a reader bookmarks or sends, so it says only
+// what is narrowing the view — the same address the toolbar's own chips write.
+document.addEventListener("htmx:configRequest", (event) => {
+  if (!event.detail.elt.closest?.("form[aria-label='Filter issues']")) return;
+  const params = event.detail.parameters;
+  for (const name of [...params.keys()]) {
+    const value = params.get(name);
+    if (value === "" || (name === "assignee" && value === "any")) params.delete(name);
+  }
 });
 
 document.addEventListener("DOMContentLoaded", reword);

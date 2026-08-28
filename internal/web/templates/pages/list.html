@@ -1,6 +1,11 @@
-{{define "content"}}
-<h1>Issues</h1>
+{{define "toolbar"}}
+<div class="mb-4 flex flex-wrap items-center gap-x-3 gap-y-2">
+  <h1 class="m-0 text-lg font-semibold tracking-tight text-ink">Issues</h1>
+</div>
 {{template "filters" .Filters}}
+{{end}}
+
+{{define "content"}}
 <div id="issues">
 {{if .Rows}}
 <p class="result-count">{{len .Rows}} issue(s)</p>

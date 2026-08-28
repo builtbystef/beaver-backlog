@@ -1,68 +1,80 @@
 {{define "filters"}}
-{{/* The bar the board and the list share. It is a plain GET form first — every
-     control posts a query parameter and submitting reloads the filtered page —
-     and htmx only makes that same request without the reload, so the view works
-     the same with the script absent.
+{{/* The toolbar the board, the list and the graph share: one bar above the view
+     it narrows, with the whole filter vocabulary within reach and the active
+     filters said beside it as chips.
 
-     The controls fold away behind a summary line that stays: what is filtering
-     right now, said as chips, each a link to the same view minus that one
-     filter. A refused reference forces the bar open, because an error nobody
-     can see is an error nobody can fix. */}}
-<details class="filters-shell"{{if .Refused}} open{{end}}>
-  {{/* The summary carries an id so the form's htmx request can refresh the
-       chips out-of-band: the swap below only replaces #issues, and chips that
-       kept saying yesterday's filters would be worse than none. */}}
-  <summary id="filters-summary">
-    <span class="filters-word">Filters</span>
-    {{range .Chips}}<a class="chip" href="{{.RemoveURL}}" title="Remove this filter">{{.Label}} <span aria-hidden="true">×</span></a>{{end}}
-    {{if .Active}}<a class="clear" href="{{.Action}}">Clear all</a>{{end}}
-  </summary>
-<form class="filters" method="get" action="{{.Action}}"
-      hx-get="{{.Action}}" hx-target="#issues" hx-select="#issues" hx-swap="outerHTML"
-      hx-select-oob="#filters-summary"
-      hx-push-url="true"
-      hx-trigger="submit, change, input changed delay:300ms from:.filter-text"
-      aria-label="Filter issues">
-  {{range .Keep}}<input type="hidden" name="{{.Name}}" value="{{.Value}}">{{end}}
-  <fieldset class="filter-group">
-    <legend>State</legend>
-    {{range .States}}
-    <label><input type="checkbox" name="state" value="{{.Value}}"{{if .On}} checked{{end}}> {{.Label}}</label>
+     Changing any control asks for the narrowed view and pushes the address it
+     answers, so the view stays linkable without a reload. Only the listing and
+     the chips come back — the controls are the reader's hands and are never
+     swapped out from under them, which is why nothing in the bar says a count
+     the stylesheet cannot read off the boxes themselves. */}}
+<div class="mb-4 flex flex-col gap-2">
+  <form class="flex flex-wrap items-start gap-2"
+        method="get" action="{{.Action}}"
+        hx-get="{{.Action}}" hx-target="#issues" hx-select="#issues" hx-swap="outerHTML"
+        hx-select-oob="#filter-chips"
+        hx-push-url="true"
+        hx-trigger="submit, change, input changed delay:300ms from:.filter-text"
+        aria-label="Filter issues">
+    {{range .Keep}}<input type="hidden" name="{{.Name}}" value="{{.Value}}">{{end}}
+
+    <input id="filter-search" class="filter-text h-8 w-52 rounded-md border border-line bg-surface px-2.5 text-sm text-ink placeholder:text-ink-subtle focus:border-accent focus:outline-none"
+           type="search" name="search" value="{{.Search}}" placeholder="Title or body…" aria-label="Text">
+
+    {{range .Menus}}
+    <details class="filter-menu group relative">
+      <summary class="flex h-8 cursor-pointer list-none items-center gap-1.5 rounded-md border border-line bg-surface px-2.5 text-sm text-ink-muted select-none group-has-checked:filter-on hover:border-line-strong hover:text-ink [&::-webkit-details-marker]:hidden">
+        {{.Label}}<span class="text-[0.6rem] text-ink-subtle" aria-hidden="true">▾</span>
+      </summary>
+      <div class="absolute top-9 left-0 z-20 flex min-w-44 flex-col gap-0.5 rounded-card border border-line bg-surface-raised p-1.5 shadow-overlay">
+        {{range .Toggles}}
+        <label class="flex cursor-pointer items-center gap-2 rounded-md px-2 py-1 text-sm text-ink-muted hover:bg-surface-hover has-checked:text-ink">
+          <input class="size-3.5 accent-accent" type="checkbox" name="{{.Name}}" value="{{.Value}}"{{if .On}} checked{{end}}>
+          <span>{{.Label}}</span>
+        </label>
+        {{end}}
+      </div>
+    </details>
     {{end}}
-    <label><input type="checkbox" name="ready" value="1"{{if .Ready}} checked{{end}}> ready</label>
-    <label><input type="checkbox" name="blocked" value="1"{{if .Blocked}} checked{{end}}> blocked</label>
-  </fieldset>
-  <fieldset class="filter-group">
-    <legend>Priority</legend>
-    {{range .Priorities}}
-    <label><input type="checkbox" name="priority" value="{{.Value}}"{{if .On}} checked{{end}}> {{.Label}}</label>
-    {{end}}
-  </fieldset>
-  <fieldset class="filter-group">
-    <legend>Assignee</legend>
-    <select name="assignee" aria-label="Assignee">
-      {{template "options" .Assignees}}
-    </select>
-    <input class="filter-text" type="text" name="actor" value="{{.Actor}}" placeholder="who" aria-label="Actor">
-  </fieldset>
-  <fieldset class="filter-group">
-    <legend>Labels</legend>
-    <input class="filter-text" type="text" name="label" value="{{.Labels}}" placeholder="all of these" aria-label="Labels">
-  </fieldset>
-  <fieldset class="filter-group">
-    <legend>Parent</legend>
-    <input class="filter-text" type="text" name="parent" value="{{.Parent}}" placeholder="a reference" aria-label="Parent">
-  </fieldset>
-  <fieldset class="filter-group">
-    <legend>Text</legend>
-    <input class="filter-text" type="search" name="search" value="{{.Search}}" placeholder="title or body" aria-label="Text">
-  </fieldset>
-  {{/* The submit button serves the reader without the script; with it, every
-       change submits itself, so the stylesheet hides the button under .js. */}}
-  <div class="filter-actions">
-    <button type="submit">Filter</button>
+
+    {{/* The assignee menu reads as on by its select rather than by a ticked box:
+         "anyone" is the option that narrows nothing. */}}
+    <details class="filter-menu group relative">
+      <summary class="flex h-8 cursor-pointer list-none items-center gap-1.5 rounded-md border border-line bg-surface px-2.5 text-sm text-ink-muted select-none group-has-[option:not([value=any]):checked]:filter-on hover:border-line-strong hover:text-ink [&::-webkit-details-marker]:hidden">
+        Assignee<span class="text-[0.6rem] text-ink-subtle" aria-hidden="true">▾</span>
+      </summary>
+      <div class="absolute top-9 left-0 z-20 flex min-w-52 flex-col gap-2 rounded-card border border-line bg-surface-raised p-2 shadow-overlay">
+        <select class="h-8 rounded-md border border-line bg-surface px-2 text-sm text-ink focus:border-accent focus:outline-none" name="assignee" aria-label="Assignee">
+          {{template "options" .Assignees}}
+        </select>
+        <input class="filter-text h-8 rounded-md border border-line bg-surface px-2.5 text-sm text-ink placeholder:text-ink-subtle focus:border-accent focus:outline-none"
+               type="text" name="actor" value="{{.Actor}}" placeholder="who" aria-label="Actor">
+      </div>
+    </details>
+
+    <input class="filter-text h-8 w-40 rounded-md border border-line bg-surface px-2.5 text-sm text-ink placeholder:text-ink-subtle focus:border-accent focus:outline-none"
+           type="text" name="label" value="{{.Labels}}" placeholder="Labels: all of these" aria-label="Labels">
+
+    {{/* The parent box carries the words about a reference that names no issue,
+         because the typo is the reader's to fix where they made it. */}}
+    <div class="flex flex-col gap-1">
+      <input class="filter-text h-8 w-40 rounded-md border border-line bg-surface px-2.5 text-sm text-ink placeholder:text-ink-subtle focus:border-accent focus:outline-none{{if .Refused}} border-condition-blocked-ink{{end}}"
+             type="text" name="parent" value="{{.Parent}}" placeholder="Parent reference" aria-label="Parent">
+      {{with .Refused}}<p class="max-w-64 text-xs text-condition-blocked-ink" role="alert">{{.}}</p>{{end}}
+    </div>
+  </form>
+
+  {{/* What is filtering right now, and the way off each one. The region stands
+       whether or not anything is active, because it is what an htmx swap writes
+       the fresh chips into. */}}
+  <div id="filter-chips" class="flex flex-wrap items-center gap-1.5{{if not .Active}} hidden{{end}}">
+    <ul class="contents" aria-label="Active filters">
+      {{range .Chips}}
+      <li><a class="inline-flex items-center gap-1 rounded-chip border border-line bg-surface px-2 py-0.5 text-xs text-ink-muted hover:border-accent hover:text-ink"
+             href="{{.RemoveURL}}" title="Remove this filter">{{.Label}}<span class="text-ink-subtle" aria-hidden="true">×</span></a></li>
+      {{end}}
+    </ul>
+    {{if .Active}}<a class="ml-1 text-xs text-ink-subtle underline-offset-2 hover:text-accent hover:underline" href="{{.ClearURL}}">Clear all</a>{{end}}
   </div>
-  {{with .Refused}}<p class="filter-error" role="alert">{{.}}</p>{{end}}
-</form>
-</details>
+</div>
 {{end}}
