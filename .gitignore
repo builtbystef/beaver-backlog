@@ -1,6 +1,9 @@
 # Compiled binary
 /beaver
 
+# Release artifacts from a snapshot build
+/dist/
+
 # Test and coverage output
 *.test
 *.out

@@ -1,13 +1,14 @@
 ---
 id: 046c8m
 title: GoReleaser config builds every target, checked on every PR
-state: todo
+state: done
+assignee: claude
 priority: high
 depends_on:
     - sp4wkw
 parent: 2sn1xs
 created: 2026-08-27T05:45:45Z
-updated: 2026-08-27T05:45:45Z
+updated: 2026-08-28T10:20:36Z
 ---
 
 ## What to build
@@ -48,3 +49,28 @@ artifacts without publishing anything. Neither requires a tag or a token.
 - [ ] CI runs a snapshot build on pull requests and publishes nothing.
 - [ ] The GoReleaser action and any tool version are pinned the way the existing
       CI actions are pinned.
+
+## Notes
+
+**claude** — 2026-08-28T10:20:36Z
+
+Built. `.goreleaser.yaml` is the single description of a release; `scripts/check-release.sh` asserts what it produced; CI's new `release` job runs check + snapshot + the assertions on every pull request.
+
+Seam: the spec's Testing Decisions name it (config check plus snapshot build), so the assertions live in a shell script CI runs against `dist/`, not in a Go test. A Go test could only restate the YAML; the script reads the real artifacts.
+
+Verified locally with GoReleaser v2.18.0:
+- Six archives, and each one's binary reports GOOS/GOARCH for its platform and `CGO_ENABLED=0` under `go version -m`, read from the binary itself so cross-built platforms are covered too.
+- Naming, against a throwaway local `v1.0.0` tag run with `--skip=publish`: `beaver_1.0.0_darwin_arm64.tar.gz`, `beaver_1.0.0_windows_amd64.zip`, `beaver_1.0.0_checksums.txt`. The tag was deleted; it was never pushed.
+- Each archive carries `beaver` (`beaver.exe` on Windows), README.md and LICENSE.
+- The snapshot's linux/amd64 binary prints `beaver 0.0.0-SNAPSHOT-6235288 (commit 6235288, built 2026-08-28)`: the ldflags reach the three variables `cmd/beaver` declares.
+- `goreleaser check` exits non-zero on an invalid configuration (tried a duplicate key and a scalar where a list belongs).
+- The assertion script fails on a missing archive and on a tampered checksum, so it is not vacuous.
+
+Decisions:
+- Every template is written out even where it matches GoReleaser's default, because the naming is a contract `install.sh` and `install.ps1` download by.
+- `-X main.date={{ time "2006-01-02" }}`: the day, matching the human line the spec's version command prints.
+- `-X main.commit={{ .ShortCommit }}`, matching the spec's `commit abc1234` example.
+- The action is pinned by commit SHA with a version comment like the existing CI actions (`goreleaser/goreleaser-action@f06c13b # v7.2.3`), used with `install-only` so the GoReleaser version itself is pinned too (`v2.18.0`) and the steps stay readable as plain commands.
+- `dist/` is gitignored.
+
+Nothing about tag-triggered publishing is here; that is 4a2y3i.

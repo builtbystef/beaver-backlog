@@ -1,0 +1,50 @@
+# The single description of what a release is: six binaries, their archives, a
+# checksums file, and notes from the commits. Tags publish it; CI runs the same
+# configuration as a snapshot on every pull request, so breakage is found long
+# before a tag exists.
+#
+# The naming below is a contract the installers download by, not an incidental
+# default, so every template is spelled out even where it matches GoReleaser's
+# own. scripts/check-release.sh asserts the result.
+
+version: 2
+
+project_name: beaver
+
+builds:
+  - id: beaver
+    main: ./cmd/beaver
+    binary: beaver
+    # Nothing in the tree needs cgo, and off is what makes the binaries
+    # cross-compilable here and portable on the far side.
+    env:
+      - CGO_ENABLED=0
+    goos: [darwin, linux, windows]
+    goarch: [amd64, arm64]
+    # The three variables cmd/beaver declares for exactly this: an artifact that
+    # can name itself. The date is the day, matching what `version` prints.
+    ldflags:
+      - -s -w
+      - -X main.version={{ .Version }}
+      - -X main.commit={{ .ShortCommit }}
+      - -X main.date={{ time "2006-01-02" }}
+
+archives:
+  - id: beaver
+    ids: [beaver]
+    name_template: "{{ .ProjectName }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}"
+    formats: [tar.gz]
+    format_overrides:
+      - goos: windows
+        formats: [zip]
+    files:
+      - README.md
+      - LICENSE
+
+checksum:
+  name_template: "{{ .ProjectName }}_{{ .Version }}_checksums.txt"
+  algorithm: sha256
+
+changelog:
+  use: git
+  sort: asc
