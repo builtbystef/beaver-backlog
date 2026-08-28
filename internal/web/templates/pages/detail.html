@@ -15,14 +15,23 @@
       <button type="submit" class="danger">Delete</button>
     </form>
   </div>
-  <dialog id="confirm-delete">
-    <form method="dialog">
-      <p>Delete <span class="id">{{$iss.ID}}</span>, {{$iss.Title}}?</p>
-      <p class="hint">The file is removed outright; version control is the only undo.</p>
-      <p class="actions">
-        <button value="cancel">Cancel</button>
-        <button value="confirm" class="danger">Delete</button>
-      </p>
+  {{/* The guard in front of the one act with no undo (confirm.js): the form
+       above opens this instead of posting, and posts only if it closes on
+       "confirm".
+
+       The ground, the border and the centring are spelt out for the same
+       reasons the quick view's overlay spells them out: an unstyled <dialog>
+       falls to the legacy sheet and to a reset that zeroes the margin a modal
+       is centred by. */}}
+  <dialog id="confirm-delete"
+          class="m-auto w-[min(26rem,calc(100vw-2rem))] rounded-card border border-line bg-surface p-0 text-ink shadow-overlay backdrop:bg-black/50">
+    <form class="flex flex-col gap-2 p-5" method="dialog">
+      <p class="text-sm text-ink">Delete <span class="id">{{$iss.ID}}</span>, {{$iss.Title}}?</p>
+      <p class="{{template "field-hint"}}">The file is removed outright; version control is the only undo.</p>
+      <div class="mt-2 flex flex-wrap items-center justify-end gap-2">
+        <button class="{{template "quiet-action"}}" value="cancel">Cancel</button>
+        <button class="cursor-pointer rounded-md border border-destructive-ink bg-destructive px-3 py-1.5 text-sm font-medium text-destructive-ink hover:bg-destructive-hover" value="confirm">Delete</button>
+      </div>
     </form>
   </dialog>
   <dl class="fields">

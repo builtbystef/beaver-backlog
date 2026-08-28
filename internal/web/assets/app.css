@@ -195,11 +195,9 @@
     padding: 0.6rem 1rem;
   }
 
-  .issue-form { max-width: 48rem; }
+  .note-form { margin: 0 0 1rem; }
 
-  .issue-form p, .note-form { margin: 0 0 1rem; }
-
-  .issue-form label, .note-form label {
+  .note-form label {
     color: var(--muted);
     display: block;
     font-size: 0.8rem;
@@ -208,7 +206,6 @@
     text-transform: uppercase;
   }
 
-  .issue-form input, .issue-form select, .issue-form textarea,
   .note-form textarea {
     background: var(--panel);
     border: 1px solid var(--line);
@@ -219,34 +216,11 @@
     width: 100%;
   }
 
-  .issue-form input:focus, .issue-form select:focus, .issue-form textarea:focus,
   .note-form textarea:focus {
     border-color: var(--accent);
     box-shadow: 0 0 0 3px var(--accent-soft);
     outline: none;
   }
-
-  .issue-form fieldset {
-    border: 1px solid var(--line);
-    border-radius: 6px;
-    margin: 0 0 1rem;
-    padding: 0.75rem 1rem;
-  }
-
-  .issue-form legend {
-    color: var(--muted);
-    font-size: 0.8rem;
-    letter-spacing: 0.04em;
-    text-transform: uppercase;
-  }
-
-  .issue-form label.check {
-    display: inline-block;
-    margin: 0 1rem 0.5rem 0;
-    text-transform: none;
-  }
-
-  .issue-form label.check input { width: auto; }
 
   .actions {
     align-items: center;
@@ -274,7 +248,6 @@
 
   /* The one act each surface is for — create, save, note, repair, the first
      state move — wears the accent; its neighbours stay quiet. */
-  .issue-form button[type="submit"],
   .note-form button[type="submit"],
   .repair button[type="submit"],
   .actions > form:first-child button:not(.danger) {
@@ -283,7 +256,6 @@
     color: #fff8e7;
   }
 
-  .issue-form button[type="submit"]:hover,
   .note-form button[type="submit"]:hover,
   .repair button[type="submit"]:hover,
   .actions > form:first-child button:not(.danger):hover {
@@ -293,17 +265,6 @@
 
   button.danger { border-color: var(--danger); }
   button.danger:hover { background: var(--danger-bg); }
-
-  dialog {
-    background: var(--panel);
-    border: 1px solid var(--line);
-    border-radius: 8px;
-    color: var(--text);
-    max-width: 32rem;
-    padding: 1rem 1.25rem;
-  }
-
-  dialog::backdrop { background: rgba(0, 0, 0, 0.6); }
 
   .hint { color: var(--muted); font-size: 0.85rem; }
 

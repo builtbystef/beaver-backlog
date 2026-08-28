@@ -1,37 +1,57 @@
+{{/* The create form: the whole of a new issue on one panel, in the order an
+     issue is usually thought of — what it is, then what it is about, then where
+     it sits among the others. */}}
+
+{{define "toolbar"}}
+<div class="mb-4 flex flex-wrap items-center gap-x-3 gap-y-2">
+  <h1 class="m-0 text-lg font-semibold tracking-tight text-ink">New issue</h1>
+</div>
+{{end}}
+
 {{define "content"}}
-<h1>New issue</h1>
+<div class="max-w-3xl">
 {{template "form-error" .Error}}
-<form class="issue-form" method="post" action="/issues">
-  <p>
-    <label for="title">Title</label>
-    <input id="title" name="title" value="{{.Form.Title}}" autofocus>
-  </p>
-  <p>
-    <label for="description">Description</label>
-    <textarea id="description" name="description" rows="10">{{.Form.Description}}</textarea>
-  </p>
-  <p>
-    <label for="priority">Priority</label>
-    <select id="priority" name="priority">
-      {{template "options" .Priorities}}
-    </select>
-  </p>
-  <p>
-    <label for="labels">Labels</label>
-    <input id="labels" name="labels" value="{{.Form.Labels}}" placeholder="bug, cli">
-  </p>
-  <p>
-    <label for="depends_on">Depends on</label>
-    <input id="depends_on" name="depends_on" value="{{.Form.DependsOn}}" placeholder="references, comma separated" list="issue-refs">
-  </p>
-  <p>
-    <label for="parent">Parent</label>
-    <input id="parent" name="parent" value="{{.Form.Parent}}" placeholder="reference" list="issue-refs">
-  </p>
+<form class="flex flex-col gap-5 rounded-card border border-line bg-surface p-5 shadow-card" method="post" action="/issues">
+  <div class="flex flex-col gap-1.5">
+    <label class="{{template "field-label"}}" for="title">Title</label>
+    <input class="{{template "field-box"}}" id="title" name="title" value="{{.Form.Title}}" autofocus>
+  </div>
+  <div class="flex flex-col gap-1.5">
+    <label class="{{template "field-label"}}" for="description">Description</label>
+    {{/* The box grows with what is typed into it (ui.js); the rows are the
+         height it starts at, not the height it stays. */}}
+    <textarea class="{{template "field-box"}} leading-relaxed" id="description" name="description" rows="10">{{.Form.Description}}</textarea>
+    <p class="{{template "field-hint"}}">Markdown. The notes log is kept separately, below the issue.</p>
+  </div>
+  <div class="grid gap-5 sm:grid-cols-2">
+    <div class="flex flex-col gap-1.5">
+      <label class="{{template "field-label"}}" for="priority">Priority</label>
+      <select class="{{template "field-box"}}" id="priority" name="priority">
+        {{template "options" .Priorities}}
+      </select>
+    </div>
+    <div class="flex flex-col gap-1.5">
+      <label class="{{template "field-label"}}" for="labels">Labels</label>
+      <input class="{{template "field-box"}}" id="labels" name="labels" value="{{.Form.Labels}}" placeholder="bug, cli">
+    </div>
+  </div>
+  {{/* The two reference fields, side by side because they answer the same
+       question about the issue: what it waits on, and what it belongs to. */}}
+  <div class="grid gap-5 sm:grid-cols-2">
+    <div class="flex flex-col gap-1.5">
+      <label class="{{template "field-label"}}" for="depends_on">Depends on</label>
+      <input class="{{template "field-box"}}" id="depends_on" name="depends_on" value="{{.Form.DependsOn}}" placeholder="references, comma separated" list="issue-refs">
+    </div>
+    <div class="flex flex-col gap-1.5">
+      <label class="{{template "field-label"}}" for="parent">Parent</label>
+      <input class="{{template "field-box"}}" id="parent" name="parent" value="{{.Form.Parent}}" placeholder="reference" list="issue-refs">
+    </div>
+  </div>
   {{template "issue-refs" .Refs}}
-  <p class="actions">
-    <button type="submit">Create issue</button>
-    <a href="/">Cancel</a>
-  </p>
+  <div class="flex flex-wrap items-center gap-3 border-t border-line pt-5">
+    <button class="{{template "primary-action"}}" type="submit">Create issue</button>
+    <a class="{{template "quiet-action"}}" href="/">Cancel</a>
+  </div>
 </form>
+</div>
 {{end}}

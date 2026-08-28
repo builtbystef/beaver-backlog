@@ -5,10 +5,47 @@
 {{define "options"}}{{range .}}<option value="{{.Value}}"{{if .Selected}} selected{{end}}>{{.Label}}</option>{{end}}{{end}}
 
 {{/* form-error words a rejected submission next to the form that caused it,
-     rendering nothing when there is nothing to complain about. */}}
-{{define "form-error"}}{{with .}}<p class="error" role="alert">{{.}}</p>{{end}}{{end}}
+     rendering nothing when there is nothing to complain about. It wears the
+     blocked mark's colours: the one thing standing between the reader and the
+     issue they meant to write.
+
+     It carries its own gap, unlike the inline fragments, because it renders
+     between two things every caller wants kept apart. */}}
+{{define "form-error"}}{{with .}}<p class="mb-4 rounded-md border border-condition-blocked-ink bg-condition-blocked px-3 py-2 text-sm text-condition-blocked-ink" role="alert">{{.}}</p>{{end}}{{end}}
 
 {{/* issue-refs is the completion list the reference fields share: every issue
      the store holds, offered as id-plus-title, so nobody types an id from
      memory. An empty list renders an empty datalist, which offers nothing. */}}
 {{define "issue-refs"}}<datalist id="issue-refs">{{range .}}<option value="{{.Value}}">{{.Label}}</option>{{end}}</datalist>{{end}}
+
+{{/* The vocabulary both forms are written in, as defines rather than repeated
+     class lists: a field's shape is one decision, and the create form and the
+     edit form must not drift apart on it.
+
+     Each renders an attribute value, not an element, because the elements
+     differ in everything else — what they post, what they complete against,
+     which one takes the focus on arrival. */}}
+
+{{/* field-label: the quiet uppercase name above a control. */}}
+{{define "field-label"}}text-xs font-medium tracking-wide text-ink-muted uppercase{{end}}
+
+{{/* field-box: a text box or a dropdown. Recessed against the panel it sits
+     on, so a form reads as a column of things to fill in rather than a wall.
+     No focus rule of its own: the accent border answers a pointer, and the
+     design system's one ring answers a keyboard. */}}
+{{define "field-box"}}w-full rounded-md border border-line bg-canvas px-3 py-2 text-sm text-ink placeholder:text-ink-subtle focus:border-accent{{end}}
+
+{{/* field-hint: what a box cannot say in its placeholder. */}}
+{{define "field-hint"}}text-xs text-ink-subtle{{end}}
+
+{{/* keep-box: one member of a checkbox group, where a tick means "keep this"
+     and the reader is dropping things by unticking them. Struck through until
+     it is ticked, so what survives the edit is legible without reading every
+     tick. */}}
+{{define "keep-box"}}inline-flex cursor-pointer items-center gap-2 rounded-chip border border-line bg-canvas px-2.5 py-1 text-sm text-ink-subtle line-through has-checked:border-accent has-checked:bg-accent-soft has-checked:text-ink has-checked:no-underline{{end}}
+
+{{/* The two actions every form ends on: the one act it is for, and the way
+     back out of it. */}}
+{{define "primary-action"}}cursor-pointer rounded-md bg-accent px-3 py-1.5 text-sm font-medium text-ink-on-accent hover:bg-accent-hover{{end}}
+
+{{define "quiet-action"}}cursor-pointer rounded-md border border-line bg-surface px-3 py-1.5 text-sm text-ink-muted hover:border-line-strong hover:text-ink{{end}}

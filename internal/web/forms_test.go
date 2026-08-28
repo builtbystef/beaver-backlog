@@ -210,16 +210,8 @@ func TestDeleteRemovesTheFileAndRedirectsHome(t *testing.T) {
 	target := create(t, open(t, dir), core.Draft{Title: "Junk"})
 	h := newHandler(t, dir)
 
-	// The detail page offers deletion behind a confirmation the reader has to
-	// answer before the post goes anywhere.
-	detail := get(h, "/issues/"+target.ID).Body.String()
-	if !strings.Contains(detail, `action="/issues/`+target.ID+`/delete"`) {
-		t.Errorf("detail page offers no delete:\n%s", detail)
-	}
-	if !strings.Contains(detail, "<dialog") {
-		t.Errorf("delete is not behind a confirm dialog:\n%s", detail)
-	}
-
+	// What the post does once the reader has answered the confirmation; the
+	// guard itself is TestDeletingAsksFirst.
 	res := post(h, "/issues/"+target.ID+"/delete", nil)
 
 	if res.Code != http.StatusSeeOther {

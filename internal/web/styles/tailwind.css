@@ -89,6 +89,15 @@
   --condition-stuck: #eed9e8;
   --condition-stuck-ink: #83406a;
 
+  /* Deleting is the one act with no undo, so the button that does it looks
+     like nothing else in the UI. A family of its own rather than the blocked
+     mark's rust: an act the reader is about to take and a condition an issue
+     is in are two facts, and two facts that look alike are read as one. Not
+     spelt "danger", which the legacy sheet still owns at a different value. */
+  --destructive: #f6d6d2;
+  --destructive-hover: #efc3bd;
+  --destructive-ink: #9b2f26;
+
   /* The graph draws three things nothing else does. Its ground is a surface of
      its own, because the neutral scale has no step that sits under a raised
      card in both palettes at once, and a canvas a reader pans around has to
@@ -151,6 +160,10 @@
     --condition-stuck: #331b2b;
     --condition-stuck-ink: #d99bc4;
 
+    --destructive: #3a1a17;
+    --destructive-hover: #4a221e;
+    --destructive-ink: #f3a49b;
+
     --graph-ground: #0e0e11;
     --graph-edge: #63636e;
     --graph-cycle: #e0788c;
@@ -203,6 +216,10 @@
   --condition-ready-ink: #7ddba2;
   --condition-stuck: #331b2b;
   --condition-stuck-ink: #d99bc4;
+
+  --destructive: #3a1a17;
+  --destructive-hover: #4a221e;
+  --destructive-ink: #f3a49b;
 
   --graph-ground: #0e0e11;
   --graph-edge: #63636e;
@@ -257,6 +274,10 @@
   --color-condition-ready-ink: var(--condition-ready-ink);
   --color-condition-stuck: var(--condition-stuck);
   --color-condition-stuck-ink: var(--condition-stuck-ink);
+
+  --color-destructive: var(--destructive);
+  --color-destructive-hover: var(--destructive-hover);
+  --color-destructive-ink: var(--destructive-ink);
 
   --color-graph-ground: var(--graph-ground);
   --color-graph-edge: var(--graph-edge);

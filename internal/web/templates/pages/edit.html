@@ -1,52 +1,80 @@
+{{/* The edit form: the same panel as the create form, plus the two groups only
+     an existing issue has. A label or a dependency the issue already carries is
+     a box to untick, and the field beside it is how the form says "add" — the
+     add-and-remove shape the core's change set takes. */}}
+
+{{define "toolbar"}}
+<div class="mb-4 flex flex-wrap items-baseline gap-x-3 gap-y-2">
+  <h1 class="m-0 text-lg font-semibold tracking-tight text-ink">Edit</h1>
+  <span class="id">{{.Issue.ID}}</span>
+</div>
+{{end}}
+
 {{define "content"}}
 {{$iss := .Issue}}
-<h1>Edit <span class="id">{{$iss.ID}}</span></h1>
+<div class="max-w-3xl">
 {{template "form-error" .Error}}
-<form class="issue-form" method="post" action="/issues/{{$iss.ID}}">
-  <p>
-    <label for="title">Title</label>
-    <input id="title" name="title" value="{{.Form.Title}}">
-  </p>
-  <p>
-    <label for="description">Description</label>
-    <textarea id="description" name="description" rows="10">{{.Form.Description}}</textarea>
-  </p>
-  <p>
-    <label for="assignee">Assignee</label>
-    <input id="assignee" name="assignee" value="{{.Form.Assignee}}" placeholder="empty to unassign">
-  </p>
-  <p>
-    <label for="priority">Priority</label>
-    <select id="priority" name="priority">
-      {{template "options" .Priorities}}
-    </select>
-  </p>
-  <fieldset>
-    <legend>Labels</legend>
+<form class="flex flex-col gap-5 rounded-card border border-line bg-surface p-5 shadow-card" method="post" action="/issues/{{$iss.ID}}">
+  <div class="flex flex-col gap-1.5">
+    <label class="{{template "field-label"}}" for="title">Title</label>
+    <input class="{{template "field-box"}}" id="title" name="title" value="{{.Form.Title}}">
+  </div>
+  <div class="flex flex-col gap-1.5">
+    <label class="{{template "field-label"}}" for="description">Description</label>
+    {{/* Editing what the issue says never touches what was said about it: the
+         notes log is not in this box and is not rewritten by saving it. */}}
+    <textarea class="{{template "field-box"}} leading-relaxed" id="description" name="description" rows="10">{{.Form.Description}}</textarea>
+    <p class="{{template "field-hint"}}">Markdown. The notes log below the issue is left alone.</p>
+  </div>
+  <div class="grid gap-5 sm:grid-cols-2">
+    <div class="flex flex-col gap-1.5">
+      <label class="{{template "field-label"}}" for="assignee">Assignee</label>
+      <input class="{{template "field-box"}}" id="assignee" name="assignee" value="{{.Form.Assignee}}" placeholder="empty to unassign">
+    </div>
+    <div class="flex flex-col gap-1.5">
+      <label class="{{template "field-label"}}" for="priority">Priority</label>
+      <select class="{{template "field-box"}}" id="priority" name="priority">
+        {{template "options" .Priorities}}
+      </select>
+    </div>
+  </div>
+  <fieldset class="flex flex-col gap-3 rounded-card border border-line p-4">
+    <legend class="{{template "field-label"}} px-1">Labels</legend>
+    {{/* A group with every box unticked posts none of them, so this marker is
+         what tells "remove them all" from "this form never showed them". */}}
     <input type="hidden" name="labels_form" value="1">
-    {{range .Form.Labels}}
-    <label class="check"><input type="checkbox" name="keep_labels" value="{{.Value}}"{{if .Keep}} checked{{end}}> {{.Value}}</label>
-    {{else}}<span class="none">none yet</span>{{end}}
-    <label for="add_labels">Add</label>
-    <input id="add_labels" name="add_labels" value="{{.Form.AddLabels}}" placeholder="bug, cli">
+    <div class="flex flex-wrap items-center gap-2">
+      {{range .Form.Labels}}
+      <label class="{{template "keep-box"}}"><input class="size-3.5 accent-accent" type="checkbox" name="keep_labels" value="{{.Value}}"{{if .Keep}} checked{{end}}> {{.Value}}</label>
+      {{else}}<span class="{{template "field-hint"}}">None yet.</span>{{end}}
+    </div>
+    <div class="flex flex-col gap-1.5">
+      <label class="{{template "field-label"}}" for="add_labels">Add</label>
+      <input class="{{template "field-box"}}" id="add_labels" name="add_labels" value="{{.Form.AddLabels}}" placeholder="bug, cli">
+    </div>
   </fieldset>
-  <fieldset>
-    <legend>Depends on</legend>
+  <fieldset class="flex flex-col gap-3 rounded-card border border-line p-4">
+    <legend class="{{template "field-label"}} px-1">Depends on</legend>
     <input type="hidden" name="depends_on_form" value="1">
-    {{range .Form.DependsOn}}
-    <label class="check"><input type="checkbox" name="keep_depends_on" value="{{.Value}}"{{if .Keep}} checked{{end}}> <span class="id">{{.Value}}</span></label>
-    {{else}}<span class="none">none yet</span>{{end}}
-    <label for="add_depends_on">Add</label>
-    <input id="add_depends_on" name="add_depends_on" value="{{.Form.AddDependsOn}}" placeholder="references, comma separated" list="issue-refs">
+    <div class="flex flex-wrap items-center gap-2">
+      {{range .Form.DependsOn}}
+      <label class="{{template "keep-box"}}"><input class="size-3.5 accent-accent" type="checkbox" name="keep_depends_on" value="{{.Value}}"{{if .Keep}} checked{{end}}> <span class="id">{{.Value}}</span></label>
+      {{else}}<span class="{{template "field-hint"}}">None yet.</span>{{end}}
+    </div>
+    <div class="flex flex-col gap-1.5">
+      <label class="{{template "field-label"}}" for="add_depends_on">Add</label>
+      <input class="{{template "field-box"}}" id="add_depends_on" name="add_depends_on" value="{{.Form.AddDependsOn}}" placeholder="references, comma separated" list="issue-refs">
+    </div>
   </fieldset>
-  <p>
-    <label for="parent">Parent</label>
-    <input id="parent" name="parent" value="{{.Form.Parent}}" placeholder="empty to detach" list="issue-refs">
-  </p>
+  <div class="flex flex-col gap-1.5">
+    <label class="{{template "field-label"}}" for="parent">Parent</label>
+    <input class="{{template "field-box"}}" id="parent" name="parent" value="{{.Form.Parent}}" placeholder="empty to detach" list="issue-refs">
+  </div>
   {{template "issue-refs" .Refs}}
-  <p class="actions">
-    <button type="submit">Save changes</button>
-    <a href="/issues/{{$iss.ID}}">Cancel</a>
-  </p>
+  <div class="flex flex-wrap items-center gap-3 border-t border-line pt-5">
+    <button class="{{template "primary-action"}}" type="submit">Save changes</button>
+    <a class="{{template "quiet-action"}}" href="/issues/{{$iss.ID}}">Cancel</a>
+  </div>
 </form>
+</div>
 {{end}}
