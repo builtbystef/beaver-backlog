@@ -236,6 +236,17 @@
 
 .brand .ink { fill: var(--ink); }
 
+/* The palette being swapped. A card carries a colour transition so its border
+   answers a hover, and on a swap that same transition eases the card to the new
+   palette while the ground behind it and its own shadow, which nothing
+   transitions, have already flipped: a boardful of cards lagging the page they
+   sit on. theme.js hangs this on the root for the swap and takes it off once
+   the new palette is drawn, which is the only way to tell that repaint from
+   every other one. Outside the layers, because what it has to beat is a utility
+   the template wrote on the card. */
+
+.theme-switching, .theme-switching * { transition: none; }
+
 /* The utility layer's vocabulary. `inline` keeps the palette above as the only
    place a colour has a value: a utility resolves the variable at use time, so
    one set of class names draws whichever theme is live. */

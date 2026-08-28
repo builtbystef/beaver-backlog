@@ -43,10 +43,26 @@ document.addEventListener("DOMContentLoaded", () => {
   if (state) state.checked = true;
 });
 
+// swapTheme is applyTheme for a palette the reader just picked, which is the
+// one time the change is watched. Every colour on the page moves at once, and
+// the elements carrying a colour transition for their hover would ease to the
+// new palette while everything without one has already arrived, so the
+// transitions are off for the swap.
+function swapTheme(choice) {
+  const root = document.documentElement;
+  root.classList.add("theme-switching");
+  applyTheme(choice);
+  // Reading a layout property forces the recalculation to happen here, with the
+  // transitions still off, so the new palette is already what they are
+  // measured from when they come back on the next line.
+  void root.offsetHeight;
+  root.classList.remove("theme-switching");
+}
+
 document.addEventListener("change", (event) => {
   const state = event.target;
   if (!state.closest?.("#theme")) return;
-  applyTheme(state.value);
+  swapTheme(state.value);
   try {
     if (state.value === "system") localStorage.removeItem(themeKey);
     else localStorage.setItem(themeKey, state.value);

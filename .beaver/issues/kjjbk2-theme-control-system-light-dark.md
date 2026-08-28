@@ -8,7 +8,7 @@ depends_on:
     - monxbk
 parent: qf0mr2
 created: 2026-08-27T05:26:16Z
-updated: 2026-08-28T08:59:22Z
+updated: 2026-08-28T09:05:13Z
 ---
 
 ## What to build
@@ -112,3 +112,25 @@ with a browser asking for dark, system and dark match it and light does not,
 which is criteria 2, 3 and 6.
 
 All four checks pass, and scripts/build-css.sh run again leaves the tree clean.
+
+**claude** — 2026-08-28T09:05:13Z
+
+Follow-up from review: swapping the palette animated the board's cards.
+
+A card carries transition-colors so its border answers a hover, and that same
+transition eased every card to the new palette over 150ms while the ground
+behind them and their own shadows, which nothing transitions, had already
+flipped. The board was where it showed because it is the only page holding a
+screenful of cards; the sidebar's four links and the theme control's own labels
+lagged the same way, just too few to notice.
+
+Fixed by turning transitions off for the swap and back on once the new palette
+is drawn: theme.js hangs `theme-switching` on the root, applies the palette,
+forces the recalculation by reading a layout property so it happens with the
+transitions still off, and takes the class back off. The rule sits outside the
+cascade layers, because what it has to beat is a utility the template wrote on
+the card.
+
+Measured in the browser: an unsuppressed flip starts 189 colour transitions,
+the suppressed one starts none, the class is not left behind, and a card's
+150ms hover transition is live again straight after.

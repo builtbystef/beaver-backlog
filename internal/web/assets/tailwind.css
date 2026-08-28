@@ -1129,6 +1129,9 @@
 .brand .ink {
   fill: var(--ink);
 }
+.theme-switching, .theme-switching * {
+  transition: none;
+}
 @layer base {
   :focus-visible {
     outline: 2px solid var(--accent);
