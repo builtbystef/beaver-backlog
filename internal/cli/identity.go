@@ -73,7 +73,7 @@ func resolveActor(env Env, asFlag string) (actor, error) {
 		if cfg.Actor != "" {
 			return actor{cfg.Actor, sourceConfig}, nil
 		}
-		name, err := establishHumanIdentity(env)
+		name, err := establishHumanIdentity(env, bufio.NewReader(env.Stdin))
 		if err != nil {
 			return actor{}, err
 		}
@@ -100,10 +100,12 @@ func knownAgent(getenv func(string) string) (string, bool) {
 	return "", false
 }
 
-// establishHumanIdentity prompts for a name and saves it to user-level config so
-// later interactive runs skip the prompt.
-func establishHumanIdentity(env Env) (string, error) {
-	name, err := promptForIdentity(env)
+// establishHumanIdentity prompts for a name over in and saves it to user-level
+// config so later interactive runs skip the prompt. The reader is passed in so
+// a command with two prompts reads both from one buffer, rather than losing the
+// second answer to the first one's buffering.
+func establishHumanIdentity(env Env, in *bufio.Reader) (string, error) {
+	name, err := promptForIdentity(env, in)
 	if err != nil {
 		return "", err
 	}
@@ -120,9 +122,9 @@ func establishHumanIdentity(env Env) (string, error) {
 // promptForIdentity asks the human for their name and reads the answer from
 // stdin. The prompt goes to stderr so it never pollutes stdout, which a caller
 // may be capturing.
-func promptForIdentity(env Env) (string, error) {
+func promptForIdentity(env Env, in *bufio.Reader) (string, error) {
 	fmt.Fprint(env.Stderr, "Enter your Beaver Backlog identity (a name): ")
-	return readReply(bufio.NewReader(env.Stdin))
+	return readReply(in)
 }
 
 // warnGenericAgent tells stderr that work is being attributed to the shared

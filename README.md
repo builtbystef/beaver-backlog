@@ -289,16 +289,6 @@ Issues relate through `depends_on` and `parent`, stored one-sided on the
 dependent or child. `beaver list --ready` shows what is actionable now (todo,
 every dependency done); `--blocked` shows what is waiting.
 
-## Configuration
-
-`beaver init` writes `.beaver/config.yml`, which is committed and shared like
-the issues. It records the store's format version and nothing else today.
-Beaver Backlog only ever reads and writes files — it never runs a
-version-control system, so committing your issue files stays entirely yours to
-do (and stays free to bundle with the code the issue produced).
-
-Your identity lives in per-machine user config, never in the repository.
-
 ## Keeping the store healthy
 
 Distributed, hand-editable files can drift: filenames out of sync with titles,

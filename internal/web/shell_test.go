@@ -209,6 +209,30 @@ func TestPageTitleNamesTheProjectFirst(t *testing.T) {
 	}
 }
 
+// A project that names itself in its committed config is called that everywhere
+// the shell names it, the rail and the tab both, rather than after the directory
+// it sits in.
+func TestBrandSlotAndTitleUseTheConfiguredName(t *testing.T) {
+	dir := newStoreNamed(t, "orbital-mechanics")
+	if err := open(t, dir).SetProjectName("Apollo Guidance"); err != nil {
+		t.Fatalf("SetProjectName: %v", err)
+	}
+	h, pages := shellPagesIn(t, dir)
+
+	for _, path := range pages {
+		body := get(h, path).Body.String()
+		if slot := brandSlot(t, body); !strings.Contains(slot, "Apollo Guidance") {
+			t.Errorf("%s does not name the project by its configured name: %s", path, slot)
+		}
+		if title := pageTitle(t, body); !strings.HasPrefix(title, "Apollo Guidance") {
+			t.Errorf("the tab for %s reads %q, which does not start with the configured name", path, title)
+		}
+		if strings.Contains(body, "orbital-mechanics") {
+			t.Errorf("%s still names the project after its directory", path)
+		}
+	}
+}
+
 // The wordmark is a lockup whose "B" is the beaver itself; at rail size the
 // animal does not survive being cap-height, so the shell wears the icon mark
 // instead and the wordmark asset goes with it.

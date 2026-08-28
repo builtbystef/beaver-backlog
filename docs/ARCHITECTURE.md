@@ -72,8 +72,9 @@ invokes a version-control system; committing the files is the operator's job.
   relationships (`depends_on`, `parent`), including the derived
   blocked/ready/stuck conditions.
 - `internal/store/` — the `.beaver` store: discovery (walking up to find it),
-  scanning, writing, `config.yml`, and the project's name — the directory the
-  store sits in, so every store has one without being configured.
+  scanning, writing, `config.yml`, and the project's name — the name the
+  committed config gives it, falling back to the directory the store sits in, so
+  every store has one without being configured.
 - `internal/output/` — human vs JSON rendering and format auto-detection
   (tables on a terminal, JSON when piped).
 - `internal/userconfig/` — per-machine user config (actor identity); never

@@ -642,3 +642,37 @@ func TestProjectNameIsTheDirectoryHoldingTheStore(t *testing.T) {
 		}
 	}
 }
+
+// A project that names itself in its committed config is called that. A config
+// that names nothing, or no config at all, leaves the store named after its
+// directory, so no existing store needs migrating.
+func TestProjectNameIsTheConfiguredNameWhereSet(t *testing.T) {
+	root := filepath.Join(t.TempDir(), "orbital-mechanics")
+	if err := os.MkdirAll(root, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if _, _, err := store.Init(root); err != nil {
+		t.Fatalf("Init: %v", err)
+	}
+	st, err := store.Discover(root)
+	if err != nil {
+		t.Fatalf("Discover: %v", err)
+	}
+
+	writeConfig(t, root, "format_version: 1\nname: Apollo Guidance\n")
+	if got := st.ProjectName(); got != "Apollo Guidance" {
+		t.Errorf("project name = %q, want the configured %q", got, "Apollo Guidance")
+	}
+
+	writeConfig(t, root, "format_version: 1\n")
+	if got := st.ProjectName(); got != "orbital-mechanics" {
+		t.Errorf("with no name in the config the project name = %q, want the directory's %q", got, "orbital-mechanics")
+	}
+
+	if err := os.Remove(filepath.Join(root, ".beaver", "config.yml")); err != nil {
+		t.Fatal(err)
+	}
+	if got := st.ProjectName(); got != "orbital-mechanics" {
+		t.Errorf("with no config file at all the project name = %q, want the directory's %q", got, "orbital-mechanics")
+	}
+}

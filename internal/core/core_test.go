@@ -247,6 +247,37 @@ func withParent(iss issue.Issue, parent string) issue.Issue {
 	return iss
 }
 
+// The project's name is the store directory's until the project says otherwise.
+// Naming it records the name for every later reader, a fresh service included.
+func TestNamingTheProjectOverridesTheDirectoryName(t *testing.T) {
+	root := filepath.Join(t.TempDir(), "orbital-mechanics")
+	if err := os.MkdirAll(root, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if _, _, err := store.Init(root); err != nil {
+		t.Fatalf("Init: %v", err)
+	}
+	svc := open(t, root)
+
+	if name, err := svc.ConfiguredProjectName(); err != nil || name != "" {
+		t.Errorf("a fresh store reports the configured name %q (err %v), want none", name, err)
+	}
+	if got := svc.ProjectName(); got != "orbital-mechanics" {
+		t.Errorf("project name = %q, want the directory's %q", got, "orbital-mechanics")
+	}
+
+	if err := svc.SetProjectName("Apollo Guidance"); err != nil {
+		t.Fatalf("SetProjectName: %v", err)
+	}
+
+	if name, err := svc.ConfiguredProjectName(); err != nil || name != "Apollo Guidance" {
+		t.Errorf("configured name = %q (err %v), want the name just set", name, err)
+	}
+	if got := open(t, root).ProjectName(); got != "Apollo Guidance" {
+		t.Errorf("a service opened afterwards calls the project %q, want the configured name", got)
+	}
+}
+
 // open returns a service over the store found from dir, failing the test if
 // there is none.
 func open(t *testing.T, dir string) *core.Service {

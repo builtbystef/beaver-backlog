@@ -169,7 +169,9 @@ func TestWhoamiInteractiveNoInputErrors(t *testing.T) {
 func TestInitSeedsIdentityInteractively(t *testing.T) {
 	h := beavertest.New(t) // not yet initialized
 	h.StdinIsTTY = true
-	h.StdinText = "Ada Lovelace\n"
+	// Two prompts on a first run: the project first, left with its directory's
+	// name, then the person.
+	h.StdinText = "\nAda Lovelace\n"
 
 	out := h.DecodeJSON(h.MustRun("init").Stdout)
 	if out["actor"] != "Ada Lovelace" {

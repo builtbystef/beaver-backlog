@@ -81,14 +81,21 @@ func (s *Store) warn(w Warning) {
 	}
 }
 
-// ProjectName is what the project holding this store is called: the name of the
-// directory the store sits in. It is derived rather than configured, so every
-// store has a name from the moment it is created — the one place a name comes
-// from until a project chooses to override it.
+// ProjectName is what the project holding this store is called: the name the
+// committed config gives it, or the name of the directory the store sits in
+// where it gives none. So every store has a name without being configured.
+//
+// An unreadable config falls back to the directory name rather than failing a
+// caller that only wants a heading; doctor reports a broken config.
 //
 // A store at the filesystem root takes that root's own path, so the name is
 // never empty.
-func (s *Store) ProjectName() string { return filepath.Base(filepath.Dir(s.root)) }
+func (s *Store) ProjectName() string {
+	if cfg, err := s.Config(); err == nil && cfg.Name != "" {
+		return cfg.Name
+	}
+	return filepath.Base(filepath.Dir(s.root))
+}
 
 // IssuesDir returns the directory holding issue files.
 func (s *Store) IssuesDir() string { return filepath.Join(s.root, "issues") }

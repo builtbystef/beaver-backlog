@@ -114,6 +114,22 @@ func Open(dir string, opts ...Option) (*Service, error) {
 // any interface asks for it.
 func (s *Service) ProjectName() string { return s.store.ProjectName() }
 
+// ConfiguredProjectName reports the name the committed config gives the
+// project, or "" when it gives none and ProjectName falls back to the store
+// directory's name. It is what to ask before offering to name a project. An
+// unreadable config is the error.
+func (s *Service) ConfiguredProjectName() (string, error) {
+	cfg, err := s.store.Config()
+	if err != nil {
+		return "", err
+	}
+	return cfg.Name, nil
+}
+
+// SetProjectName records name as the project's name in the committed config,
+// where it travels to everyone who clones the store. An empty name is refused.
+func (s *Service) SetProjectName(name string) error { return s.store.SetProjectName(name) }
+
 // Fingerprint reports a cheap summary of the store's files — their names,
 // sizes, and modification times — that changes whenever an issue is written,
 // edited, or deleted, whoever did it. An interface watching for changes polls
