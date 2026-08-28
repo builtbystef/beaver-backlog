@@ -251,8 +251,8 @@
   .h-8 {
     height: calc(var(--spacing) * 8);
   }
-  .h-10 {
-    height: calc(var(--spacing) * 10);
+  .h-auto {
+    height: auto;
   }
   .h-full {
     height: 100%;
@@ -263,11 +263,11 @@
   .w-40 {
     width: calc(var(--spacing) * 40);
   }
+  .w-48 {
+    width: calc(var(--spacing) * 48);
+  }
   .w-52 {
     width: calc(var(--spacing) * 52);
-  }
-  .w-auto {
-    width: auto;
   }
   .w-fit {
     width: fit-content;

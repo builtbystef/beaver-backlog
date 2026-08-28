@@ -7,7 +7,7 @@ depends_on:
     - monxbk
 parent: qf0mr2
 created: 2026-08-27T05:26:16Z
-updated: 2026-08-27T05:26:16Z
+updated: 2026-08-28T05:21:48Z
 ---
 
 ## What to build
@@ -27,3 +27,19 @@ With the theme left on system, the UI still follows the operating system's prefe
 - [ ] The chosen palette is in force at first paint: the page never renders the other palette first.
 - [ ] Returning the control to system gives the operating system's preference back.
 - [ ] Tests assert that the control is in the shell and that it names its three states, never the class names that draw it.
+
+## Notes
+
+**claude** — 2026-08-28T05:21:48Z
+
+For this slice: the logo and the favicon follow the operating system, not the
+override. Both are SVGs embedded through `<img>` and `<link rel="icon">`, so
+they carry their own `prefers-color-scheme` rule and cannot see the page's
+`data-theme` — a reader on a dark OS who chooses light gets a light-ink logo on
+a light sidebar. The outgoing logo had the same gap; it only becomes visible
+once the override exists.
+
+Two ways out when you get here: inline the logo into layout.html so the page's
+CSS reaches it (~16KB per page, no separate request), or keep the `<img>` and
+swap its `src` between a light and a dark file from the theme script. The
+favicon can only take the second, since a tab icon is never inlined.
