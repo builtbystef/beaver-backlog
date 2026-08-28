@@ -17,8 +17,11 @@
 <div id="issues">
 {{if .Graph.Nodes}}
 {{/* The frame carries the controls in its own corner rather than on a strip
-     above it, so the picture keeps the whole width it was laid out for. */}}
-<div class="graph-frame relative h-[70vh] touch-none overflow-hidden rounded-card border border-line bg-surface shadow-card select-none">
+     above it, so the picture keeps the whole width it was laid out for. It
+     takes the window's height less the chrome above and the legend below,
+     because the whole picture at once is what reset is for — and a short
+     frame shrinks the fit until nothing in it can be read. */}}
+<div class="graph-frame relative h-[calc(100vh-14rem)] min-h-[26rem] touch-none overflow-hidden rounded-card border border-line bg-graph-ground select-none">
   {{/* The controls wear the toolbar's chip, so the two rows of things a reader
        can press look like one vocabulary. Each spells its own ground and
        border out: an unstyled <button> still falls to the legacy sheet, which
@@ -36,17 +39,32 @@
        which reset returns to. */}}
   <svg class="graph" width="{{.Graph.Width}}" height="{{.Graph.Height}}"
        viewBox="0 0 {{.Graph.Width}} {{.Graph.Height}}" xmlns="http://www.w3.org/2000/svg">
+    {{$m := .Graph.Metrics}}
     <defs>
-      <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+      <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
         <path class="arrowhead" d="M 0 0 L 10 5 L 0 10 z"/>
       </marker>
-      <marker id="arrow-back" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+      <marker id="arrow-back" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
         <path class="arrowhead arrowhead-back" d="M 0 0 L 10 5 L 0 10 z"/>
       </marker>
+      {{/* The ground the picture is drawn on. The dots are inside the picture
+           rather than behind the frame, so they travel with a pan and grow with
+           a zoom — which is what tells a reader the canvas is moving under them
+           when the part they are looking at is empty. */}}
+      <pattern id="grid" width="{{$m.Grid}}" height="{{$m.Grid}}" patternUnits="userSpaceOnUse">
+        <circle class="grid-dot" cx="1" cy="1" r="1"/>
+      </pattern>
+      {{/* One clip for every node: a clipPath's coordinates are the referencing
+           element's own, and each node's group is translated to its corner, so
+           the same shape rounds the spine's outer corners on all of them. */}}
+      <clipPath id="node-shape">
+        <rect width="{{$m.W}}" height="{{$m.H}}" rx="{{$m.Radius}}"/>
+      </clipPath>
     </defs>
+    <rect class="grid" x="0" y="0" width="{{.Graph.Width}}" height="{{.Graph.Height}}" fill="url(#grid)"/>
     {{range .Graph.Clusters}}
     <g class="cluster" data-cluster="{{.ID}}">
-      <rect class="cluster-box" x="{{.X}}" y="{{.Y}}" width="{{.W}}" height="{{.H}}" rx="10"/>
+      <rect class="cluster-box" x="{{.X}}" y="{{.Y}}" width="{{.W}}" height="{{.H}}" rx="16"/>
       <text class="cluster-label" x="{{.LabelX}}" y="{{.LabelY}}">{{.Label}}</text>
     </g>
     {{end}}
@@ -55,16 +73,21 @@
           marker-end="url(#{{if .Back}}arrow-back{{else}}arrow{{end}})"/>
     {{end}}
     {{range .Graph.Nodes}}
+    {{/* A node is the board's card in SVG: a raised panel wearing its state as a
+         stripe down one edge, rather than a panel dyed with it. Text on a
+         neutral ground reads at any zoom, and the stripe is still the one thing
+         legible when the picture is small enough that the words are not. */}}
     <a href="/issues/{{.Issue.ID}}" data-issue="{{.Issue.ID}}" data-layer="{{.Layer}}" data-row="{{.Row}}"
        class="{{.Class}}">
       <g transform="translate({{.X}},{{.Y}})">
-        <rect class="node-box" width="190" height="64" rx="8"/>
-        {{if .Ready}}<circle class="ready-mark" cx="176" cy="14" r="5"><title>ready</title></circle>{{end}}
-        <text class="node-title" x="12" y="23">{{.Title}}</text>
-        <text class="node-meta" x="12" y="40">{{.Issue.ID}} · {{.Issue.State}}{{with .Issue.Assignee}} · {{.}}{{end}}</text>
+        <rect class="node-box" width="{{$m.W}}" height="{{$m.H}}" rx="{{$m.Radius}}"/>
+        <rect class="node-spine" width="{{$m.StripeW}}" height="{{$m.H}}" clip-path="url(#node-shape)"/>
+        {{if .Ready}}<circle class="ready-mark" cx="{{$m.MarkX}}" cy="{{$m.MarkY}}" r="{{$m.MarkR}}"><title>ready</title></circle>{{end}}
+        <text class="node-title" x="{{$m.TitleX}}" y="{{$m.TitleY}}">{{.Title}}</text>
+        <text class="node-meta" x="{{$m.TitleX}}" y="{{$m.MetaY}}">{{.Issue.ID}} · {{.Issue.State}}{{with .Issue.Assignee}} · {{.}}{{end}}</text>
         {{range .Badges}}
-        <rect class="node-badge" x="{{.X}}" y="45" width="{{.W}}" height="15" rx="7"/>
-        <text class="node-badge-text" x="{{.X}}" dx="5" y="57">{{.Text}}</text>
+        <rect class="node-badge" x="{{.X}}" y="{{$m.BadgeY}}" width="{{.W}}" height="{{$m.BadgeH}}" rx="{{$m.BadgeR}}"/>
+        <text class="node-badge-text" x="{{.X}}" dx="{{$m.BadgeTextX}}" y="{{$m.BadgeTextY}}">{{.Text}}</text>
         {{end}}
         <title>{{.Issue.Title}}</title>
       </g>
@@ -77,14 +100,14 @@
      closes a cycle. */}}
 <div class="mt-2 flex flex-wrap items-center justify-between gap-x-6 gap-y-2 text-xs text-ink-muted">
   <ul class="flex flex-wrap items-center gap-x-4 gap-y-1.5" aria-label="Legend">
-    <li class="flex items-center gap-1.5"><span class="inline-block h-3 w-4 rounded-xs border border-line-strong bg-state-todo"></span>todo</li>
-    <li class="flex items-center gap-1.5"><span class="inline-block h-3 w-4 rounded-xs border border-line-strong bg-state-in-progress"></span>in-progress</li>
-    <li class="flex items-center gap-1.5"><span class="inline-block h-3 w-4 rounded-xs border border-line-strong bg-state-done"></span>done</li>
-    <li class="flex items-center gap-1.5"><span class="inline-block h-3 w-4 rounded-xs border border-line-strong bg-state-cancelled"></span>cancelled</li>
+    <li class="flex items-center gap-1.5"><span class="inline-block h-3.5 w-1.5 rounded-chip bg-state-todo-ink"></span>todo</li>
+    <li class="flex items-center gap-1.5"><span class="inline-block h-3.5 w-1.5 rounded-chip bg-state-in-progress-ink"></span>in-progress</li>
+    <li class="flex items-center gap-1.5"><span class="inline-block h-3.5 w-1.5 rounded-chip bg-state-done-ink"></span>done</li>
+    <li class="flex items-center gap-1.5"><span class="inline-block h-3.5 w-1.5 rounded-chip bg-state-cancelled-ink"></span>cancelled</li>
     <li class="flex items-center gap-1.5"><span class="inline-block size-2.5 rounded-full bg-condition-ready-ink"></span>ready</li>
-    <li class="flex items-center gap-1.5"><span class="inline-block h-3 w-4 rounded-xs border-2 border-condition-blocked-ink"></span>blocked</li>
-    <li class="flex items-center gap-1.5"><span class="inline-block h-3 w-4 rounded-xs border-2 border-dashed border-condition-stuck-ink"></span>stuck</li>
-    <li class="flex items-center gap-1.5"><span class="inline-block h-0 w-4 border-t-2 border-dashed border-graph-cycle"></span>cycle</li>
+    <li class="flex items-center gap-1.5"><span class="inline-block h-3.5 w-4.5 rounded-xs border-2 border-condition-blocked-ink"></span>blocked</li>
+    <li class="flex items-center gap-1.5"><span class="inline-block h-3.5 w-4.5 rounded-xs border-2 border-dashed border-condition-stuck-ink"></span>stuck</li>
+    <li class="flex items-center gap-1.5"><span class="inline-block h-0 w-4.5 border-t-2 border-dashed border-graph-cycle"></span>cycle</li>
   </ul>
   <p class="text-ink-subtle">Drag the background to pan · scroll to zoom · hover a node for its neighbourhood</p>
 </div>

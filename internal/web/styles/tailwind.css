@@ -48,44 +48,55 @@
   --accent-hover: #a84512;
   --accent-soft: #fbeee6;
 
-  /* Semantic marks: a tinted chip and the ink that stays readable on it. Muted
-     on purpose — a board of them must not read as a board of alerts — and drawn
-     from the accent's own world (clay, ochre, moss, slate-teal, stone, plum)
-     rather than the reflex blue-green-amber-red, which says nothing about this
-     tool. Each of the three families keeps its own hues: a condition never
-     borrows a state's colour or a priority's, because two marks that look alike
-     are read as the same fact. */
-  --state-todo: #e9e6e0;
-  --state-todo-ink: #57534a;
-  --state-in-progress: #dbe6e5;
-  --state-in-progress-ink: #2d5b58;
-  --state-done: #e2e8da;
-  --state-done-ink: #4a6033;
-  --state-cancelled: #e8e3e3;
-  --state-cancelled-ink: #6b5f5f;
+  /* Semantic marks: a tinted chip and the ink that stays readable on it. The
+     tints carry enough colour to be told apart at a glance — a first cut was
+     quiet to the point that blue and green read as the same pale gray — while
+     staying short of alarm: a board of them must read as a board of work.
 
-  --priority-urgent: #f1dcd4;
-  --priority-urgent-ink: #9b4425;
-  --priority-high: #f3e5cd;
-  --priority-high-ink: #84601e;
-  --priority-medium: #ebe9e4;
-  --priority-medium-ink: #5a5750;
-  --priority-low: #f0efec;
-  --priority-low-ink: #75726b;
+     Each of the three families keeps its own hues, because two marks that look
+     alike are read as the same fact. States take the widest spread, since a
+     node's fill is the only thing legible when the graph is zoomed out: stone,
+     blue, green, rose. Priorities climb one warm ramp from stone to ochre to
+     clay, which is what an ordinal wants. Conditions sit apart again — rust,
+     a brighter emerald than done's settled green, and plum. Done recedes and
+     ready pops on purpose: finished work should stop asking for attention, and
+     the go signal should catch the eye.
 
-  --condition-blocked: #f0dfd9;
-  --condition-blocked-ink: #8f4a30;
-  --condition-ready: #dfe7e2;
-  --condition-ready-ink: #3f6350;
-  --condition-stuck: #ebdfe6;
-  --condition-stuck-ink: #7a4560;
+     Every ink clears 4.5:1 on its own chip. */
+  --state-todo: #eae6df;
+  --state-todo-ink: #5d574c;
+  --state-in-progress: #cfe0f5;
+  --state-in-progress-ink: #1d5687;
+  --state-done: #dbe8d3;
+  --state-done-ink: #46683a;
+  --state-cancelled: #ecdedb;
+  --state-cancelled-ink: #7a5750;
 
-  /* The graph draws two things nothing else does: the arrow between two issues,
-     and the arrow that closes a dependency cycle. The first is a line, quieter
-     than ink and louder than a border; the second is a fault the store should
-     not hold, so it gets a hue of its own rather than borrowing a condition's —
+  --priority-urgent: #f8d7c9;
+  --priority-urgent-ink: #a53f18;
+  --priority-high: #f9e5ba;
+  --priority-high-ink: #86590c;
+  --priority-medium: #e6e5e0;
+  --priority-medium-ink: #5c584f;
+  --priority-low: #f0efeb;
+  --priority-low-ink: #6f6b62;
+
+  --condition-blocked: #f7dbd0;
+  --condition-blocked-ink: #9d4620;
+  --condition-ready: #c9edd5;
+  --condition-ready-ink: #1a6a41;
+  --condition-stuck: #eed9e8;
+  --condition-stuck-ink: #83406a;
+
+  /* The graph draws three things nothing else does. Its ground is a surface of
+     its own — the neutral scale has no step that sits under a raised card in
+     both palettes at once, and a canvas a reader pans around has to read as
+     ground. The other two are lines: the arrow between two issues, quieter
+     than ink and louder than a border; and the arrow that closes a dependency
+     cycle, which gets a hue of its own rather than borrowing a condition's —
      a cycle is not a blocked issue, and two marks that look alike are read as
      the same fact. */
+  --graph-ground: #f0f0f2;
   --graph-edge: #8e8e98;
   --graph-cycle: #a8394a;
 
@@ -115,31 +126,32 @@
     --accent-hover: #f0793d;
     --accent-soft: #2c1c12;
 
-    --state-todo: #26241f;
-    --state-todo-ink: #b0aaa0;
-    --state-in-progress: #16292a;
-    --state-in-progress-ink: #7fb5b0;
-    --state-done: #1c2416;
-    --state-done-ink: #9cbb7c;
-    --state-cancelled: #262122;
-    --state-cancelled-ink: #a89a9a;
+    --state-todo: #2a2823;
+    --state-todo-ink: #b8b1a4;
+    --state-in-progress: #14304a;
+    --state-in-progress-ink: #8dc3ef;
+    --state-done: #1d3319;
+    --state-done-ink: #a6cf88;
+    --state-cancelled: #2f2422;
+    --state-cancelled-ink: #c4a29c;
 
-    --priority-urgent: #33190f;
-    --priority-urgent-ink: #e0937a;
-    --priority-high: #2e2413;
-    --priority-high-ink: #d8b072;
-    --priority-medium: #242320;
-    --priority-medium-ink: #a8a49c;
-    --priority-low: #201f1d;
-    --priority-low-ink: #8b8781;
+    --priority-urgent: #3d1c0e;
+    --priority-urgent-ink: #f0a181;
+    --priority-high: #372a10;
+    --priority-high-ink: #e8bd72;
+    --priority-medium: #282622;
+    --priority-medium-ink: #b0aba1;
+    --priority-low: #232220;
+    --priority-low-ink: #928d85;
 
-    --condition-blocked: #301a12;
-    --condition-blocked-ink: #d8917a;
-    --condition-ready: #1a2620;
-    --condition-ready-ink: #86b39c;
-    --condition-stuck: #2a1c26;
-    --condition-stuck-ink: #c295b0;
+    --condition-blocked: #3a1c10;
+    --condition-blocked-ink: #ee9d78;
+    --condition-ready: #12331f;
+    --condition-ready-ink: #7ddba2;
+    --condition-stuck: #331b2b;
+    --condition-stuck-ink: #d99bc4;
 
+    --graph-ground: #0e0e11;
     --graph-edge: #63636e;
     --graph-cycle: #e0788c;
 
@@ -167,31 +179,32 @@
   --accent-hover: #f0793d;
   --accent-soft: #2c1c12;
 
-  --state-todo: #26241f;
-  --state-todo-ink: #b0aaa0;
-  --state-in-progress: #16292a;
-  --state-in-progress-ink: #7fb5b0;
-  --state-done: #1c2416;
-  --state-done-ink: #9cbb7c;
-  --state-cancelled: #262122;
-  --state-cancelled-ink: #a89a9a;
+  --state-todo: #2a2823;
+  --state-todo-ink: #b8b1a4;
+  --state-in-progress: #14304a;
+  --state-in-progress-ink: #8dc3ef;
+  --state-done: #1d3319;
+  --state-done-ink: #a6cf88;
+  --state-cancelled: #2f2422;
+  --state-cancelled-ink: #c4a29c;
 
-  --priority-urgent: #33190f;
-  --priority-urgent-ink: #e0937a;
-  --priority-high: #2e2413;
-  --priority-high-ink: #d8b072;
-  --priority-medium: #242320;
-  --priority-medium-ink: #a8a49c;
-  --priority-low: #201f1d;
-  --priority-low-ink: #8b8781;
+  --priority-urgent: #3d1c0e;
+  --priority-urgent-ink: #f0a181;
+  --priority-high: #372a10;
+  --priority-high-ink: #e8bd72;
+  --priority-medium: #282622;
+  --priority-medium-ink: #b0aba1;
+  --priority-low: #232220;
+  --priority-low-ink: #928d85;
 
-  --condition-blocked: #301a12;
-  --condition-blocked-ink: #d8917a;
-  --condition-ready: #1a2620;
-  --condition-ready-ink: #86b39c;
-  --condition-stuck: #2a1c26;
-  --condition-stuck-ink: #c295b0;
+  --condition-blocked: #3a1c10;
+  --condition-blocked-ink: #ee9d78;
+  --condition-ready: #12331f;
+  --condition-ready-ink: #7ddba2;
+  --condition-stuck: #331b2b;
+  --condition-stuck-ink: #d99bc4;
 
+  --graph-ground: #0e0e11;
   --graph-edge: #63636e;
   --graph-cycle: #e0788c;
 
@@ -245,6 +258,7 @@
   --color-condition-stuck: var(--condition-stuck);
   --color-condition-stuck-ink: var(--condition-stuck-ink);
 
+  --color-graph-ground: var(--graph-ground);
   --color-graph-edge: var(--graph-edge);
   --color-graph-cycle: var(--graph-cycle);
 
@@ -369,10 +383,15 @@
   .changed { animation: flash 1.6s ease-out; }
 
   /* The graph: the whole backlog as one picture, drawn inside a frame the
-     script turns into a viewport it pans and zooms. A node's fill is the
-     board's state colour, so a card and a node read the same thing; the
-     conditions the core derives ride on the border and the ready dot, and an
-     arrow that closes a cycle is the one line drawn in a colour of its own.
+     script turns into a viewport it pans and zooms.
+
+     A node is the board's card in SVG — a raised panel on a dotted ground —
+     wearing its state as a saturated spine down one edge rather than as a wash
+     over the whole box. Two reasons: text on a neutral panel reads at any
+     zoom, and colour concentrated in a 5px spine survives being shrunk, where
+     a pastel fill turns to mush. The conditions the core derives ride on the
+     border and the ready dot, and the arrow that closes a cycle is the one
+     line drawn in a colour of its own.
 
      None of this is a utility: every class here is either computed by the
      server — `state-{{.State}}`, `edge-back` — or added by graph.js at
@@ -385,35 +404,64 @@
 
   .graph { display: block; height: 100%; width: 100%; }
 
+  .graph .grid-dot { fill: var(--line-strong); }
+
   .graph .cluster-box {
-    fill: var(--surface-hover);
+    fill: var(--surface);
     stroke: var(--line-strong);
-    stroke-dasharray: 4 4;
+    stroke-dasharray: 6 5;
   }
 
   .graph .cluster-label {
     fill: var(--ink-subtle);
     font-size: 12px;
-    font-weight: 500;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
   }
 
   .graph .node { text-decoration: none; }
+
   .graph .node-box { fill: var(--state-todo); stroke: var(--line-strong); }
   .graph .state-in-progress .node-box { fill: var(--state-in-progress); }
   .graph .state-done .node-box { fill: var(--state-done); }
   .graph .state-cancelled .node-box { fill: var(--state-cancelled); }
 
+  /* The spine is the same state at full chroma. The fill says which state at a
+     glance; the spine is what survives being shrunk, where a tint turns to
+     mush against its neighbours. */
+  .graph .node-spine { fill: var(--state-todo-ink); }
+  .graph .state-in-progress .node-spine { fill: var(--state-in-progress-ink); }
+  .graph .state-done .node-spine { fill: var(--state-done-ink); }
+  .graph .state-cancelled .node-spine { fill: var(--state-cancelled-ink); }
+
+  /* Abandoned work recedes without leaving the shape of the picture. */
+  .graph .state-cancelled { opacity: 0.72; }
+
   .graph .blocked .node-box { stroke: var(--condition-blocked-ink); stroke-width: 2; }
-  .graph .stuck .node-box { stroke-dasharray: 5 3; }
-  .graph .ready-mark { fill: var(--condition-ready-ink); }
+  .graph .stuck .node-box { stroke-dasharray: 6 4; }
 
-  .graph .node-title { fill: var(--ink); font-size: 13px; font-weight: 500; }
-  .graph .node-meta { fill: var(--ink-muted); font-size: 11px; }
+  /* The ready dot sits on the panel's own edge, so it carries a ring of the
+     panel to keep its shape wherever the corner radius puts it. */
+  .graph .ready-mark {
+    fill: var(--condition-ready-ink);
+    stroke: var(--surface);
+    stroke-width: 2;
+  }
+
+  .graph .node-title { fill: var(--ink); font-size: 14px; font-weight: 550; }
+  .graph .node-meta { fill: var(--ink-muted); font-size: 11.5px; }
   .graph .node-badge { fill: var(--surface); stroke: var(--line); }
-  .graph .node-badge-text { fill: var(--ink-muted); font-size: 10px; }
+  .graph .node-badge-text { fill: var(--ink-muted); font-size: 10.5px; }
 
-  .graph .edge { fill: none; stroke: var(--graph-edge); stroke-width: 1.5; }
-  .graph .edge-back { stroke: var(--graph-cycle); stroke-dasharray: 6 4; }
+  .graph .edge {
+    fill: none;
+    stroke: var(--graph-edge);
+    stroke-linecap: round;
+    stroke-width: 1.75;
+  }
+
+  .graph .edge-back { stroke: var(--graph-cycle); stroke-dasharray: 7 5; }
   .graph .arrowhead { fill: var(--graph-edge); }
   .graph .arrowhead-back { fill: var(--graph-cycle); }
 
@@ -432,5 +480,7 @@
   .graph .node.near .node-box,
   .graph .node:hover .node-box { stroke: var(--accent); stroke-width: 2; }
 
-  .graph .edge.near { stroke: var(--accent); stroke-width: 2.5; }
+  .graph .node.near, .graph .node:hover { opacity: 1; }
+
+  .graph .edge.near { stroke: var(--accent); stroke-width: 2.75; }
 }

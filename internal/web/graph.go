@@ -27,24 +27,70 @@ import (
 // text is truncated rather than wrapped: SVG lays out no paragraphs, and a
 // uniform card is what makes the layers legible.
 const (
-	nodeWidth    = 190
-	nodeHeight   = 64
-	layerGap     = 70 // horizontal space between layers, where the arrows run
-	rowGap       = 28
-	bandGap      = 40  // vertical space between one family's band and the next
-	canvasPad    = 48  // room at the edges, including for an arrow looping above a node
-	clusterPad   = 18  // room between a containment box and the nodes inside it
-	clusterLabel = 24  // the strip at the top of a box holding its title
-	titleLimit   = 22  // characters of an issue's title a node shows
+	nodeWidth    = 248
+	nodeHeight   = 88
+	nodePad      = 14 // the node's own margin around everything it says
+	layerGap     = 88 // horizontal space between layers, where the arrows run
+	rowGap       = 34
+	bandGap      = 52  // vertical space between one family's band and the next
+	canvasPad    = 56  // room at the edges, including for an arrow looping above a node
+	clusterPad   = 26  // room between a containment box and the nodes inside it
+	clusterLabel = 34  // the strip at the top of a box holding its title
+	titleLimit   = 28  // characters of an issue's title a node shows
 	badgeChar    = 6.2 // the width one character of a label badge takes at its size
-	badgePad     = 10  // the badge's own padding around that text
-	badgeGap     = 5
+	badgePad     = 14  // the badge's own padding around that text
+	badgeGap     = 6
+	badgeHeight  = 18
+	nodeRadius   = 10
+	spineWidth   = 8  // the state-coloured edge, wide enough to read when shrunk
+	gridPitch    = 32 // the dotted canvas the picture is drawn on, in user units
 )
+
+// nodeMetrics is where everything inside a node sits, in the node's own
+// coordinates. It travels to the template so the box and its contents cannot
+// drift apart: the layout here already owns the geometry, and a template
+// repeating the numbers is the same measurement written twice. Every value is
+// final — html/template does no arithmetic, and it should not have to.
+var nodeMetrics = metrics{
+	W: nodeWidth, H: nodeHeight, Radius: nodeRadius, StripeW: spineWidth,
+	TitleX:     nodePad + spineWidth,
+	TitleY:     nodePad + 16,
+	MetaY:      nodePad + 35,
+	BadgeY:     nodeHeight - nodePad - badgeHeight,
+	BadgeH:     badgeHeight,
+	BadgeR:     badgeHeight / 2,
+	BadgeTextX: 8,
+	BadgeTextY: nodeHeight - nodePad - badgeHeight + 13,
+	MarkX:      nodeWidth - nodePad - 5,
+	MarkY:      nodePad + 2,
+	MarkR:      5,
+	Grid:       gridPitch,
+}
+
+// metrics is the picture's fixed geometry — the node's inner layout and the
+// pitch of the dotted ground — handed to the template as one value.
+type metrics struct {
+	W, H         float64
+	Radius       float64
+	StripeW      float64 // the state-coloured spine down the node's left edge
+	TitleX       float64
+	TitleY       float64
+	MetaY        float64
+	BadgeY       float64
+	BadgeH       float64
+	BadgeR       float64
+	BadgeTextX   float64 // the badge text's inset from the badge's own left edge
+	BadgeTextY   float64
+	MarkX, MarkY float64 // the ready dot
+	MarkR        float64
+	Grid         float64
+}
 
 // graph is a laid-out picture: the boxes, the nodes and the arrows, with the
 // canvas they all fit inside.
 type graph struct {
 	Width, Height float64
+	Metrics       metrics
 	Clusters      []cluster
 	Nodes         []node
 	Edges         []edge
@@ -85,10 +131,10 @@ type badge struct {
 // order, dropping the rest rather than spilling over the box.
 func badges(labels []string) []badge {
 	var out []badge
-	x := float64(12)
+	x := float64(nodePad + spineWidth)
 	for _, label := range labels {
 		w := badgePad + badgeChar*float64(len([]rune(label)))
-		if x+w > nodeWidth-12 {
+		if x+w > nodeWidth-nodePad {
 			break
 		}
 		out = append(out, badge{X: x, W: w, Text: label})
@@ -416,7 +462,7 @@ func slicesReversedIf(layers []int, reverse bool) []int {
 // picture, so an arrow between two bands still runs left to right, and each band
 // takes the vertical room its rows need, one below the last.
 func (l *layoutState) place() graph {
-	g := graph{Width: 2 * canvasPad, Height: 2 * canvasPad}
+	g := graph{Width: 2 * canvasPad, Height: 2 * canvasPad, Metrics: nodeMetrics}
 	originX := float64(canvasPad + clusterPad)
 	at := make(map[string]node, len(l.issues))
 	y := float64(canvasPad)
@@ -461,8 +507,8 @@ func (l *layoutState) place() graph {
 				Y:      top,
 				W:      maxX + nodeWidth + clusterPad - (minX - clusterPad),
 				H:      y - top,
-				LabelX: minX - clusterPad + 10,
-				LabelY: top + clusterLabel - 7,
+				LabelX: minX - clusterPad + 14,
+				LabelY: top + clusterLabel - 12,
 			})
 		}
 		y += bandGap
