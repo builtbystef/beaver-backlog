@@ -1,6 +1,6 @@
 <p align="center">
   <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="internal/web/assets/logo.svg">
+    <source media="(prefers-color-scheme: dark)" srcset="docs/assets/logo-full-dark.svg">
     <img src="docs/assets/logo-full.svg" alt="Beaver Backlog" width="440">
   </picture>
 </p>
