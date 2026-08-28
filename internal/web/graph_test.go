@@ -6,9 +6,11 @@ package web_test
 // what blocked or ready mean, which is the core's to say.
 
 import (
+	"html"
 	"net/http"
 	"os"
 	"regexp"
+	"slices"
 	"strings"
 	"testing"
 
@@ -135,8 +137,9 @@ func TestGraphBoxesAParentWithItsChildren(t *testing.T) {
 	}
 }
 
-// The picture is sized in the markup, so a backlog wider than the window makes
-// the page scroll rather than shrinking the nodes to nothing.
+// The picture is sized in the markup, in the user units the layout was computed
+// in: that size is the whole window, which is what the script fits the viewport
+// to and what reset returns to.
 func TestGraphCanvasIsSized(t *testing.T) {
 	dir := newStore(t)
 	seedBacklog(t, dir)
@@ -247,8 +250,9 @@ func TestGraphCarriesTheSharedFilterBar(t *testing.T) {
 }
 
 // Pan, zoom and hover are the script's; the page's part of the bargain is to
-// carry it and the reset control it drives.
-func TestGraphCarriesTheInteractionScript(t *testing.T) {
+// carry it and the controls it drives. The picture no longer stands without the
+// script, so nothing here is gated on its arrival (ADR 0006).
+func TestGraphCarriesTheInteractionScriptAndItsControls(t *testing.T) {
 	dir := newStore(t)
 	seedBacklog(t, dir)
 	h := newHandler(t, dir)
@@ -258,16 +262,74 @@ func TestGraphCarriesTheInteractionScript(t *testing.T) {
 	if !strings.Contains(body, `/assets/graph.js`) {
 		t.Errorf("the graph page does not load the interaction script:\n%s", body)
 	}
-	if !strings.Contains(body, `data-graph-reset`) {
-		t.Errorf("the graph page has no reset control:\n%s", body)
+	for _, control := range []string{`data-graph-reset`, `data-graph-zoom="in"`, `data-graph-zoom="out"`} {
+		if !strings.Contains(body, control) {
+			t.Errorf("the graph page has no %s control:\n%s", control, body)
+		}
+	}
+	for _, tag := range buttonTag.FindAllString(body, -1) {
+		if strings.Contains(tag, "data-graph-") && strings.Contains(tag, "hidden") {
+			t.Errorf("the graph control %s waits for a script to reveal it", tag)
+		}
 	}
 	if res := get(h, "/assets/graph.js"); res.Code != http.StatusOK {
 		t.Errorf("GET /assets/graph.js = %d, want 200", res.Code)
 	}
-	// Without the script the picture is still a picture: sized in user units
-	// inside a frame that scrolls (ADR 0006).
-	if !strings.Contains(body, "graph-frame") {
-		t.Errorf("the graph is not drawn in a scrollable frame:\n%s", body)
+}
+
+// A node is its issue in miniature — the picture is otherwise geometry, so what
+// a node says is the only way to recognise one without opening it.
+func TestANodeSaysWhatItsIssueIs(t *testing.T) {
+	dir := newStore(t)
+	svc := open(t, dir)
+	target := create(t, svc, core.Draft{Title: "Fix flag parsing"})
+	start(t, svc, target.ID)
+
+	markup := graphNodes(t, get(newHandler(t, dir), "/graph").Body.String())[target.ID]
+
+	for _, want := range []string{"Fix flag parsing", target.ID, string(issue.StateInProgress), "tester"} {
+		if !strings.Contains(markup, want) {
+			t.Errorf("the node for %s does not say %q:\n%s", target.ID, want, markup)
+		}
+	}
+}
+
+// The legend is the picture's vocabulary: every fill and every mark a node or
+// an arrow can wear, named once, so a first look needs no guessing.
+func TestTheLegendNamesEveryMarkThePictureDraws(t *testing.T) {
+	dir := newStore(t)
+	seedBacklog(t, dir)
+
+	named := legend(t, get(newHandler(t, dir), "/graph").Body.String())
+
+	for _, mark := range []string{"todo", "in-progress", "done", "cancelled", "ready", "blocked", "stuck", "cycle"} {
+		if !slices.Contains(named, mark) {
+			t.Errorf("the legend does not name %q; it names %v", mark, named)
+		}
+	}
+}
+
+// Nothing to draw is a sentence, not an empty frame — and a filter that matches
+// nothing says that rather than claiming the store is empty.
+func TestAGraphWithNothingToDrawSaysSo(t *testing.T) {
+	dir := newStore(t)
+	h := newHandler(t, dir)
+
+	empty := get(h, "/graph").Body.String()
+	if !strings.Contains(empty, "Nothing to draw yet") {
+		t.Errorf("an empty store does not say there is nothing to draw:\n%s", empty)
+	}
+	if strings.Contains(empty, "<svg") {
+		t.Errorf("an empty store still draws a picture:\n%s", empty)
+	}
+
+	create(t, open(t, dir), core.Draft{Title: "Fix flag parsing"})
+	narrowed := get(h, "/graph?label=nothing-wears-this").Body.String()
+	if !strings.Contains(narrowed, "No issue matches these filters") {
+		t.Errorf("a filter matching nothing does not say so:\n%s", narrowed)
+	}
+	if strings.Contains(narrowed, "Nothing to draw yet") {
+		t.Errorf("a filter matching nothing claims the store is empty:\n%s", narrowed)
 	}
 }
 
@@ -318,9 +380,27 @@ func addFrontmatterEdge(t *testing.T, dir, id, dep string) {
 }
 
 var (
-	nodeMark = regexp.MustCompile(`data-issue="([a-z0-9]+)"`)
-	edgeMark = regexp.MustCompile(`data-edge="([a-z0-9]+→[a-z0-9]+)"`)
+	nodeMark    = regexp.MustCompile(`data-issue="([a-z0-9]+)"`)
+	edgeMark    = regexp.MustCompile(`data-edge="([a-z0-9]+→[a-z0-9]+)"`)
+	buttonTag   = regexp.MustCompile(`<button[^>]*>`)
+	legendList  = regexp.MustCompile(`(?s)<ul[^>]*aria-label="Legend"[^>]*>(.*?)</ul>`)
+	legendEntry = regexp.MustCompile(`(?s)<li[^>]*>(.*?)</li>`)
 )
+
+// legend reads the picture's vocabulary back as the words it names, one per
+// entry — the swatch beside each is the drawing, not the naming.
+func legend(t *testing.T, body string) []string {
+	t.Helper()
+	m := legendList.FindStringSubmatch(body)
+	if m == nil {
+		t.Fatalf("the graph has no legend:\n%s", body)
+	}
+	var out []string
+	for _, entry := range legendEntry.FindAllStringSubmatch(m[1], -1) {
+		out = append(out, strings.Join(strings.Fields(html.UnescapeString(stripTags.ReplaceAllString(entry[1], " "))), " "))
+	}
+	return out
+}
 
 // graphNodes reads the rendered picture back as the nodes it draws: each issue's
 // id against the markup of its own node.

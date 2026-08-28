@@ -19,8 +19,9 @@ var paletteBlocks = map[string]*regexp.Regexp{
 }
 
 // paletteTokens are the categories the design system promises: neutral
-// surfaces and text, the beaver-orange accent, and the muted marks for state,
-// priority, and the derived conditions.
+// surfaces and text, the beaver-orange accent, the muted marks for state,
+// priority, and the derived conditions, and the two lines only the graph
+// draws.
 var paletteTokens = []string{
 	"--canvas", "--surface", "--surface-raised", "--surface-hover",
 	"--line", "--line-strong",
@@ -29,6 +30,7 @@ var paletteTokens = []string{
 	"--state-todo", "--state-in-progress", "--state-done", "--state-cancelled",
 	"--priority-urgent", "--priority-high", "--priority-medium", "--priority-low",
 	"--condition-blocked", "--condition-ready", "--condition-stuck",
+	"--graph-edge", "--graph-cycle",
 }
 
 // The stylesheet is compiled by a tool nobody has at build time, so the one

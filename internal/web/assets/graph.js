@@ -1,8 +1,9 @@
 // The graph as a canvas: panning, zooming and hover-highlighting, hand-written
 // and dependency-free (ADR 0006). Nothing here draws anything — the picture is
 // the server's, already laid out — so the script only moves the window onto it
-// and marks what the pointer is near. The page is a scrollable picture without
-// it, which is why each of these is an addition rather than a requirement.
+// and marks what the pointer is near. Reading the picture needs the script:
+// the frame is a viewport rather than a scrollbox, and the controls beside it
+// are this file's to answer.
 //
 // The window is the SVG's viewBox, in the same user units the layout was
 // computed in: panning subtracts the pointer's travel from its corner, zooming
@@ -29,17 +30,13 @@ document.addEventListener("DOMContentLoaded", adopt);
 // know it is here.
 new MutationObserver(adopt).observe(document.documentElement, { childList: true, subtree: true });
 
-// adopt turns a freshly rendered picture into the one being read: its frame
-// becomes a viewport rather than a scrollbox, and the window the reader had is
-// put back over it.
+// adopt turns a freshly rendered picture into the one being read: the window the
+// reader had is put back over it, so a redraw lands underneath them without
+// moving the ground.
 function adopt() {
   const svg = canvas();
-  if (!svg || svg.dataset.interactive !== undefined) return;
-  svg.dataset.interactive = "";
-  svg.closest(".graph-frame")?.classList.add("interactive");
-  // The zoom pair is dead weight without a viewport to move, so this script is
-  // what reveals it.
-  for (const control of document.querySelectorAll("[data-graph-zoom]")) control.hidden = false;
+  if (!svg || svg.dataset.adopted !== undefined) return;
+  svg.dataset.adopted = "";
   if (!viewport) viewport = whole(svg);
   show(svg);
 }

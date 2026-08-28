@@ -1,3 +1,11 @@
+{{/* The graph: the whole backlog as one picture, under the toolbar that narrows
+     it. Everything a filter changes lives inside #issues — the picture and the
+     legend that gives it its vocabulary; the controls themselves stay in the
+     toolbar above, where a swap never reaches them.
+
+     The picture needs graph.js to be read: the frame is a viewport, not a
+     scrollbox (ADR 0006). */}}
+
 {{define "toolbar"}}
 <div class="mb-4 flex flex-wrap items-center gap-x-3 gap-y-2">
   <h1 class="m-0 text-lg font-semibold tracking-tight text-ink">Graph</h1>
@@ -6,73 +14,88 @@
 {{end}}
 
 {{define "content"}}
-<div id="issues" class="graph-view">
-  <div class="graph-controls">
-    <button type="button" data-graph-reset>Reset view</button>
-    {{/* The zoom pair only means anything once graph.js has turned the frame
-         into a viewport, so the script is what reveals them. */}}
-    <button type="button" data-graph-zoom="in" aria-label="Zoom in" hidden>+</button>
-    <button type="button" data-graph-zoom="out" aria-label="Zoom out" hidden>−</button>
-    <span class="graph-hint">Drag the background to pan · scroll to zoom · hover a node for its neighbourhood</span>
+<div id="issues">
+{{if .Graph.Nodes}}
+{{/* The frame carries the controls in its own corner rather than on a strip
+     above it, so the picture keeps the whole width it was laid out for. */}}
+<div class="graph-frame relative h-[70vh] touch-none overflow-hidden rounded-card border border-line bg-surface shadow-card select-none">
+  {{/* The controls wear the toolbar's chip, so the two rows of things a reader
+       can press look like one vocabulary. Each spells its own ground and
+       border out: an unstyled <button> still falls to the legacy sheet, which
+       flips on the system's palette rather than the reader's choice. */}}
+  <div class="absolute top-3 right-3 z-10 flex items-center gap-1.5">
+    <button class="flex size-8 items-center justify-center rounded-md border border-line bg-surface p-0 text-sm text-ink-muted hover:border-line-strong hover:text-ink"
+            type="button" data-graph-zoom="out" aria-label="Zoom out">−</button>
+    <button class="flex size-8 items-center justify-center rounded-md border border-line bg-surface p-0 text-sm text-ink-muted hover:border-line-strong hover:text-ink"
+            type="button" data-graph-zoom="in" aria-label="Zoom in">+</button>
+    <button class="flex h-8 items-center rounded-md border border-line bg-surface px-2.5 text-sm text-ink-muted hover:border-line-strong hover:text-ink"
+            type="button" data-graph-reset>Reset view</button>
   </div>
-  {{/* The picture's vocabulary, so a first look needs no guessing: fills are
-       states, the rest are the derived conditions. */}}
-  <ul class="graph-legend" aria-label="Legend">
-    <li><span class="swatch swatch-todo"></span> todo</li>
-    <li><span class="swatch swatch-in-progress"></span> in-progress</li>
-    <li><span class="swatch swatch-done"></span> done</li>
-    <li><span class="swatch swatch-cancelled"></span> cancelled</li>
-    <li><span class="swatch swatch-ready"></span> ready</li>
-    <li><span class="swatch swatch-blocked"></span> blocked</li>
-    <li><span class="swatch swatch-stuck"></span> stuck</li>
-    <li><span class="swatch swatch-cycle"></span> cycle</li>
-  </ul>
-  {{/* The canvas is sized in user units and the frame scrolls, so the picture is
-       a picture with the script absent; graph.js turns the frame into a viewport
-       it pans and zooms instead (ADR 0006). */}}
-  <div class="graph-frame">
-    <svg class="graph" width="{{.Graph.Width}}" height="{{.Graph.Height}}"
-         viewBox="0 0 {{.Graph.Width}} {{.Graph.Height}}" xmlns="http://www.w3.org/2000/svg">
-      <defs>
-        <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
-          <path class="arrowhead" d="M 0 0 L 10 5 L 0 10 z"/>
-        </marker>
-        <marker id="arrow-back" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
-          <path class="arrowhead arrowhead-back" d="M 0 0 L 10 5 L 0 10 z"/>
-        </marker>
-      </defs>
-      {{range .Graph.Clusters}}
-      <g class="cluster" data-cluster="{{.ID}}">
-        <rect class="cluster-box" x="{{.X}}" y="{{.Y}}" width="{{.W}}" height="{{.H}}" rx="10"/>
-        <text class="cluster-label" x="{{.LabelX}}" y="{{.LabelY}}">{{.Label}}</text>
+  {{/* The picture is sized in the user units the layout was computed in: that
+       size is the whole window, which the script fits the viewport to and
+       which reset returns to. */}}
+  <svg class="graph" width="{{.Graph.Width}}" height="{{.Graph.Height}}"
+       viewBox="0 0 {{.Graph.Width}} {{.Graph.Height}}" xmlns="http://www.w3.org/2000/svg">
+    <defs>
+      <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+        <path class="arrowhead" d="M 0 0 L 10 5 L 0 10 z"/>
+      </marker>
+      <marker id="arrow-back" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+        <path class="arrowhead arrowhead-back" d="M 0 0 L 10 5 L 0 10 z"/>
+      </marker>
+    </defs>
+    {{range .Graph.Clusters}}
+    <g class="cluster" data-cluster="{{.ID}}">
+      <rect class="cluster-box" x="{{.X}}" y="{{.Y}}" width="{{.W}}" height="{{.H}}" rx="10"/>
+      <text class="cluster-label" x="{{.LabelX}}" y="{{.LabelY}}">{{.Label}}</text>
+    </g>
+    {{end}}
+    {{range .Graph.Edges}}
+    <path class="{{.Class}}" data-edge="{{.From}}→{{.To}}" d="{{.Path}}"
+          marker-end="url(#{{if .Back}}arrow-back{{else}}arrow{{end}})"/>
+    {{end}}
+    {{range .Graph.Nodes}}
+    <a href="/issues/{{.Issue.ID}}" data-issue="{{.Issue.ID}}" data-layer="{{.Layer}}" data-row="{{.Row}}"
+       class="{{.Class}}">
+      <g transform="translate({{.X}},{{.Y}})">
+        <rect class="node-box" width="190" height="64" rx="8"/>
+        {{if .Ready}}<circle class="ready-mark" cx="176" cy="14" r="5"><title>ready</title></circle>{{end}}
+        <text class="node-title" x="12" y="23">{{.Title}}</text>
+        <text class="node-meta" x="12" y="40">{{.Issue.ID}} · {{.Issue.State}}{{with .Issue.Assignee}} · {{.}}{{end}}</text>
+        {{range .Badges}}
+        <rect class="node-badge" x="{{.X}}" y="45" width="{{.W}}" height="15" rx="7"/>
+        <text class="node-badge-text" x="{{.X}}" dx="5" y="57">{{.Text}}</text>
+        {{end}}
+        <title>{{.Issue.Title}}</title>
       </g>
-      {{end}}
-      {{range .Graph.Edges}}
-      <path class="{{.Class}}" data-edge="{{.From}}→{{.To}}" d="{{.Path}}"
-            marker-end="url(#{{if .Back}}arrow-back{{else}}arrow{{end}})"/>
-      {{end}}
-      {{range .Graph.Nodes}}
-      <a href="/issues/{{.Issue.ID}}" data-issue="{{.Issue.ID}}" data-layer="{{.Layer}}" data-row="{{.Row}}"
-         class="{{.Class}}">
-        <g transform="translate({{.X}},{{.Y}})">
-          <rect class="node-box" width="190" height="64" rx="8"/>
-          {{if .Ready}}<circle class="ready-mark" cx="176" cy="14" r="5"><title>ready</title></circle>{{end}}
-          <text class="node-title" x="12" y="23">{{.Title}}</text>
-          <text class="node-meta" x="12" y="40">{{.Issue.ID}} · {{.Issue.State}}{{with .Issue.Assignee}} · {{.}}{{end}}</text>
-          {{range .Badges}}
-          <rect class="node-badge" x="{{.X}}" y="45" width="{{.W}}" height="15" rx="7"/>
-          <text class="node-badge-text" x="{{.X}}" dx="5" y="57">{{.Text}}</text>
-          {{end}}
-          <title>{{.Issue.Title}}</title>
-        </g>
-      </a>
-      {{end}}
-    </svg>
-  </div>
-  {{if not .Graph.Nodes}}
-  {{if .Filters.Active}}<p class="empty">No issue matches these filters.</p>
-  {{else}}<p class="empty">Nothing to draw yet.</p>{{end}}
-  {{end}}
+    </a>
+    {{end}}
+  </svg>
+</div>
+{{/* The picture's vocabulary, so a first look needs no guessing: the fills are
+     states, the rest are the conditions the core derives and the arrow that
+     closes a cycle. */}}
+<div class="mt-2 flex flex-wrap items-center justify-between gap-x-6 gap-y-2 text-xs text-ink-muted">
+  <ul class="flex flex-wrap items-center gap-x-4 gap-y-1.5" aria-label="Legend">
+    <li class="flex items-center gap-1.5"><span class="inline-block h-3 w-4 rounded-xs border border-line-strong bg-state-todo"></span>todo</li>
+    <li class="flex items-center gap-1.5"><span class="inline-block h-3 w-4 rounded-xs border border-line-strong bg-state-in-progress"></span>in-progress</li>
+    <li class="flex items-center gap-1.5"><span class="inline-block h-3 w-4 rounded-xs border border-line-strong bg-state-done"></span>done</li>
+    <li class="flex items-center gap-1.5"><span class="inline-block h-3 w-4 rounded-xs border border-line-strong bg-state-cancelled"></span>cancelled</li>
+    <li class="flex items-center gap-1.5"><span class="inline-block size-2.5 rounded-full bg-condition-ready-ink"></span>ready</li>
+    <li class="flex items-center gap-1.5"><span class="inline-block h-3 w-4 rounded-xs border-2 border-condition-blocked-ink"></span>blocked</li>
+    <li class="flex items-center gap-1.5"><span class="inline-block h-3 w-4 rounded-xs border-2 border-dashed border-condition-stuck-ink"></span>stuck</li>
+    <li class="flex items-center gap-1.5"><span class="inline-block h-0 w-4 border-t-2 border-dashed border-graph-cycle"></span>cycle</li>
+  </ul>
+  <p class="text-ink-subtle">Drag the background to pan · scroll to zoom · hover a node for its neighbourhood</p>
+</div>
+{{else if .Filters.Active}}
+<p class="rounded-card border border-dashed border-line px-4 py-10 text-center text-sm text-ink-muted">No issue matches these filters.</p>
+{{else}}
+<div class="rounded-card border border-dashed border-line px-4 py-10 text-center">
+  <p class="text-sm text-ink-muted">Nothing to draw yet.</p>
+  <a class="mt-3 inline-block rounded-md bg-accent px-3 py-1.5 text-sm font-medium text-ink-on-accent hover:bg-accent-hover" href="/issues/new">Create an issue</a>
+</div>
+{{end}}
 </div>
 {{end}}
 

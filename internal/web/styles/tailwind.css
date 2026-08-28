@@ -80,6 +80,15 @@
   --condition-stuck: #ebdfe6;
   --condition-stuck-ink: #7a4560;
 
+  /* The graph draws two things nothing else does: the arrow between two issues,
+     and the arrow that closes a dependency cycle. The first is a line, quieter
+     than ink and louder than a border; the second is a fault the store should
+     not hold, so it gets a hue of its own rather than borrowing a condition's —
+     a cycle is not a blocked issue, and two marks that look alike are read as
+     the same fact. */
+  --graph-edge: #8e8e98;
+  --graph-cycle: #a8394a;
+
   /* Elevation reads as a shadow in light and as a lighter surface in dark, so
      it belongs to the palette rather than to the rule that lifts something. */
   --elevation-card: 0 1px 2px rgba(24, 24, 27, 0.06);
@@ -131,6 +140,9 @@
     --condition-stuck: #2a1c26;
     --condition-stuck-ink: #c295b0;
 
+    --graph-edge: #63636e;
+    --graph-cycle: #e0788c;
+
     --elevation-card: 0 1px 2px rgba(0, 0, 0, 0.5);
     --elevation-overlay: 0 8px 30px rgba(0, 0, 0, 0.6);
   }
@@ -179,6 +191,9 @@
   --condition-ready-ink: #86b39c;
   --condition-stuck: #2a1c26;
   --condition-stuck-ink: #c295b0;
+
+  --graph-edge: #63636e;
+  --graph-cycle: #e0788c;
 
   --elevation-card: 0 1px 2px rgba(0, 0, 0, 0.5);
   --elevation-overlay: 0 8px 30px rgba(0, 0, 0, 0.6);
@@ -229,6 +244,9 @@
   --color-condition-ready-ink: var(--condition-ready-ink);
   --color-condition-stuck: var(--condition-stuck);
   --color-condition-stuck-ink: var(--condition-stuck-ink);
+
+  --color-graph-edge: var(--graph-edge);
+  --color-graph-cycle: var(--graph-cycle);
 
   --shadow-card: var(--elevation-card);
   --shadow-overlay: var(--elevation-overlay);
@@ -349,4 +367,70 @@
   }
 
   .changed { animation: flash 1.6s ease-out; }
+
+  /* The graph: the whole backlog as one picture, drawn inside a frame the
+     script turns into a viewport it pans and zooms. A node's fill is the
+     board's state colour, so a card and a node read the same thing; the
+     conditions the core derives ride on the border and the ready dot, and an
+     arrow that closes a cycle is the one line drawn in a colour of its own.
+
+     None of this is a utility: every class here is either computed by the
+     server — `state-{{.State}}`, `edge-back` — or added by graph.js at
+     runtime, where no scanner can see it. The frame's cursor is here for the
+     second reason: `panning` is the script's, and a `cursor-grab` utility on
+     the element would outrank a components-layer rule trying to change it. */
+
+  .graph-frame { cursor: grab; }
+  .graph-frame.panning { cursor: grabbing; }
+
+  .graph { display: block; height: 100%; width: 100%; }
+
+  .graph .cluster-box {
+    fill: var(--surface-hover);
+    stroke: var(--line-strong);
+    stroke-dasharray: 4 4;
+  }
+
+  .graph .cluster-label {
+    fill: var(--ink-subtle);
+    font-size: 12px;
+    font-weight: 500;
+  }
+
+  .graph .node { text-decoration: none; }
+  .graph .node-box { fill: var(--state-todo); stroke: var(--line-strong); }
+  .graph .state-in-progress .node-box { fill: var(--state-in-progress); }
+  .graph .state-done .node-box { fill: var(--state-done); }
+  .graph .state-cancelled .node-box { fill: var(--state-cancelled); }
+
+  .graph .blocked .node-box { stroke: var(--condition-blocked-ink); stroke-width: 2; }
+  .graph .stuck .node-box { stroke-dasharray: 5 3; }
+  .graph .ready-mark { fill: var(--condition-ready-ink); }
+
+  .graph .node-title { fill: var(--ink); font-size: 13px; font-weight: 500; }
+  .graph .node-meta { fill: var(--ink-muted); font-size: 11px; }
+  .graph .node-badge { fill: var(--surface); stroke: var(--line); }
+  .graph .node-badge-text { fill: var(--ink-muted); font-size: 10px; }
+
+  .graph .edge { fill: none; stroke: var(--graph-edge); stroke-width: 1.5; }
+  .graph .edge-back { stroke: var(--graph-cycle); stroke-dasharray: 6 4; }
+  .graph .arrowhead { fill: var(--graph-edge); }
+  .graph .arrowhead-back { fill: var(--graph-cycle); }
+
+  /* Hovering a node lifts its neighbourhood — itself, the arrows at either end,
+     and the issues those reach — while the rest recedes rather than vanishing,
+     so the shape of the whole picture is still there behind it. */
+
+  .graph .node, .graph .edge, .graph .cluster { transition: opacity 120ms ease-out; }
+
+  .graph.dimmed .node,
+  .graph.dimmed .edge,
+  .graph.dimmed .cluster { opacity: 0.15; }
+
+  .graph.dimmed .near { opacity: 1; }
+
+  .graph .node.near .node-box,
+  .graph .node:hover .node-box { stroke: var(--accent); stroke-width: 2; }
+
+  .graph .edge.near { stroke: var(--accent); stroke-width: 2.5; }
 }
