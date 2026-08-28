@@ -47,9 +47,9 @@ jobs:
             exit 1
           fi
 
-  # The install script cannot be exercised for real until a release exists, so
-  # the gate on the project's shell is a linter. shellcheck ships with the
-  # runner image.
+  # The install scripts cannot be exercised for real until a release exists, so
+  # the gate on the project's shell is a linter for each. shellcheck and pwsh
+  # both ship with the runner image; PSScriptAnalyzer is a module away.
   scripts:
     runs-on: ubuntu-latest
     steps:
@@ -57,6 +57,13 @@ jobs:
 
       - name: shellcheck
         run: shellcheck install.sh scripts/*.sh
+
+      - name: PSScriptAnalyzer
+        shell: pwsh
+        run: |
+          Set-PSRepository -Name PSGallery -InstallationPolicy Trusted
+          Install-Module -Name PSScriptAnalyzer -Force -Scope CurrentUser
+          Invoke-ScriptAnalyzer -Path install.ps1 -Severity Error,Warning -ReportSummary -EnableExit
 
   test:
     strategy:
