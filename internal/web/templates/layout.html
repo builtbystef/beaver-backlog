@@ -30,10 +30,13 @@
 <div class="flex min-h-screen flex-col md:flex-row">
   <aside class="shrink-0 border-b border-line bg-surface md:sticky md:top-0 md:h-screen md:w-60 md:border-r md:border-b-0">
     <div class="flex h-full flex-col gap-4 px-4 py-4">
-      {{/* The brand: the icon mark on its own tile, a rule, then the project's
-           name. The mark is the favicon's file drawn into the page, so the two
-           cannot drift and the mark's ink follows the theme the reader chose
-           rather than the operating system the file alone can see.
+      {{/* The brand: the icon mark, a rule, then the project's name. The mark
+           sits on the rail's own surface rather than a tile of its own: the
+           beaver is a silhouette, and a ground behind it drew a square the eye
+           read before the animal. It is the favicon's file drawn into the page,
+           so the two cannot drift and the mark's ink follows the theme the
+           reader chose rather than the operating system the file alone can
+           see.
 
            It answers no hover. This is the masthead, not a nav item, and
            lighting it up offers a press that goes where the reader already is.
@@ -42,11 +45,11 @@
            in the title attribute for a hover to read. */}}
       <header>
         <a class="flex min-w-0 items-center gap-2.5 py-1" href="/" title="{{.Project}}">
-          <span class="brand flex size-10 shrink-0 items-center justify-center rounded-lg bg-canvas [&>svg]:size-8">
+          <span class="brand flex size-9 shrink-0 items-center justify-center [&>svg]:size-9">
             {{.Mark}}
           </span>
-          <span class="h-5 w-px shrink-0 bg-line-strong" aria-hidden="true"></span>
-          <span class="truncate text-sm font-semibold text-ink">{{.Project}}</span>
+          <span class="h-6 w-px shrink-0 bg-line-strong" aria-hidden="true"></span>
+          <span class="truncate text-base font-semibold text-ink">{{.Project}}</span>
         </a>
       </header>
       {{/* The one text filter, the other window onto it being the toolbar's text
@@ -59,9 +62,10 @@
       <nav aria-label="Views" class="flex flex-col gap-0.5">
         {{range .Nav}}
         <a href="{{.Href}}"
-           class="flex items-center justify-between gap-2 rounded-md px-2.5 py-1.5 text-sm transition-colors {{if .Current}}bg-accent-soft font-medium text-accent{{else}}text-ink-muted hover:bg-surface-hover hover:text-ink{{end}}"
+           class="flex items-center gap-2.5 rounded-md px-2.5 py-1.5 text-sm transition-colors {{if .Current}}bg-accent-soft font-medium text-accent{{else}}text-ink-muted hover:bg-surface-hover hover:text-ink{{end}}"
            {{- if .Current}} aria-current="page"{{end}}>
-          <span>{{.Label}}</span>
+          {{template "navicon" .Icon}}
+          <span class="min-w-0 flex-1 truncate">{{.Label}}</span>
           {{if .Badge}}<span class="rounded-chip bg-condition-stuck px-1.5 text-xs font-semibold text-condition-stuck-ink">{{.Badge}}</span>{{end}}
         </a>
         {{end}}

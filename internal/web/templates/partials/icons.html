@@ -1,0 +1,28 @@
+{{/* The sidebar's nav icons: one line-drawn glyph per view, so the rail can be
+     read by shape before it is read by word. They share a single frame and
+     differ only in what is drawn inside it, which is what keeps four glyphs
+     looking like one set: the same box, the same stroke, no fills.
+
+     Drawn in currentColor, so an entry's icon follows the ink of the entry it
+     sits in, including the accent a current one wears. Hidden from the
+     accessibility tree, the label beside it already saying where the link
+     goes. */}}
+
+{{define "navicon"}}
+<svg class="size-4 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+     stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+  {{- if eq . "board"}}
+  <rect x="3" y="4" width="18" height="16" rx="2"/>
+  <path d="M9 4v16M15 4v16"/>
+  {{- else if eq . "issues"}}
+  <path d="M9 6h12M9 12h12M9 18h12M4 6h.01M4 12h.01M4 18h.01"/>
+  {{- else if eq . "graph"}}
+  <circle cx="6" cy="5.5" r="2.5"/>
+  <circle cx="18" cy="12" r="2.5"/>
+  <circle cx="6" cy="18.5" r="2.5"/>
+  <path d="m8.3 6.8 7.4 4M15.7 13.2l-7.4 4"/>
+  {{- else if eq . "doctor"}}
+  <path d="M3 12h4l2.5-7 5 14 2.5-7h4"/>
+  {{- end}}
+</svg>
+{{- end}}

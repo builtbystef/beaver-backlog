@@ -14,8 +14,12 @@
 <div id="issues" class="board grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
   {{range .Columns}}
   <section class="column flex flex-col gap-2 rounded-card border border-line bg-surface p-3" data-column="{{.State}}">
-    <h2 class="m-0 flex items-center gap-2 text-sm font-medium">
-      {{template "state" .State}}
+    {{/* The column's head names a place, not a fact about an issue. It wears
+         the state's colour as a dot rather than the chip the cards carry: four
+         more pills above a board already full of them read as four more marks
+         to take in, and the heading disappeared into its own contents. */}}
+    <h2 class="m-0 flex items-center gap-2">
+      <span class="column-title column-{{.State}}">{{.State}}</span>
       <span class="text-xs text-ink-subtle">{{len .Cards}}</span>
     </h2>
     {{range .Cards}}

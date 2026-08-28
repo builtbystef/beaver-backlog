@@ -493,6 +493,37 @@
 
   .markdown hr { border: none; border-top: 1px solid var(--line); margin: 1rem 0; }
 
+  /* A board column's heading. The cards below it are chips all the way down, so
+     the head that names the column has to be the one thing up there that is not
+     one: the state's colour comes back as a dot, and the word is set as a
+     heading in reading ink. The names are computed, which is why this is a
+     class and not a utility.
+
+     The dot takes the state's ink rather than its tint, a tint being too quiet
+     to carry at 8px. */
+
+  .column-title {
+    align-items: center;
+    color: var(--ink);
+    display: inline-flex;
+    font-size: 0.8125rem;
+    font-weight: 600;
+    gap: 0.45rem;
+  }
+
+  .column-title::before {
+    background: currentColor;
+    border-radius: 999px;
+    content: "";
+    height: 0.5rem;
+    width: 0.5rem;
+  }
+
+  .column-todo::before { background: var(--state-todo-ink); }
+  .column-in-progress::before { background: var(--state-in-progress-ink); }
+  .column-done::before { background: var(--state-done-ink); }
+  .column-cancelled::before { background: var(--state-cancelled-ink); }
+
   /* Dragging: the card in hand fades, the column under the cursor lights up,
      and a card waiting on the server dims until the board is redrawn. Every
      class here is one a script adds, so no template holds it to be scanned. */

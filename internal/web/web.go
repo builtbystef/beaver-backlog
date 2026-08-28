@@ -270,11 +270,14 @@ type page struct {
 }
 
 // navItem is one entry in the shell's sidebar navigation: where it goes, what
-// it says, whether the reader is already there, and the count it wears — only
-// Doctor wears one, and only when there is something to count.
+// it says, which glyph it wears, whether the reader is already there, and the
+// count it wears — only Doctor wears one, and only when there is something to
+// count.
 type navItem struct {
-	Href    string
-	Label   string
+	Href  string
+	Label string
+	// Icon names the glyph the navicon template draws for this entry.
+	Icon    string
 	Current bool
 	Badge   int
 }
@@ -288,10 +291,10 @@ type navItem struct {
 // simply shows no badge.
 func (p page) Nav() []navItem {
 	items := []navItem{
-		{Href: "/", Label: "Board"},
-		{Href: "/issues", Label: "Issues"},
-		{Href: "/graph", Label: "Graph"},
-		{Href: "/doctor", Label: "Doctor", Badge: len(p.Warnings)},
+		{Href: "/", Label: "Board", Icon: "board"},
+		{Href: "/issues", Label: "Issues", Icon: "issues"},
+		{Href: "/graph", Label: "Graph", Icon: "graph"},
+		{Href: "/doctor", Label: "Doctor", Icon: "doctor", Badge: len(p.Warnings)},
 	}
 	for i, section := range []string{"board", "issues", "graph", "doctor"} {
 		items[i].Current = section == p.Section
