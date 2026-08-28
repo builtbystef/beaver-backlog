@@ -73,7 +73,8 @@ can be discussed before you invest in an implementation.
 
 ## Reporting bugs
 
-Open a GitHub issue with the version (`git rev-parse HEAD` if built from
-source), the command you ran, what you expected, and what happened. If the
-problem involves store state, the output of `beaver doctor --format json` is
-usually the fastest diagnostic.
+Open a GitHub issue with the output of `beaver version`, the command you ran,
+what you expected, and what happened. A binary built from a clone reports
+version `dev`, so name the commit as well in that case. If the problem involves
+store state, the output of `beaver doctor --format json` is usually the fastest
+diagnostic.
