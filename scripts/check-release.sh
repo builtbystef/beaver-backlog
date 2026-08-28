@@ -20,7 +20,9 @@ fail() {
 
 [ -f "$dist/metadata.json" ] || fail "no $dist/metadata.json: run goreleaser release --snapshot --clean first"
 version=$(jq -r .version "$dist/metadata.json")
-[ -n "$version" ] && [ "$version" != null ] || fail "metadata.json names no version"
+if [ -z "$version" ] || [ "$version" = null ]; then
+  fail "metadata.json names no version"
+fi
 
 # The platform set is spelled out rather than derived from the build, so that
 # dropping one from the configuration fails here instead of passing quietly.
@@ -97,7 +99,9 @@ if [ -x "$host" ]; then
   commit=$(jq -r .commit <<<"$reported")
   built_version=$(jq -r .version <<<"$reported")
   head=$(git -C "$repo_root" rev-parse HEAD)
-  [ -n "$commit" ] && [ "${head#"$commit"}" != "$head" ] || fail "version reports commit $commit, want a prefix of $head"
+  if [ -z "$commit" ] || [ "${head#"$commit"}" = "$head" ]; then
+    fail "version reports commit $commit, want a prefix of $head"
+  fi
   [ "$built_version" != dev ] || fail "version reports a dev build, so the version flag never reached the binary"
 else
   fail "no archive for this machine ($host_os/$host_arch), so the injected build metadata cannot be run"
