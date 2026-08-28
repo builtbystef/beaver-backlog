@@ -106,8 +106,21 @@
     <li class="flex items-center gap-1.5"><span class="inline-block h-3.5 w-4.5 rounded-xs border-2 border-dashed border-condition-stuck-ink"></span>stuck</li>
     <li class="flex items-center gap-1.5"><span class="inline-block h-0 w-4.5 border-t-2 border-dashed border-graph-cycle"></span>cycle</li>
   </ul>
-  <p class="text-ink-subtle">Drag the background to pan · scroll to zoom · hover a node for its neighbourhood</p>
+  <p class="text-ink-subtle">Drag to pan · scroll to zoom · hover a node for its neighbourhood · click it for its facts</p>
 </div>
+{{/* Where the quick view lands: an empty overlay graph.js fills from
+     /issues/{id}/quick and opens over the picture, so clicking a node inspects
+     an issue without navigating away from the graph or moving the window the
+     reader panned to.
+
+     The ground, the border and the padding are spelt out because an unstyled
+     <dialog> falls to the legacy sheet, whose palette flips on the system's
+     preference rather than the reader's choice. The centring is spelt out for
+     the reset, which zeroes the margin a modal is otherwise centred by. No
+     display utility belongs here: it would outrank the rule that keeps a
+     closed dialog shut. */}}
+<dialog id="quick-view"
+        class="m-auto w-[min(30rem,calc(100vw-2rem))] rounded-card border border-line bg-surface p-0 text-ink shadow-overlay backdrop:bg-black/50"></dialog>
 {{else if .Filters.Active}}
 <p class="rounded-card border border-dashed border-line px-4 py-10 text-center text-sm text-ink-muted">No issue matches these filters.</p>
 {{else}}

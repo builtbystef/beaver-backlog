@@ -207,3 +207,64 @@ function perPixel(svg) {
 function clamp(value, low, high) {
   return Math.min(Math.max(value, low), high);
 }
+
+// The quick view: a node's key facts drawn over the picture. Clicking a node no
+// longer follows it, so inspecting an issue costs neither the page nor the
+// window the reader panned to; the fragment is the server's, fetched from the
+// node's own id.
+
+const overlay = () => document.getElementById("quick-view");
+
+// A node is still a link, so a modified click opens the issue in a new tab the
+// way any link does. Only the plain one is claimed.
+document.addEventListener("click", (event) => {
+  const svg = canvas();
+  const node = event.target.closest?.("[data-issue]");
+  if (!svg || !node || !svg.contains(node)) return;
+  if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+  event.preventDefault();
+  inspect(node.dataset.issue);
+});
+
+async function inspect(id) {
+  const dialog = overlay();
+  if (!dialog) return;
+  const res = await fetch(`/issues/${encodeURIComponent(id)}/quick`);
+  if (!res.ok) {
+    // The issue went while the picture was on screen. Following the link is
+    // then the honest answer: the reader gets the store's own words for it
+    // rather than a click that did nothing.
+    window.location.href = `/issues/${encodeURIComponent(id)}`;
+    return;
+  }
+  dialog.innerHTML = await res.text();
+  // The live refresh reads this the way it reads a card mid-drag: the picture
+  // is not swapped out from under something the reader is holding open.
+  document.body.dataset.holding = "quick";
+  dialog.showModal();
+}
+
+// A click on the backdrop dismisses, as it does everywhere else. The browser
+// reports one as a click on the dialog itself, the panel inside it being what
+// the pointer is over the rest of the time.
+document.addEventListener("click", (event) => {
+  const dialog = overlay();
+  if (dialog?.open && event.target === dialog) dialog.close();
+});
+
+// Dismissing puts the picture back untouched: nothing was navigated away from
+// and nothing was redrawn, so the window the reader panned to is still the one
+// on screen. The close event does not bubble, hence the capture.
+document.addEventListener(
+  "close",
+  (event) => {
+    if (event.target !== overlay()) return;
+    event.target.innerHTML = "";
+    delete document.body.dataset.holding;
+    // A store change that arrived while the view was open has been waiting for
+    // this, and the pointer events the live listener otherwise retries on may
+    // never come: Escape is a key, not a click.
+    document.dispatchEvent(new Event("beaver:release"));
+  },
+  true,
+);

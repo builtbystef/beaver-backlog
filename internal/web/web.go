@@ -69,6 +69,7 @@ func New(cfg Config) (http.Handler, error) {
 	mux.HandleFunc("POST /issues", s.create)
 	mux.HandleFunc("GET /issues/{ref}", s.detail)
 	mux.HandleFunc("GET /issues/{ref}/edit", s.editFormPage)
+	mux.HandleFunc("GET /issues/{ref}/quick", s.quick)
 	mux.HandleFunc("POST /issues/{ref}", s.update)
 	mux.HandleFunc("POST /issues/{ref}/state", s.setState)
 	mux.HandleFunc("POST /issues/{ref}/start", s.start)
@@ -359,11 +360,19 @@ func (s *server) relPath(p string) string {
 	return p
 }
 
-// render writes one page, building it in full before any of it reaches the
-// browser so a template failure cannot leave a half-drawn page behind a 200.
+// render writes one page through the entry the request asks for.
 func (s *server) render(w http.ResponseWriter, r *http.Request, name string, status int, data any) {
+	s.renderTemplate(w, name, entry(r), status, data)
+}
+
+// renderTemplate writes one named template out of a page's set, building it in
+// full before any of it reaches the browser so a template failure cannot leave
+// a half-drawn page behind a 200. The quick view enters here rather than
+// through render: it is only ever laid over a page the browser already has, so
+// it has no whole-document form for an entry to choose between.
+func (s *server) renderTemplate(w http.ResponseWriter, name, define string, status int, data any) {
 	var buf bytes.Buffer
-	if err := pages[name].ExecuteTemplate(&buf, entry(r), data); err != nil {
+	if err := pages[name].ExecuteTemplate(&buf, define, data); err != nil {
 		http.Error(w, "rendering "+name+": "+err.Error(), http.StatusInternalServerError)
 		return
 	}
@@ -398,6 +407,7 @@ var pages = map[string]*template.Template{
 	"detail.html":  mustParse("detail.html"),
 	"doctor.html":  mustParse("doctor.html"),
 	"matches.html": mustParse("matches.html"),
+	"quick.html":   mustParse("quick.html"),
 	"error.html":   mustParse("error.html"),
 }
 

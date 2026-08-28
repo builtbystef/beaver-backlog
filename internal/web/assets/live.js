@@ -90,9 +90,13 @@ function status(shown) {
 // Dragging the graph's canvas is the same bargain by a different gesture: it
 // marks the body the same way and ends on a pointer release rather than a
 // dragend, so the redraw waits for the hand to come off the picture.
+// A quick view open over the graph is the same bargain by a third gesture, and
+// the only one that ends on no pointer event at all — Escape is a key — so the
+// picture says when it lets go.
 document.addEventListener("dragend", () => setTimeout(retry, 0));
 document.addEventListener("pointerup", () => setTimeout(retry, 0));
 document.addEventListener("focusout", () => setTimeout(retry, 0));
+document.addEventListener("beaver:release", () => setTimeout(retry, 0));
 
 async function refresh() {
   const target = view();
@@ -136,11 +140,22 @@ function fingerprint(el) {
 }
 
 // held reports whether redrawing right now would take something out of the
-// reader's hands: a card mid-drag, or the field they are typing in.
+// reader's hands: a card mid-drag, a view held open over the page, or the
+// control they are filling in. A link or a button with the focus ring on it is
+// none of those, and waiting on one would strand the redraw for good — the
+// browser hands focus back to the graph node a quick view was opened from, and
+// nothing takes it away again.
 function held() {
   if (document.body.dataset.dragging !== undefined) return true;
+  if (document.body.dataset.holding !== undefined) return true;
   const focused = document.activeElement;
-  return !!focused && focused !== document.body && !!view()?.contains(focused);
+  return !!focused && filling(focused) && !!view()?.contains(focused);
+}
+
+// filling reports whether an element is one a reader puts something into,
+// which is what a redraw must not pull out from under them mid-answer.
+function filling(el) {
+  return el.matches?.("input, textarea, select, [contenteditable]") ?? false;
 }
 
 function retry() {

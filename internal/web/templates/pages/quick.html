@@ -1,0 +1,50 @@
+{{/* The quick view: one issue's key facts, drawn over the graph so a click
+     inspects an issue without costing the reader the window they panned to.
+
+     It is only ever a fragment. The page it lies over is already on screen, so
+     anything of the shell here would be a second copy of the application. */}}
+
+{{define "quick"}}
+{{$iss := .Issue}}
+<article class="flex flex-col gap-4 p-5">
+  <header class="flex items-start justify-between gap-3">
+    <div class="min-w-0">
+      {{/* The condition rides after the title, the way it does on a card: at
+           most one word, and nothing at all for an issue with nothing to say. */}}
+      <h2 class="text-base font-semibold text-ink">{{$iss.Title}}{{template "condition" .Rel}}</h2>
+      {{/* The two ways to refer to the issue: the identity, then the label the
+           title reads as. */}}
+      <p class="mt-1 flex flex-wrap items-baseline gap-x-2"><span class="id">{{$iss.ID}}</span><span class="id">{{.Slug}}</span></p>
+    </div>
+    {{/* Dismissing is the dialog's own business, so the button needs no script
+         of its own; Escape and a click on the backdrop do the same thing. */}}
+    <form method="dialog" class="shrink-0">
+      <button class="flex size-7 items-center justify-center rounded-md border border-line bg-surface p-0 text-sm text-ink-muted hover:border-line-strong hover:text-ink"
+              type="submit" aria-label="Close">×</button>
+    </form>
+  </header>
+  {{/* Every field is answered, a dash standing in for the ones the issue does
+       not fill, so a quiet issue reads as told rather than half-drawn. */}}
+  <dl class="grid grid-cols-[5.5rem_1fr] items-baseline gap-x-4 gap-y-2 text-sm">
+    <dt class="text-ink-muted">State</dt>
+    <dd>{{template "state" $iss.State}}</dd>
+    <dt class="text-ink-muted">Priority</dt>
+    <dd>{{with $iss.Priority}}{{template "priority" .}}{{else}}{{template "none"}}{{end}}</dd>
+    <dt class="text-ink-muted">Assignee</dt>
+    <dd class="text-ink">{{with $iss.Assignee}}{{.}}{{else}}{{template "none"}}{{end}}</dd>
+    <dt class="text-ink-muted">Labels</dt>
+    <dd class="flex flex-wrap items-baseline gap-1.5">{{range $iss.Labels}}{{template "label" .}}{{else}}{{template "none"}}{{end}}</dd>
+    <dt class="text-ink-muted">Parent</dt>
+    <dd>{{with $iss.Parent}}{{template "reflink" .}}{{else}}{{template "none"}}{{end}}</dd>
+  </dl>
+  <a class="rounded-md bg-accent px-3 py-1.5 text-center text-sm font-medium text-ink-on-accent hover:bg-accent-hover"
+     href="/issues/{{$iss.ID}}">Open issue</a>
+</article>
+{{end}}
+
+{{/* Nothing to draw: a reference the store cannot resolve to one issue. The
+     graph never asks for one — its nodes hold exact IDs — so this is what a
+     typed address gets, and it is a sentence rather than a page. */}}
+{{define "quick-missing"}}
+<p class="p-5 text-sm text-ink-muted">No issue here called <span class="id">{{.}}</span>.</p>
+{{end}}
