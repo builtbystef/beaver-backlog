@@ -13,13 +13,8 @@
 <link rel="icon" type="image/svg+xml" href="/assets/favicon.svg">
 <link rel="icon" type="image/png" sizes="32x32" href="/assets/favicon.png">
 <link rel="apple-touch-icon" href="/assets/apple-touch-icon.png">
-{{/* The design system first, the sheet still drawing the pages it has not
-     reached yet second. app.css declares itself into the legacy cascade layer,
-     which sits above the reset and below the design system's own rules, so a
-     restyled page wins wherever the two meet. It goes when the last page is
-     redrawn on the tokens. */}}
+{{/* The design system, and nothing else: every page is drawn on the tokens. */}}
 <link rel="stylesheet" href="/assets/tailwind.css">
-<link rel="stylesheet" href="/assets/app.css">
 <script src="/assets/htmx.min.js" defer></script>
 <script src="/assets/confirm.js" defer></script>
 <script src="/assets/live.js" defer></script>
@@ -93,9 +88,9 @@
 {{with .Notice}}<p class="mb-4 rounded-md border border-line bg-accent-soft px-3 py-2 text-sm text-ink" role="status">{{.}}</p>{{end}}
 {{with .Warnings}}
 <section class="mb-4 rounded-card border border-line bg-condition-stuck px-3 py-2 text-sm text-condition-stuck-ink" role="status">
-  <p>{{len .}} file(s) skipped: not usable issues. Run <code>beaver doctor</code>.</p>
+  <p>{{len .}} file(s) skipped: not usable issues. Run {{template "code" "beaver doctor"}}.</p>
   <ul class="mt-1 list-disc pl-5">
-    {{range .}}<li><code>{{.Path}}</code>: {{.Reason}}</li>{{end}}
+    {{range .}}<li>{{template "code" .Path}}: {{.Reason}}</li>{{end}}
   </ul>
 </section>
 {{end}}

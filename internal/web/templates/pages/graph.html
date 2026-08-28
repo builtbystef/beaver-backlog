@@ -22,9 +22,8 @@
      and a short frame shrinks that fit until nothing in it can be read. */}}
 <div class="graph-frame relative h-[calc(100vh-14rem)] min-h-[26rem] touch-none overflow-hidden rounded-card border border-line bg-graph-ground select-none">
   {{/* The controls wear the toolbar's chip, so everything pressable looks like
-       one vocabulary. Each spells its own ground and border out, because an
-       unstyled <button> falls to the legacy sheet, which flips on the system's
-       palette rather than the reader's choice. */}}
+       one vocabulary. Each spells its own ground and border out: the design
+       system draws no button by tag, so an unstyled one is the browser's. */}}
   <div class="absolute top-3 right-3 z-10 flex items-center gap-1.5">
     <button class="flex size-8 items-center justify-center rounded-md border border-line bg-surface p-0 text-sm text-ink-muted hover:border-line-strong hover:text-ink"
             type="button" data-graph-zoom="out" aria-label="Zoom out">−</button>
@@ -113,12 +112,10 @@
      an issue without navigating away from the graph or moving the window the
      reader panned to.
 
-     The ground, the border and the padding are spelt out because an unstyled
-     <dialog> falls to the legacy sheet, whose palette flips on the system's
-     preference rather than the reader's choice. The centring is spelt out for
-     the reset, which zeroes the margin a modal is otherwise centred by. No
-     display utility belongs here: it would outrank the rule that keeps a
-     closed dialog shut. */}}
+     The ground, the border and the padding are spelt out because the design
+     system draws no dialog by tag, and the centring for the reset, which zeroes
+     the margin a modal is otherwise centred by. No display utility belongs
+     here: it would outrank the rule that keeps a closed dialog shut. */}}
 <dialog id="quick-view"
         class="m-auto w-[min(30rem,calc(100vw-2rem))] rounded-card border border-line bg-surface p-0 text-ink shadow-overlay backdrop:bg-black/50"></dialog>
 {{else if .Filters.Active}}

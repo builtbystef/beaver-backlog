@@ -1,12 +1,25 @@
+{{/* The choice a reference naming several issues leads to. A slug two issues
+     share names neither of them, so this is a page of candidates rather than a
+     failure: each row carries the three things a reader picks on (the id, the
+     title, and the state it is in) and leads to the issue it names. */}}
+
+{{define "toolbar"}}
+<div class="mb-4 flex flex-col gap-1">
+  <h1 class="m-0 text-lg font-semibold tracking-tight text-ink">{{.Ref}} names {{len .Matches}} issues</h1>
+  <p class="text-sm text-ink-muted">A slug is not an identity; these issues share one. Pick the one you meant.</p>
+</div>
+{{end}}
+
 {{define "content"}}
-<h1>{{.Ref}} names {{len .Matches}} issues</h1>
-<p>A slug is not an identity; these issues share one. Pick the one you meant.</p>
-<ul class="matches">
+<ul class="flex max-w-3xl flex-col gap-2">
   {{range .Matches}}
   <li>
-    {{template "reflink" .ID}}
-    {{.Title}}
-    {{template "state" .State}}
+    <a class="flex flex-wrap items-baseline gap-x-3 gap-y-1.5 rounded-card border border-line bg-surface px-4 py-3 shadow-card transition-colors hover:border-accent"
+       href="/issues/{{.ID}}">
+      <span class="id">{{.ID}}</span>
+      <span class="min-w-0 flex-1 text-sm text-ink">{{.Title}}</span>
+      {{template "state" .State}}
+    </a>
   </li>
   {{end}}
 </ul>

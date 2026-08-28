@@ -1,5 +1,17 @@
+{{/* A request this interface could not answer: what went wrong in its own
+     words, and the way back out. It is a page inside the shell like any other,
+     because a reader who mistyped an address has not left the application.
+
+     The message keeps its `error` class: the board's script reads a refused
+     drop out of this page to show beside the card that snapped back. */}}
+
+{{define "toolbar"}}
+<div class="mb-4 flex flex-wrap items-center gap-x-3 gap-y-2">
+  <h1 class="m-0 text-lg font-semibold tracking-tight text-ink">{{.Title}}</h1>
+</div>
+{{end}}
+
 {{define "content"}}
-<h1>{{.Title}}</h1>
-<p class="error">{{.Message}}</p>
-<p><a href="/">Back to the issues</a></p>
+<p class="error max-w-2xl rounded-card border border-condition-blocked-ink bg-condition-blocked px-4 py-3 text-sm break-words text-condition-blocked-ink" role="alert">{{.Message}}</p>
+<p class="mt-4"><a class="{{template "quiet-action"}} inline-block" href="/">Back to the issues</a></p>
 {{end}}

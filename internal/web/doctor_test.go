@@ -94,7 +94,7 @@ func TestDoctorAllClearOnAHealthyStore(t *testing.T) {
 	if len(findings(t, body)) != 0 {
 		t.Errorf("a healthy store renders findings:\n%s", body)
 	}
-	if !strings.Contains(body, "all-clear") {
+	if !strings.Contains(body, "All clear") {
 		t.Errorf("a healthy store does not render an all-clear:\n%s", body)
 	}
 	if strings.Contains(body, "/doctor/fix") {
@@ -111,8 +111,13 @@ func TestDoctorFixRenamesTheDriftedFile(t *testing.T) {
 	canonical := filepath.Base(issueFile(t, dir, drifted.ID))
 	rename(t, dir, drifted.ID, "wandered.md")
 	h := newHandler(t, dir)
-	if body := get(h, "/doctor").Body.String(); !strings.Contains(body, "/doctor/fix") {
-		t.Fatalf("no repair button while a fixable finding stands:\n%s", body)
+	offer := get(h, "/doctor").Body.String()
+	if !strings.Contains(offer, "/doctor/fix") {
+		t.Fatalf("no repair button while a fixable finding stands:\n%s", offer)
+	}
+	// The reader is told what pressing it does before they press it.
+	if !strings.Contains(offer, "renamed to the name its frontmatter implies") {
+		t.Errorf("the repair offer does not say what it will do:\n%s", offer)
 	}
 
 	res := post(h, "/doctor/fix", url.Values{})
@@ -153,9 +158,14 @@ func TestDoctorOffersNoRepairWhenNothingIsFixable(t *testing.T) {
 	if strings.Contains(body, "/doctor/fix") {
 		t.Errorf("a repair button appears with nothing fixable:\n%s", body)
 	}
+	if !strings.Contains(body, "needs a human") {
+		t.Errorf("nothing fixable is not said in words:\n%s", body)
+	}
 }
 
-var findingMark = regexp.MustCompile(`<li class="finding ([a-z]+)" data-category="([a-z_]+)"`)
+// A finding says what it is in data attributes rather than in the classes it
+// is drawn with, so this reads the report rather than the stylesheet.
+var findingMark = regexp.MustCompile(`data-category="([a-z_]+)" data-class="([a-z]+)"`)
 
 // findings reads the rendered report back as what it depicts: each category
 // present, and how each of its findings was classed.
@@ -163,7 +173,7 @@ func findings(t *testing.T, body string) map[string][]string {
 	t.Helper()
 	out := map[string][]string{}
 	for _, m := range findingMark.FindAllStringSubmatch(body, -1) {
-		out[m[2]] = append(out[m[2]], m[1])
+		out[m[1]] = append(out[m[1]], m[2])
 	}
 	return out
 }

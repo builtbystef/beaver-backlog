@@ -1,6 +1,5 @@
 /*! tailwindcss v4.3.3 | MIT License | https://tailwindcss.com */
 @layer properties;
-@layer theme, base, legacy, components, utilities;
 @layer theme, base, components, utilities;
 @layer theme {
   :root, :host {
@@ -8,6 +7,7 @@
     --font-mono: ui-monospace, SFMono-Regular, Menlo, monospace;
     --color-black: #000;
     --spacing: 0.25rem;
+    --container-2xl: 42rem;
     --container-3xl: 48rem;
     --text-xs: 0.75rem;
     --text-xs--line-height: calc(1 / 0.75);
@@ -234,6 +234,9 @@
   .mt-3 {
     margin-top: calc(var(--spacing) * 3);
   }
+  .mt-4 {
+    margin-top: calc(var(--spacing) * 4);
+  }
   .mt-5 {
     margin-top: calc(var(--spacing) * 5);
   }
@@ -349,6 +352,9 @@
   }
   .w-px {
     width: 1px;
+  }
+  .max-w-2xl {
+    max-width: var(--container-2xl);
   }
   .max-w-3xl {
     max-width: var(--container-3xl);
@@ -487,6 +493,9 @@
   .overflow-x-auto {
     overflow-x: auto;
   }
+  .rounded {
+    border-radius: 0.25rem;
+  }
   .rounded-card {
     border-radius: var(--radius-card);
   }
@@ -575,6 +584,9 @@
   .bg-condition-blocked {
     background-color: var(--condition-blocked);
   }
+  .bg-condition-ready {
+    background-color: var(--condition-ready);
+  }
   .bg-condition-ready-ink {
     background-color: var(--condition-ready-ink);
   }
@@ -604,6 +616,9 @@
   }
   .bg-surface {
     background-color: var(--surface);
+  }
+  .bg-surface-hover {
+    background-color: var(--surface-hover);
   }
   .bg-surface-raised {
     background-color: var(--surface-raised);
@@ -656,6 +671,9 @@
   .py-2 {
     padding-block: calc(var(--spacing) * 2);
   }
+  .py-3 {
+    padding-block: calc(var(--spacing) * 3);
+  }
   .py-4 {
     padding-block: calc(var(--spacing) * 4);
   }
@@ -685,6 +703,9 @@
   }
   .align-top {
     vertical-align: top;
+  }
+  .font-mono {
+    font-family: var(--font-mono);
   }
   .font-sans {
     font-family: var(--font-sans);
@@ -738,6 +759,9 @@
   .break-words {
     overflow-wrap: break-word;
   }
+  .break-all {
+    word-break: break-all;
+  }
   .whitespace-nowrap {
     white-space: nowrap;
   }
@@ -746,6 +770,9 @@
   }
   .text-condition-blocked-ink {
     color: var(--condition-blocked-ink);
+  }
+  .text-condition-ready-ink {
+    color: var(--condition-ready-ink);
   }
   .text-condition-stuck-ink {
     color: var(--condition-stuck-ink);
@@ -1067,7 +1094,7 @@
   }
 }
 @layer components {
-  .state, .priority, .label, .mark {
+  .state, .priority, .label, .mark, .finding-class {
     align-items: center;
     border-radius: var(--radius-chip);
     display: inline-flex;
@@ -1118,6 +1145,18 @@
     background: var(--surface-hover);
     border: 1px solid var(--line);
     color: var(--ink-muted);
+  }
+  .finding-problem {
+    background: var(--condition-blocked);
+    color: var(--condition-blocked-ink);
+  }
+  .finding-advisory {
+    background: var(--priority-high);
+    color: var(--priority-high-ink);
+  }
+  .finding-fixed {
+    background: var(--state-done);
+    color: var(--state-done-ink);
   }
   .mark-ready {
     background: var(--condition-ready);

@@ -34,7 +34,6 @@ func TestRouteStatuses(t *testing.T) {
 		{"/", http.StatusOK},
 		{"/issues", http.StatusOK},
 		{"/assets/htmx.min.js", http.StatusOK},
-		{"/assets/app.css", http.StatusOK},
 		{"/nope", http.StatusNotFound},
 		{"/issues/anything", http.StatusNotFound},
 	}
@@ -226,27 +225,32 @@ func TestEveryPageNavigatesToBoardAndList(t *testing.T) {
 	}
 }
 
-// The board is a view like any other: a broken file costs a banner, not a page
-// (ADR 0003).
+// Every view is a view like any other: a broken file costs a banner naming it
+// and the reason, not a page (ADR 0003). Doctor is the exception, and reports
+// the same file as a finding instead, so nothing is named twice.
 func TestInvalidFileBecomesABannerNotAnError(t *testing.T) {
 	dir := newStore(t)
-	create(t, open(t, dir), core.Draft{Title: "Perfectly fine"})
+	fine := create(t, open(t, dir), core.Draft{Title: "Perfectly fine"})
 	broken := filepath.Join(dir, ".beaver", "issues", "broken.md")
 	if err := os.WriteFile(broken, []byte("not an issue file"), 0o644); err != nil {
 		t.Fatalf("seed invalid file: %v", err)
 	}
+	h := newHandler(t, dir)
 
-	res := get(newHandler(t, dir), "/")
+	for _, view := range []string{"/", "/issues", "/graph", "/issues/" + fine.ID} {
+		res := get(h, view)
 
-	if res.Code != http.StatusOK {
-		t.Errorf("status = %d, want 200 despite the invalid file", res.Code)
-	}
-	body := res.Body.String()
-	if !strings.Contains(body, "broken.md") {
-		t.Errorf("banner does not name the skipped file:\n%s", body)
-	}
-	if !strings.Contains(body, "Perfectly fine") {
-		t.Error("the valid issue is missing; one broken file must not empty the page")
+		if res.Code != http.StatusOK {
+			t.Errorf("GET %s = %d, want 200 despite the invalid file", view, res.Code)
+			continue
+		}
+		body := res.Body.String()
+		if !strings.Contains(body, "broken.md") {
+			t.Errorf("%s does not name the skipped file:\n%s", view, body)
+		}
+		if !strings.Contains(body, "Perfectly fine") {
+			t.Errorf("%s lost the valid issue; one broken file must not empty a view", view)
+		}
 	}
 }
 
@@ -323,21 +327,51 @@ func TestDetailResolvesEveryFormOfReference(t *testing.T) {
 	}
 }
 
+// An address this interface does not serve is answered by this interface: its
+// own page, inside the shell, naming what was asked for.
+func TestUnknownAddressGetsThisInterfacesOwnPage(t *testing.T) {
+	res := get(newHandler(t, newStore(t)), "/no-such-page")
+
+	if res.Code != http.StatusNotFound {
+		t.Fatalf("GET /no-such-page = %d, want 404", res.Code)
+	}
+	body := res.Body.String()
+	if !strings.Contains(body, "/no-such-page") {
+		t.Errorf("the 404 page does not name the address that was asked for:\n%s", body)
+	}
+	if !strings.Contains(body, `href="/issues"`) {
+		t.Errorf("the 404 page is not drawn inside the shell:\n%s", body)
+	}
+}
+
 // A slug two issues share names neither of them, so the page offers the choice
-// rather than guessing.
+// rather than guessing. Picking between them takes more than a pair of ids, so
+// each candidate arrives with its title and the state it is in.
 func TestDetailOnASharedSlugOffersTheMatches(t *testing.T) {
 	dir := newStore(t)
 	svc := open(t, dir)
 	first := create(t, svc, core.Draft{Title: "Fix flag parsing"})
 	second := create(t, svc, core.Draft{Title: "Fix flag parsing"})
+	start(t, svc, second.ID)
 
 	h := newHandler(t, dir)
 	res := get(h, "/issues/fix-flag-parsing")
 
 	body := res.Body.String()
-	for _, iss := range []issue.Issue{first, second} {
+	rows := matchRows(t, body)
+	for _, iss := range []issue.Issue{first, fetch(t, svc, second.ID)} {
 		if link := `href="/issues/` + iss.ID + `"`; !strings.Contains(body, link) {
 			t.Errorf("shared slug page does not link %s by ID:\n%s", iss.ID, body)
+		}
+		row, ok := rows[iss.ID]
+		if !ok {
+			t.Errorf("shared slug page offers no row for %s:\n%s", iss.ID, body)
+			continue
+		}
+		for _, want := range []string{iss.Title, string(iss.State)} {
+			if !strings.Contains(row, want) {
+				t.Errorf("the row for %s does not say %q: %s", iss.ID, want, row)
+			}
 		}
 	}
 	// Searching the shared slug is still a reference, so it lands on the same
@@ -345,6 +379,24 @@ func TestDetailOnASharedSlugOffersTheMatches(t *testing.T) {
 	if to := get(h, "/search?q=fix-flag-parsing").Header().Get("Location"); to != "/issues/fix-flag-parsing" {
 		t.Errorf("searching the shared slug went to %q, want the disambiguation page", to)
 	}
+}
+
+var (
+	matchRow    = regexp.MustCompile(`(?s)<li\b[^>]*>(.*?)</li>`)
+	matchRowRef = regexp.MustCompile(`href="/issues/([^"/]+)"`)
+)
+
+// matchRows reads the disambiguation page back as what it offers: one row per
+// candidate, keyed by the id that row leads to.
+func matchRows(t *testing.T, body string) map[string]string {
+	t.Helper()
+	out := map[string]string{}
+	for _, m := range matchRow.FindAllStringSubmatch(body, -1) {
+		if ref := matchRowRef.FindStringSubmatch(m[1]); ref != nil {
+			out[ref[1]] = m[1]
+		}
+	}
+	return out
 }
 
 // The one search box: a reference goes to the issue, anything else filters the

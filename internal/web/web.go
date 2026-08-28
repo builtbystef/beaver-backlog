@@ -211,9 +211,11 @@ func (s *server) asset(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *server) notFound(w http.ResponseWriter, r *http.Request) {
+	// The address as the reader typed it, leading slash and all, so the page
+	// names what was asked for rather than the lookup key behind it.
 	s.render(w, r, "error.html", http.StatusNotFound, errorPage{
 		page:    s.page("Not found", nil),
-		Message: "No page at " + path(r) + ".",
+		Message: "No page at " + r.URL.Path + ".",
 	})
 }
 

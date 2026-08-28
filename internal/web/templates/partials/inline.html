@@ -13,6 +13,12 @@
      a blank, so an empty cell still reads as answered. */}}
 {{define "none"}}<span class="none">–</span>{{end}}
 
+{{/* code is a literal drawn inline: a file's path as this interface names one
+     (relative to where the server was launched), or a command to run. The only
+     place a bare <code> appears outside rendered Markdown, so it carries its
+     own look rather than a rule by tag. */}}
+{{define "code"}}<code class="rounded bg-surface-hover px-1 py-0.5 font-mono text-xs break-all text-ink-muted">{{.}}</code>{{end}}
+
 {{define "reflink"}}<a class="id" href="/issues/{{.}}">{{.}}</a>{{end}}
 
 {{/* condition says what the core derives about an issue's dependencies, at

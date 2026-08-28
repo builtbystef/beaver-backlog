@@ -1,31 +1,53 @@
+{{/* Doctor: the store's health report. The findings are the page, so they take
+     the width as a column of rows rather than a table: what class a finding is,
+     what is wrong, and which files and issues it concerns.
+
+     Every finding says its class and its category in data attributes as well as
+     in what it is drawn with, because the classification is a fact about the
+     store rather than a decoration on the row. */}}
+
+{{define "toolbar"}}
+<div class="mb-4 flex flex-wrap items-baseline gap-x-3 gap-y-1">
+  <h1 class="m-0 text-lg font-semibold tracking-tight text-ink">Doctor</h1>
+  {{/* The counts, where there is something to count. A healthy store says the
+       number it checked in the all-clear itself, and saying it twice would
+       make the one sentence worth reading harder to find. */}}
+  {{if .Findings}}
+  <p class="text-sm text-ink-muted">
+    {{if .Repaired}}Repaired {{.Fixed}}; {{.Problems}} problem(s) still need a human (checked {{.Checked}} issue(s)).
+    {{else}}{{.Problems}} problem(s) and {{.Advisories}} advisory note(s) (checked {{.Checked}} issue(s)).{{end}}
+  </p>
+  {{end}}
+</div>
+{{end}}
+
 {{define "content"}}
-<h1>Doctor</h1>
 {{if .Findings}}
-<p class="summary">
-  {{if .Repaired}}Repaired {{.Fixed}}; {{.Problems}} problem(s) still need a human (checked {{.Checked}} issue(s)).
-  {{else}}{{.Problems}} problem(s) and {{.Advisories}} advisory note(s) (checked {{.Checked}} issue(s)).{{end}}
-</p>
-<ul class="findings">
+<ul class="flex flex-col gap-2">
   {{range .Findings}}
-  <li class="finding {{.Class}}" data-category="{{.Category}}">
-    <span class="class-badge {{.Class}}">{{.Label}}</span>
-    <span class="detail">{{.Detail}}</span>
-    <span class="anchors">
-      {{range .Paths}}<code>{{.}}</code> {{end}}
-      {{range .IDs}}{{template "reflink" .}} {{end}}
+  <li class="flex flex-wrap items-baseline gap-x-3 gap-y-1.5 rounded-card border border-line bg-surface px-4 py-3 shadow-card"
+      data-category="{{.Category}}" data-class="{{.Class}}">
+    <span class="finding-class finding-{{.Class}}">{{.Label}}</span>
+    <span class="min-w-0 flex-1 text-sm text-ink">{{.Detail}}</span>
+    {{/* The anchors: what a reader has to open to act on the finding, kept to
+         the end of the row where the eye lands after reading it. */}}
+    <span class="flex flex-wrap items-baseline gap-x-2 gap-y-1">
+      {{range .Paths}}{{template "code" .}}{{end}}
+      {{range .IDs}}{{template "reflink" .}}{{end}}
     </span>
   </li>
   {{end}}
 </ul>
 {{if .Fixable}}
-<form class="repair" method="post" action="/doctor/fix">
-  <p class="hint">{{.Fixable}} of these can be repaired mechanically: a drifted file is renamed to the name its frontmatter implies. No repair ever removes data.</p>
-  <p class="actions"><button type="submit">Repair what is safe</button></p>
+<form class="mt-5 flex flex-col items-start gap-3 rounded-card border border-line bg-surface p-5 shadow-card" method="post" action="/doctor/fix">
+  <p class="text-sm text-ink-muted">{{.Fixable}} of these can be repaired mechanically: a drifted file is renamed to the name its frontmatter implies. No repair ever removes data.</p>
+  <button class="{{template "primary-action"}}" type="submit">Repair what is safe</button>
 </form>
 {{else}}
-<p class="hint">Nothing here can be repaired mechanically; each needs a human.</p>
+<p class="mt-5 text-sm text-ink-subtle">Nothing here can be repaired mechanically; each needs a human.</p>
 {{end}}
 {{else}}
-<p class="all-clear" role="status">All clear: no problems found in {{.Checked}} issue(s).</p>
+{{/* A healthy store, in the colour the go signal wears everywhere else. */}}
+<p class="rounded-card border border-line bg-condition-ready px-4 py-3 text-sm text-condition-ready-ink" role="status">All clear: no problems found in {{.Checked}} issue(s).</p>
 {{end}}
 {{end}}

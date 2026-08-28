@@ -249,6 +249,22 @@ func TestShellNoLongerCarriesTheWordmark(t *testing.T) {
 	}
 }
 
+// The last page drawn on the design system takes the hand-written sheet with
+// it: the tokens are the only stylesheet the shell loads, and the legacy layer
+// they were ordered around goes with the file (ADR 0006).
+func TestShellCarriesOnlyTheDesignSystemsStylesheet(t *testing.T) {
+	h, pages := shellPages(t)
+
+	for _, path := range pages {
+		if body := get(h, path).Body.String(); strings.Contains(body, "app.css") {
+			t.Errorf("%s still loads the hand-written stylesheet", path)
+		}
+	}
+	if got := get(h, "/assets/app.css").Code; got != http.StatusNotFound {
+		t.Errorf("the hand-written stylesheet is still served: GET /assets/app.css = %d, want 404", got)
+	}
+}
+
 var (
 	navBlock  = regexp.MustCompile(`(?s)<nav[^>]*aria-label="Views"[^>]*>(.*?)</nav>`)
 	navAnchor = regexp.MustCompile(`(?s)<a([^>]*)>(.*?)</a>`)

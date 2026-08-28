@@ -7,13 +7,11 @@
    read the vendored minified htmx and mine it for class names, which is both
    noise and churn. The templates are the only place utilities are written. */
 
-/* The cascade layers, in the order they resolve. `legacy` is app.css, the
-   hand-written sheet still drawing the pages the redesign has not reached: it
-   sits above the reset, so those pages keep their looks, and below the design
-   system's own rules, so a restyled page wins wherever the two meet. The layer
-   goes when app.css does. */
+/* The cascade layers, in the order they resolve. Spelt out rather than left
+   implicit because the components layer below must lose to the utilities a
+   template writes on the same element. */
 
-@layer theme, base, legacy, components, utilities;
+@layer theme, base, components, utilities;
 
 @import "tailwindcss" source(none);
 @source "../templates";
@@ -92,8 +90,7 @@
   /* Deleting is the one act with no undo, so the button that does it looks
      like nothing else in the UI. A family of its own rather than the blocked
      mark's rust: an act the reader is about to take and a condition an issue
-     is in are two facts, and two facts that look alike are read as one. Not
-     spelt "danger", which the legacy sheet still owns at a different value. */
+     is in are two facts, and two facts that look alike are read as one. */
   --destructive: #f6d6d2;
   --destructive-hover: #efc3bd;
   --destructive-ink: #9b2f26;
@@ -334,7 +331,8 @@
   .state,
   .priority,
   .label,
-  .mark {
+  .mark,
+  .finding-class {
     align-items: center;
     border-radius: var(--radius-chip);
     display: inline-flex;
@@ -369,6 +367,13 @@
     border: 1px solid var(--line);
     color: var(--ink-muted);
   }
+
+  /* Doctor's classification of a finding, which the server computes: a problem
+     says the store is unhealthy, an advisory only that something looks odd, and
+     a repaired one is a receipt for what the last press of the button did. */
+  .finding-problem { background: var(--condition-blocked); color: var(--condition-blocked-ink); }
+  .finding-advisory { background: var(--priority-high); color: var(--priority-high-ink); }
+  .finding-fixed { background: var(--state-done); color: var(--state-done-ink); }
 
   .mark-ready { background: var(--condition-ready); color: var(--condition-ready-ink); }
   .mark-blocked { background: var(--condition-blocked); color: var(--condition-blocked-ink); }
