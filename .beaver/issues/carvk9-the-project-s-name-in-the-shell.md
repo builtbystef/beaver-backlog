@@ -1,11 +1,12 @@
 ---
 id: carvk9
 title: The project's name in the shell
-state: todo
+state: done
+assignee: claude
 priority: medium
 parent: qf0mr2
 created: 2026-08-28T05:46:17Z
-updated: 2026-08-28T05:46:17Z
+updated: 2026-08-28T06:10:29Z
 ---
 
 ## What to build
@@ -30,13 +31,13 @@ the case where the application's own name tells the reader nothing.
 
 ## Acceptance criteria
 
-- [ ] The sidebar shows the icon mark beside the project's name, on the same left rail as the navigation, drawn on the design tokens and reading correctly in both palettes.
-- [ ] The project's name is the name of the directory holding the store, so a store that was never configured still has one.
-- [ ] Every page's title names the project, so two projects open at once are told apart by their tabs.
-- [ ] A name too long for the sidebar is cut short with the whole name available on hover; it never wraps and never widens the sidebar.
-- [ ] The brand slot still leads to the Board, and still takes a visible focus ring from the keyboard.
-- [ ] The full wordmark no longer appears in the shell. The README's header and the icon set keep theirs.
-- [ ] `docs/GLOSSARY.md` records what the project's name is.
+- [x] The sidebar shows the icon mark beside the project's name, on the same left rail as the navigation, drawn on the design tokens and reading correctly in both palettes.
+- [x] The project's name is the name of the directory holding the store, so a store that was never configured still has one.
+- [x] Every page's title names the project, so two projects open at once are told apart by their tabs.
+- [x] A name too long for the sidebar is cut short with the whole name available on hover; it never wraps and never widens the sidebar.
+- [x] The brand slot still leads to the Board, and still takes a visible focus ring from the keyboard.
+- [x] The full wordmark no longer appears in the shell. The README's header and the icon set keep theirs.
+- [x] `docs/GLOSSARY.md` records what the project's name is.
 
 ## Notes for the builder
 

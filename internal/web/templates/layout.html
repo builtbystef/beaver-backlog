@@ -3,7 +3,9 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>{{.Title}} · Beaver Backlog</title>
+{{/* The project leads, because two projects open at once are told apart by
+     their tabs and a narrow tab strip cuts the end off, never the front. */}}
+<title>{{with .Project}}{{.}} · {{end}}{{.Title}}</title>
 {{/* The icon in three forms: the vector one modern browsers prefer, which
      carries the palette flip a tab strip asks for; a raster fallback for the
      ones that do not read SVG; and the tile a home screen wants, which needs a
@@ -30,9 +32,21 @@
 <div class="flex min-h-screen flex-col md:flex-row">
   <aside class="shrink-0 border-b border-line bg-surface md:sticky md:top-0 md:h-screen md:w-60 md:border-r md:border-b-0">
     <div class="flex h-full flex-col gap-4 px-4 py-4">
-      <a class="inline-flex self-center rounded-md focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent" href="/">
-        <img class="h-auto w-40" src="/assets/logo.svg" alt="Beaver Backlog" width="261" height="48">
-      </a>
+      {{/* The brand slot: the icon mark beside the project's name, on the rail
+           the navigation is on and weighted like it, rather than a banner above
+           it. It is the icon rather than the wordmark because the wordmark is a
+           lockup whose "B" is the beaver itself, and the animal does not survive
+           being cap-height. The artwork is the favicon's — one file for one mark,
+           since a second copy under a name of its own would only drift.
+
+           The name is cut short by the stylesheet rather than wrapped, so the
+           whole of it lives in the title attribute for a hover to read. */}}
+      <header>
+        <a class="flex min-w-0 items-center gap-2 rounded-md px-2.5 py-1.5 hover:bg-surface-hover" href="/" title="{{.Project}}">
+          <img class="size-5 shrink-0" src="/assets/favicon.svg" alt="" width="500" height="500">
+          <span class="truncate text-sm font-semibold text-ink">{{.Project}}</span>
+        </a>
+      </header>
       {{/* The one text filter, the other window onto it being the toolbar's text
            field; ui.js keeps the two agreeing while a view is being narrowed. */}}
       <form action="/search" method="get" role="search">

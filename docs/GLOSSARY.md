@@ -104,3 +104,8 @@ A flat, append-only, attributed and timestamped entry appended to an issue's bod
 — a coordination journal for humans and agents ("tried X, see commit abc; handing
 back"). Not threaded: no replies, and no editing another actor's entries.
 _Avoid_: Comment, Discussion
+
+**Project name**:
+What the project a store belongs to is called — by default the name of the
+directory the store sits in, so every project has one without being configured.
+_Avoid_: Store name, Workspace, Repository name

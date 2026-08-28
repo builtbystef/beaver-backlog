@@ -415,6 +415,20 @@ func newStore(t *testing.T) string {
 	return dir
 }
 
+// newStoreNamed initializes a store inside a directory of a chosen name — the
+// name being what the project is called, for the pages that have to say it.
+func newStoreNamed(t *testing.T, name string) string {
+	t.Helper()
+	dir := filepath.Join(t.TempDir(), name)
+	if err := os.MkdirAll(dir, 0o755); err != nil {
+		t.Fatalf("make project directory: %v", err)
+	}
+	if _, _, err := core.Init(dir); err != nil {
+		t.Fatalf("init store: %v", err)
+	}
+	return dir
+}
+
 func open(t *testing.T, dir string, opts ...core.Option) *core.Service {
 	t.Helper()
 	svc, err := core.Open(dir, opts...)

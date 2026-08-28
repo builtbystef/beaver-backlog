@@ -241,6 +241,11 @@ func (s *server) fail(w http.ResponseWriter, r *http.Request, err error) {
 // must never cost the reader the rest of the store (ADR 0003).
 type page struct {
 	Title string
+	// Project is what the store's project is called — what the brand slot says
+	// and what the tab leads with, so two projects served at once are two names
+	// rather than two copies of the application's. Empty only where there is no
+	// store left to name.
+	Project string
 	// Section names the sidebar entry this page belongs under, so the nav can
 	// say where the reader is; empty on a page that is nowhere in particular,
 	// like a form or an error.
@@ -316,11 +321,23 @@ type errorPage struct {
 }
 
 func (s *server) page(title string, warnings []core.Warning) page {
-	p := page{Title: title}
+	p := page{Title: title, Project: s.projectName()}
 	for _, w := range warnings {
 		p.Warnings = append(p.Warnings, skipped{Path: s.relPath(w.Path), Reason: w.Err.Error()})
 	}
 	return p
+}
+
+// projectName asks the store what its project is called, per page like every
+// other read: the store can appear or vanish underneath the browser, and
+// resolving it costs a walk up the directories rather than a scan. A page
+// rendered where there is no store names nothing, which is the honest answer.
+func (s *server) projectName() string {
+	svc, err := s.open()
+	if err != nil {
+		return ""
+	}
+	return svc.ProjectName()
 }
 
 // relPath renders path relative to the directory the server was launched from

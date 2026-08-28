@@ -248,11 +248,12 @@
     width: calc(var(--spacing) * 3.5);
     height: calc(var(--spacing) * 3.5);
   }
+  .size-5 {
+    width: calc(var(--spacing) * 5);
+    height: calc(var(--spacing) * 5);
+  }
   .h-8 {
     height: calc(var(--spacing) * 8);
-  }
-  .h-auto {
-    height: auto;
   }
   .h-full {
     height: 100%;
@@ -338,8 +339,10 @@
   .gap-y-2 {
     row-gap: calc(var(--spacing) * 2);
   }
-  .self-center {
-    align-self: center;
+  .truncate {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
   .rounded-card {
     border-radius: var(--radius-card);
@@ -566,16 +569,6 @@
   .focus\:outline-none:focus {
     --tw-outline-style: none;
     outline-style: none;
-  }
-  .focus-visible\:outline-2:focus-visible {
-    outline-style: var(--tw-outline-style);
-    outline-width: 2px;
-  }
-  .focus-visible\:outline-offset-2:focus-visible {
-    outline-offset: 2px;
-  }
-  .focus-visible\:outline-accent:focus-visible {
-    outline-color: var(--accent);
   }
   .has-checked\:text-ink:has(:checked) {
     color: var(--ink);
@@ -1002,11 +995,6 @@
   syntax: "*";
   inherits: false;
 }
-@property --tw-outline-style {
-  syntax: "*";
-  inherits: false;
-  initial-value: solid;
-}
 @layer properties {
   @supports ((-webkit-hyphens: none) and (not (margin-trim: inline))) or ((-moz-orient: inline) and (not (color:rgb(from red r g b)))) {
     *, ::before, ::after, ::backdrop {
@@ -1046,7 +1034,6 @@
       --tw-drop-shadow-color: initial;
       --tw-drop-shadow-alpha: 100%;
       --tw-drop-shadow-size: initial;
-      --tw-outline-style: solid;
     }
   }
 }

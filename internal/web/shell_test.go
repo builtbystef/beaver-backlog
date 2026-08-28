@@ -23,7 +23,13 @@ import (
 // forms, one issue, and an address that names nothing at all.
 func shellPages(t *testing.T) (http.Handler, []string) {
 	t.Helper()
-	dir := newStore(t)
+	return shellPagesIn(t, newStore(t))
+}
+
+// shellPagesIn is shellPages over a store the caller placed, for the tests that
+// care what the project is called.
+func shellPagesIn(t *testing.T, dir string) (http.Handler, []string) {
+	t.Helper()
 	target := create(t, open(t, dir), core.Draft{Title: "Fix flag parsing"})
 	return newHandler(t, dir), []string{
 		"/", "/issues", "/graph", "/doctor",
@@ -141,12 +147,92 @@ func TestNoticeAfterAWriteReachesTheReader(t *testing.T) {
 	}
 }
 
+// The brand slot names the project the reader is looking at rather than the
+// application they opened — two projects served at once are two names. Every
+// page says it, the one that names nothing included.
+func TestBrandSlotNamesTheProjectOnEveryPage(t *testing.T) {
+	h, pages := shellPagesIn(t, newStoreNamed(t, "orbital-mechanics"))
+
+	for _, path := range pages {
+		slot := brandSlot(t, get(h, path).Body.String())
+		if !strings.Contains(slot, "orbital-mechanics") {
+			t.Errorf("%s does not name the project in the brand slot: %s", path, slot)
+		}
+		if strings.Contains(slot, "Beaver Backlog") {
+			t.Errorf("%s still names the application in the brand slot: %s", path, slot)
+		}
+	}
+}
+
+// A name too long for the rail is cut short by the stylesheet, so the whole of
+// it has to remain reachable on the element itself.
+func TestBrandSlotKeepsTheWholeNameForHover(t *testing.T) {
+	name := "a-project-with-a-really-rather-long-directory-name"
+	h, _ := shellPagesIn(t, newStoreNamed(t, name))
+
+	slot := brandSlot(t, get(h, "/").Body.String())
+
+	if !strings.Contains(slot, `title="`+name+`"`) {
+		t.Errorf("the brand slot offers no way to read the whole name: %s", slot)
+	}
+}
+
+// The brand slot is still the way back to the Board, and still a link, which is
+// what takes the focus ring the design system draws on anything focused from
+// the keyboard.
+func TestBrandSlotLeadsToTheBoard(t *testing.T) {
+	h, pages := shellPagesIn(t, newStoreNamed(t, "orbital-mechanics"))
+
+	for _, path := range pages {
+		slot := brandSlot(t, get(h, path).Body.String())
+		m := anchorRef.FindStringSubmatch(slot)
+		if m == nil {
+			t.Errorf("%s renders no link in the brand slot: %s", path, slot)
+			continue
+		}
+		if m[1] != "/" {
+			t.Errorf("%s brand slot leads to %q, want the Board", path, m[1])
+		}
+	}
+}
+
+// The tab is how two projects open at once are told apart, so the project comes
+// first — a narrow tab strip cuts the end off, never the front.
+func TestPageTitleNamesTheProjectFirst(t *testing.T) {
+	h, pages := shellPagesIn(t, newStoreNamed(t, "orbital-mechanics"))
+
+	for _, path := range pages {
+		title := pageTitle(t, get(h, path).Body.String())
+		if !strings.HasPrefix(title, "orbital-mechanics") {
+			t.Errorf("the tab for %s reads %q, which does not start with the project", path, title)
+		}
+	}
+}
+
+// The wordmark is a lockup whose "B" is the beaver itself; at rail size the
+// animal does not survive being cap-height, so the shell wears the icon mark
+// instead and the wordmark asset goes with it.
+func TestShellNoLongerCarriesTheWordmark(t *testing.T) {
+	h, pages := shellPagesIn(t, newStoreNamed(t, "orbital-mechanics"))
+
+	for _, path := range pages {
+		if body := get(h, path).Body.String(); strings.Contains(body, "logo.svg") {
+			t.Errorf("%s still draws the wordmark", path)
+		}
+	}
+	if got := get(h, "/assets/logo.svg").Code; got != http.StatusNotFound {
+		t.Errorf("the wordmark is still served: GET /assets/logo.svg = %d, want 404", got)
+	}
+}
+
 var (
 	navBlock  = regexp.MustCompile(`(?s)<nav[^>]*aria-label="Views"[^>]*>(.*?)</nav>`)
 	navAnchor = regexp.MustCompile(`(?s)<a([^>]*)>(.*?)</a>`)
 	anchorRef = regexp.MustCompile(`href="([^"]*)"`)
 	badgeText = regexp.MustCompile(`>\s*(\d+)\s*<`)
 	searchTag = regexp.MustCompile(`(?s)<form[^>]*role="search"[^>]*>.*?</form>`)
+	brandTag  = regexp.MustCompile(`(?s)<header[^>]*>.*?</header>`)
+	titleTag  = regexp.MustCompile(`<title>(.*?)</title>`)
 )
 
 // navEntry is one sidebar entry read back off the page: the anchor's own
@@ -217,4 +303,25 @@ func searchBox(t *testing.T, body string) string {
 		t.Fatalf("no search box on the page:\n%s", body)
 	}
 	return m
+}
+
+// brandSlot is the sidebar's brand region as rendered: the icon mark and the
+// project's name, above the navigation on the same rail.
+func brandSlot(t *testing.T, body string) string {
+	t.Helper()
+	m := brandTag.FindString(body)
+	if m == "" {
+		t.Fatalf("no brand slot on the page:\n%s", body)
+	}
+	return m
+}
+
+// pageTitle is what the browser puts on the tab.
+func pageTitle(t *testing.T, body string) string {
+	t.Helper()
+	m := titleTag.FindStringSubmatch(body)
+	if m == nil {
+		t.Fatalf("the page carries no title:\n%s", body)
+	}
+	return m[1]
 }

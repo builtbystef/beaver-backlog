@@ -614,3 +614,31 @@ func writeRaw(t *testing.T, root, name, content string) {
 		t.Fatalf("write %s: %v", name, err)
 	}
 }
+
+// Every store is in a project with a name, without anyone configuring one: the
+// name of the directory the store sits in. Discovering from a subdirectory
+// changes nothing — the name belongs to the store, not to where the caller was
+// standing when it was found.
+func TestProjectNameIsTheDirectoryHoldingTheStore(t *testing.T) {
+	root := filepath.Join(t.TempDir(), "orbital-mechanics")
+	if err := os.MkdirAll(root, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if _, _, err := store.Init(root); err != nil {
+		t.Fatalf("Init: %v", err)
+	}
+	sub := filepath.Join(root, "src", "pkg")
+	if err := os.MkdirAll(sub, 0o755); err != nil {
+		t.Fatal(err)
+	}
+
+	for _, from := range []string{root, sub} {
+		st, err := store.Discover(from)
+		if err != nil {
+			t.Fatalf("Discover from %s: %v", from, err)
+		}
+		if got := st.ProjectName(); got != "orbital-mechanics" {
+			t.Errorf("project name discovered from %s = %q, want %q", from, got, "orbital-mechanics")
+		}
+	}
+}

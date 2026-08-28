@@ -109,6 +109,11 @@ func Open(dir string, opts ...Option) (*Service, error) {
 	return s, nil
 }
 
+// ProjectName reports what the project this store belongs to is called. Every
+// store has a name without anyone configuring one, and this is the single place
+// any interface asks for it.
+func (s *Service) ProjectName() string { return s.store.ProjectName() }
+
 // Fingerprint reports a cheap summary of the store's files — their names,
 // sizes, and modification times — that changes whenever an issue is written,
 // edited, or deleted, whoever did it. An interface watching for changes polls

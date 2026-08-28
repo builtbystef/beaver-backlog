@@ -81,6 +81,15 @@ func (s *Store) warn(w Warning) {
 	}
 }
 
+// ProjectName is what the project holding this store is called: the name of the
+// directory the store sits in. It is derived rather than configured, so every
+// store has a name from the moment it is created — the one place a name comes
+// from until a project chooses to override it.
+//
+// A store at the filesystem root takes that root's own path, so the name is
+// never empty.
+func (s *Store) ProjectName() string { return filepath.Base(filepath.Dir(s.root)) }
+
 // IssuesDir returns the directory holding issue files.
 func (s *Store) IssuesDir() string { return filepath.Join(s.root, "issues") }
 
