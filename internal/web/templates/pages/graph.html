@@ -52,15 +52,13 @@
            a zoom — which is what tells a reader the canvas is moving under them
            when the part they are looking at is empty. */}}
       <pattern id="grid" width="{{$m.Grid}}" height="{{$m.Grid}}" patternUnits="userSpaceOnUse">
-        <circle class="grid-dot" cx="1" cy="1" r="1"/>
+        <circle class="grid-dot" cx="1.4" cy="1.4" r="1.4"/>
       </pattern>
-      {{/* One clip for every node: a clipPath's coordinates are the referencing
-           element's own, and each node's group is translated to its corner, so
-           the same shape rounds the spine's outer corners on all of them. */}}
-      <clipPath id="node-shape">
-        <rect width="{{$m.W}}" height="{{$m.H}}" rx="{{$m.Radius}}"/>
-      </clipPath>
     </defs>
+    {{/* The ground starts as the picture's own extent and is restretched to the
+         window by graph.js on every pan and zoom: the canvas has to be wherever
+         the reader is looking, and the layout's extent is not that once they
+         have panned past the last node. */}}
     <rect class="grid" x="0" y="0" width="{{.Graph.Width}}" height="{{.Graph.Height}}" fill="url(#grid)"/>
     {{range .Graph.Clusters}}
     <g class="cluster" data-cluster="{{.ID}}">
@@ -73,15 +71,14 @@
           marker-end="url(#{{if .Back}}arrow-back{{else}}arrow{{end}})"/>
     {{end}}
     {{range .Graph.Nodes}}
-    {{/* A node is the board's card in SVG: a raised panel wearing its state as a
-         stripe down one edge, rather than a panel dyed with it. Text on a
-         neutral ground reads at any zoom, and the stripe is still the one thing
-         legible when the picture is small enough that the words are not. */}}
+    {{/* A node is the board's card in SVG: a panel tinted with its state and
+         outlined in the same colour at full chroma. The outline is what carries
+         the state when the picture is small enough that the words are not
+         legible — a tint alone goes to mush against its neighbours. */}}
     <a href="/issues/{{.Issue.ID}}" data-issue="{{.Issue.ID}}" data-layer="{{.Layer}}" data-row="{{.Row}}"
        class="{{.Class}}">
       <g transform="translate({{.X}},{{.Y}})">
         <rect class="node-box" width="{{$m.W}}" height="{{$m.H}}" rx="{{$m.Radius}}"/>
-        <rect class="node-spine" width="{{$m.StripeW}}" height="{{$m.H}}" clip-path="url(#node-shape)"/>
         {{if .Ready}}<circle class="ready-mark" cx="{{$m.MarkX}}" cy="{{$m.MarkY}}" r="{{$m.MarkR}}"><title>ready</title></circle>{{end}}
         <text class="node-title" x="{{$m.TitleX}}" y="{{$m.TitleY}}">{{.Title}}</text>
         <text class="node-meta" x="{{$m.TitleX}}" y="{{$m.MetaY}}">{{.Issue.ID}} · {{.Issue.State}}{{with .Issue.Assignee}} · {{.}}{{end}}</text>
@@ -100,10 +97,13 @@
      closes a cycle. */}}
 <div class="mt-2 flex flex-wrap items-center justify-between gap-x-6 gap-y-2 text-xs text-ink-muted">
   <ul class="flex flex-wrap items-center gap-x-4 gap-y-1.5" aria-label="Legend">
-    <li class="flex items-center gap-1.5"><span class="inline-block h-3.5 w-1.5 rounded-chip bg-state-todo-ink"></span>todo</li>
-    <li class="flex items-center gap-1.5"><span class="inline-block h-3.5 w-1.5 rounded-chip bg-state-in-progress-ink"></span>in-progress</li>
-    <li class="flex items-center gap-1.5"><span class="inline-block h-3.5 w-1.5 rounded-chip bg-state-done-ink"></span>done</li>
-    <li class="flex items-center gap-1.5"><span class="inline-block h-3.5 w-1.5 rounded-chip bg-state-cancelled-ink"></span>cancelled</li>
+    {{/* A state's swatch is the node in miniature — the tint it is filled with
+         inside the outline that carries it — rather than a shape the picture
+         does not draw anywhere. */}}
+    <li class="flex items-center gap-1.5"><span class="inline-block h-3.5 w-4.5 rounded-xs border border-state-todo-ink bg-state-todo"></span>todo</li>
+    <li class="flex items-center gap-1.5"><span class="inline-block h-3.5 w-4.5 rounded-xs border border-state-in-progress-ink bg-state-in-progress"></span>in-progress</li>
+    <li class="flex items-center gap-1.5"><span class="inline-block h-3.5 w-4.5 rounded-xs border border-state-done-ink bg-state-done"></span>done</li>
+    <li class="flex items-center gap-1.5"><span class="inline-block h-3.5 w-4.5 rounded-xs border border-state-cancelled-ink bg-state-cancelled"></span>cancelled</li>
     <li class="flex items-center gap-1.5"><span class="inline-block size-2.5 rounded-full bg-condition-ready-ink"></span>ready</li>
     <li class="flex items-center gap-1.5"><span class="inline-block h-3.5 w-4.5 rounded-xs border-2 border-condition-blocked-ink"></span>blocked</li>
     <li class="flex items-center gap-1.5"><span class="inline-block h-3.5 w-4.5 rounded-xs border-2 border-dashed border-condition-stuck-ink"></span>stuck</li>

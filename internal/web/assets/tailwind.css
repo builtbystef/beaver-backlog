@@ -20,6 +20,7 @@
     --leading-normal: 1.5;
     --radius-xs: 0.125rem;
     --radius-md: 0.375rem;
+    --radius-lg: 0.5rem;
     --default-transition-duration: 150ms;
     --default-transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
     --default-font-family: var(--font-sans);
@@ -289,6 +290,9 @@
   .h-3\.5 {
     height: calc(var(--spacing) * 3.5);
   }
+  .h-5 {
+    height: calc(var(--spacing) * 5);
+  }
   .h-8 {
     height: calc(var(--spacing) * 8);
   }
@@ -304,9 +308,6 @@
   .min-h-screen {
     min-height: 100vh;
   }
-  .w-1\.5 {
-    width: calc(var(--spacing) * 1.5);
-  }
   .w-4\.5 {
     width: calc(var(--spacing) * 4.5);
   }
@@ -318,6 +319,9 @@
   }
   .w-full {
     width: 100%;
+  }
+  .w-px {
+    width: 1px;
   }
   .max-w-64 {
     max-width: calc(var(--spacing) * 64);
@@ -391,6 +395,9 @@
   .gap-2 {
     gap: calc(var(--spacing) * 2);
   }
+  .gap-2\.5 {
+    gap: calc(var(--spacing) * 2.5);
+  }
   .gap-4 {
     gap: calc(var(--spacing) * 4);
   }
@@ -428,6 +435,9 @@
   }
   .rounded-full {
     border-radius: calc(infinity * 1px);
+  }
+  .rounded-lg {
+    border-radius: var(--radius-lg);
   }
   .rounded-md {
     border-radius: var(--radius-md);
@@ -467,6 +477,18 @@
   .border-line {
     border-color: var(--line);
   }
+  .border-state-cancelled-ink {
+    border-color: var(--state-cancelled-ink);
+  }
+  .border-state-done-ink {
+    border-color: var(--state-done-ink);
+  }
+  .border-state-in-progress-ink {
+    border-color: var(--state-in-progress-ink);
+  }
+  .border-state-todo-ink {
+    border-color: var(--state-todo-ink);
+  }
   .bg-accent {
     background-color: var(--accent);
   }
@@ -488,17 +510,20 @@
   .bg-graph-ground {
     background-color: var(--graph-ground);
   }
-  .bg-state-cancelled-ink {
-    background-color: var(--state-cancelled-ink);
+  .bg-line-strong {
+    background-color: var(--line-strong);
   }
-  .bg-state-done-ink {
-    background-color: var(--state-done-ink);
+  .bg-state-cancelled {
+    background-color: var(--state-cancelled);
   }
-  .bg-state-in-progress-ink {
-    background-color: var(--state-in-progress-ink);
+  .bg-state-done {
+    background-color: var(--state-done);
   }
-  .bg-state-todo-ink {
-    background-color: var(--state-todo-ink);
+  .bg-state-in-progress {
+    background-color: var(--state-in-progress);
+  }
+  .bg-state-todo {
+    background-color: var(--state-todo);
   }
   .bg-surface {
     background-color: var(--surface);
@@ -650,6 +675,10 @@
   .shadow-overlay {
     --tw-shadow: var(--elevation-overlay);
     box-shadow: var(--tw-inset-shadow), var(--tw-inset-ring-shadow), var(--tw-ring-offset-shadow), var(--tw-ring-shadow), var(--tw-shadow);
+  }
+  .outline {
+    outline-style: var(--tw-outline-style);
+    outline-width: 1px;
   }
   .filter {
     filter: var(--tw-blur,) var(--tw-brightness,) var(--tw-contrast,) var(--tw-grayscale,) var(--tw-hue-rotate,) var(--tw-invert,) var(--tw-saturate,) var(--tw-sepia,) var(--tw-drop-shadow,);
@@ -1003,8 +1032,8 @@
     fill: var(--line-strong);
   }
   .graph .cluster-box {
-    fill: var(--surface);
-    stroke: var(--line-strong);
+    fill: none;
+    stroke: var(--graph-edge);
     stroke-dasharray: 6 5;
   }
   .graph .cluster-label {
@@ -1019,28 +1048,20 @@
   }
   .graph .node-box {
     fill: var(--state-todo);
-    stroke: var(--line-strong);
+    stroke: var(--state-todo-ink);
+    stroke-width: 1.25;
   }
   .graph .state-in-progress .node-box {
     fill: var(--state-in-progress);
+    stroke: var(--state-in-progress-ink);
   }
   .graph .state-done .node-box {
     fill: var(--state-done);
+    stroke: var(--state-done-ink);
   }
   .graph .state-cancelled .node-box {
     fill: var(--state-cancelled);
-  }
-  .graph .node-spine {
-    fill: var(--state-todo-ink);
-  }
-  .graph .state-in-progress .node-spine {
-    fill: var(--state-in-progress-ink);
-  }
-  .graph .state-done .node-spine {
-    fill: var(--state-done-ink);
-  }
-  .graph .state-cancelled .node-spine {
-    fill: var(--state-cancelled-ink);
+    stroke: var(--state-cancelled-ink);
   }
   .graph .state-cancelled {
     opacity: 0.72;
@@ -1054,8 +1075,6 @@
   }
   .graph .ready-mark {
     fill: var(--condition-ready-ink);
-    stroke: var(--surface);
-    stroke-width: 2;
   }
   .graph .node-title {
     fill: var(--ink);
@@ -1213,6 +1232,11 @@
   inherits: false;
   initial-value: 0 0 #0000;
 }
+@property --tw-outline-style {
+  syntax: "*";
+  inherits: false;
+  initial-value: solid;
+}
 @property --tw-blur {
   syntax: "*";
   inherits: false;
@@ -1292,6 +1316,7 @@
       --tw-ring-offset-width: 0px;
       --tw-ring-offset-color: #fff;
       --tw-ring-offset-shadow: 0 0 #0000;
+      --tw-outline-style: solid;
       --tw-blur: initial;
       --tw-brightness: initial;
       --tw-contrast: initial;

@@ -406,9 +406,14 @@
 
   .graph .grid-dot { fill: var(--line-strong); }
 
+  /* A containment box is a region drawn around its issues, not a surface under
+     them: filling it would hide the canvas the picture is drawn on, and the one
+     ground the whole picture shares is what says a pan is moving it. The dashes
+     take the picture's own line colour, a step darker than the dots, so the
+     boundary reads without a fill to help it. */
   .graph .cluster-box {
-    fill: var(--surface);
-    stroke: var(--line-strong);
+    fill: none;
+    stroke: var(--graph-edge);
     stroke-dasharray: 6 5;
   }
 
@@ -422,18 +427,19 @@
 
   .graph .node { text-decoration: none; }
 
-  .graph .node-box { fill: var(--state-todo); stroke: var(--line-strong); }
-  .graph .state-in-progress .node-box { fill: var(--state-in-progress); }
-  .graph .state-done .node-box { fill: var(--state-done); }
-  .graph .state-cancelled .node-box { fill: var(--state-cancelled); }
-
-  /* The spine is the same state at full chroma. The fill says which state at a
-     glance; the spine is what survives being shrunk, where a tint turns to
-     mush against its neighbours. */
-  .graph .node-spine { fill: var(--state-todo-ink); }
-  .graph .state-in-progress .node-spine { fill: var(--state-in-progress-ink); }
-  .graph .state-done .node-spine { fill: var(--state-done-ink); }
-  .graph .state-cancelled .node-spine { fill: var(--state-cancelled-ink); }
+  /* A node wears its state twice over: the tint it is filled with, and the same
+     colour at full chroma around the whole edge. The outline is what survives
+     being shrunk — a pale fill goes to mush against its neighbours — and it is
+     the whole edge rather than a bar down one side, which is a decoration the
+     card does not need and every other card already has. */
+  .graph .node-box {
+    fill: var(--state-todo);
+    stroke: var(--state-todo-ink);
+    stroke-width: 1.25;
+  }
+  .graph .state-in-progress .node-box { fill: var(--state-in-progress); stroke: var(--state-in-progress-ink); }
+  .graph .state-done .node-box { fill: var(--state-done); stroke: var(--state-done-ink); }
+  .graph .state-cancelled .node-box { fill: var(--state-cancelled); stroke: var(--state-cancelled-ink); }
 
   /* Abandoned work recedes without leaving the shape of the picture. */
   .graph .state-cancelled { opacity: 0.72; }
@@ -441,13 +447,9 @@
   .graph .blocked .node-box { stroke: var(--condition-blocked-ink); stroke-width: 2; }
   .graph .stuck .node-box { stroke-dasharray: 6 4; }
 
-  /* The ready dot sits on the panel's own edge, so it carries a ring of the
-     panel to keep its shape wherever the corner radius puts it. */
-  .graph .ready-mark {
-    fill: var(--condition-ready-ink);
-    stroke: var(--surface);
-    stroke-width: 2;
-  }
+  /* The one mark that is meant to catch an eye scanning the picture for what it
+     could pick up, so it is the brightest thing on the card. */
+  .graph .ready-mark { fill: var(--condition-ready-ink); }
 
   .graph .node-title { fill: var(--ink); font-size: 14px; font-weight: 550; }
   .graph .node-meta { fill: var(--ink-muted); font-size: 11.5px; }

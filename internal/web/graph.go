@@ -42,7 +42,6 @@ const (
 	badgeGap     = 6
 	badgeHeight  = 18
 	nodeRadius   = 10
-	spineWidth   = 8  // the state-coloured edge, wide enough to read when shrunk
 	gridPitch    = 32 // the dotted canvas the picture is drawn on, in user units
 )
 
@@ -52,8 +51,8 @@ const (
 // repeating the numbers is the same measurement written twice. Every value is
 // final — html/template does no arithmetic, and it should not have to.
 var nodeMetrics = metrics{
-	W: nodeWidth, H: nodeHeight, Radius: nodeRadius, StripeW: spineWidth,
-	TitleX:     nodePad + spineWidth,
+	W: nodeWidth, H: nodeHeight, Radius: nodeRadius,
+	TitleX:     nodePad,
 	TitleY:     nodePad + 16,
 	MetaY:      nodePad + 35,
 	BadgeY:     nodeHeight - nodePad - badgeHeight,
@@ -72,7 +71,6 @@ var nodeMetrics = metrics{
 type metrics struct {
 	W, H         float64
 	Radius       float64
-	StripeW      float64 // the state-coloured spine down the node's left edge
 	TitleX       float64
 	TitleY       float64
 	MetaY        float64
@@ -131,7 +129,7 @@ type badge struct {
 // order, dropping the rest rather than spilling over the box.
 func badges(labels []string) []badge {
 	var out []badge
-	x := float64(nodePad + spineWidth)
+	x := float64(nodePad)
 	for _, label := range labels {
 		w := badgePad + badgeChar*float64(len([]rune(label)))
 		if x+w > nodeWidth-nodePad {

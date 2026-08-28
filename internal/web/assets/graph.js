@@ -51,6 +51,28 @@ function whole(svg) {
 
 function show(svg) {
   svg.setAttribute("viewBox", `${viewport.x} ${viewport.y} ${viewport.w} ${viewport.h}`);
+  ground(svg);
+}
+
+// The dotted canvas is drawn inside the picture rather than painted behind the
+// frame, which is what makes it travel with a pan and grow with a zoom — but it
+// is a rectangle, and the server can only size it to the layout's own extent.
+// So it is restretched to whatever the window covers: the ground has to be
+// under the reader wherever they have gone, including past the last node. The
+// dots themselves do not move with it, the pattern being laid out in the
+// picture's units rather than the rectangle's.
+//
+// It is stretched a window's width past every edge, because the window is not
+// the whole of what is on screen: when the frame and the picture disagree in
+// shape the browser letterboxes, and what sits in the bands either side is
+// outside the viewBox but still in plain sight.
+function ground(svg) {
+  const dots = svg.querySelector(".grid");
+  if (!dots) return;
+  dots.setAttribute("x", viewport.x - viewport.w);
+  dots.setAttribute("y", viewport.y - viewport.h);
+  dots.setAttribute("width", viewport.w * 3);
+  dots.setAttribute("height", viewport.h * 3);
 }
 
 document.addEventListener("click", (event) => {

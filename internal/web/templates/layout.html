@@ -40,10 +40,19 @@
            since a second copy under a name of its own would only drift.
 
            The name is cut short by the stylesheet rather than wrapped, so the
-           whole of it lives in the title attribute for a hover to read. */}}
+           whole of it lives in the title attribute for a hover to read.
+
+           The mark gets a tile of its own and a rule between it and the name:
+           the two are a lockup rather than one word with a picture stuck to the
+           front of it. Nothing about the pair answers a hover — it is the
+           masthead, not a nav item, and lighting it up like one would offer a
+           press that goes where the reader already is. */}}
       <header>
-        <a class="flex min-w-0 items-center gap-2 rounded-md px-2.5 py-1.5 hover:bg-surface-hover" href="/" title="{{.Project}}">
-          <img class="size-5 shrink-0" src="/assets/favicon.svg" alt="" width="500" height="500">
+        <a class="flex min-w-0 items-center gap-2.5 py-1" href="/" title="{{.Project}}">
+          <span class="flex size-8 shrink-0 items-center justify-center rounded-lg border border-line bg-canvas">
+            <img class="size-5" src="/assets/favicon.svg" alt="" width="500" height="500">
+          </span>
+          <span class="h-5 w-px shrink-0 bg-line-strong" aria-hidden="true"></span>
           <span class="truncate text-sm font-semibold text-ink">{{.Project}}</span>
         </a>
       </header>
