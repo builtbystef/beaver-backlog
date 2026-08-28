@@ -1,6 +1,6 @@
 /* The design system's source stylesheet. The Tailwind CLI compiles this into
-   ../assets/tailwind.css, which is committed and embedded — building the binary
-   never needs the CLI or a network (ADR 0006). Regenerate with
+   ../assets/tailwind.css, which is committed and embedded, so building the
+   binary never needs the CLI or a network (ADR 0006). Regenerate with
    scripts/build-css.sh after touching this file or the templates.
 
    Tailwind is told to scan nothing on its own: left to auto-detect, it would
@@ -23,7 +23,8 @@
 
    Light is the base. A reader whose system asks for dark gets the dark values
    unless they have chosen light, and a reader who has chosen dark gets them
-   whatever the system says — the three states the theme control offers. */
+   whatever the system says. Those are the three states the theme control
+   offers. */
 
 :root {
   color-scheme: light;
@@ -49,18 +50,18 @@
   --accent-soft: #fbeee6;
 
   /* Semantic marks: a tinted chip and the ink that stays readable on it. The
-     tints carry enough colour to be told apart at a glance — a first cut was
-     quiet to the point that blue and green read as the same pale gray — while
-     staying short of alarm: a board of them must read as a board of work.
+     tints carry enough colour to be told apart at a glance (a first cut was so
+     quiet that blue and green read as the same pale gray) while staying short
+     of alarm: a board of them must read as a board of work.
 
      Each of the three families keeps its own hues, because two marks that look
      alike are read as the same fact. States take the widest spread, since a
      node's fill is the only thing legible when the graph is zoomed out: stone,
      blue, green, rose. Priorities climb one warm ramp from stone to ochre to
-     clay, which is what an ordinal wants. Conditions sit apart again — rust,
-     a brighter emerald than done's settled green, and plum. Done recedes and
-     ready pops on purpose: finished work should stop asking for attention, and
-     the go signal should catch the eye.
+     clay, which is what an ordinal wants. Conditions sit apart again: rust, a
+     brighter emerald than done's settled green, and plum. Done recedes and
+     ready pops on purpose. Finished work should stop asking for attention; the
+     go signal should catch the eye.
 
      Every ink clears 4.5:1 on its own chip. */
   --state-todo: #eae6df;
@@ -89,13 +90,12 @@
   --condition-stuck-ink: #83406a;
 
   /* The graph draws three things nothing else does. Its ground is a surface of
-     its own — the neutral scale has no step that sits under a raised card in
-     both palettes at once, and a canvas a reader pans around has to read as
-     ground. The other two are lines: the arrow between two issues, quieter
-     than ink and louder than a border; and the arrow that closes a dependency
-     cycle, which gets a hue of its own rather than borrowing a condition's —
-     a cycle is not a blocked issue, and two marks that look alike are read as
-     the same fact. */
+     its own, because the neutral scale has no step that sits under a raised
+     card in both palettes at once, and a canvas a reader pans around has to
+     read as ground. The other two are lines: the arrow between two issues,
+     quieter than ink and louder than a border, and the arrow closing a
+     dependency cycle. That one gets a hue of its own rather than borrowing a
+     condition's, a cycle not being a blocked issue. */
   --graph-ground: #f0f0f2;
   --graph-edge: #8e8e98;
   --graph-cycle: #a8394a;
@@ -271,7 +271,7 @@
    its own because the template applies it through a variant that reads the
    controls inside the menu: what the menu says about itself has to follow the
    boxes live, since narrowing the view redraws the listing and not the bar
-   that asked for it — a count rendered by the server would be a filter ago. */
+   that asked for it. A count rendered by the server would be a filter ago. */
 
 @utility filter-on {
   background: var(--accent-soft);
@@ -292,21 +292,22 @@
 }
 
 /* The base every page draws on: what the reset leaves undecided. Nothing here
-   names a colour of its own — the tokens above are the only table. */
+   names a colour of its own; the tokens above are the only table. */
 
 @layer base {
   /* One focus story for everything: the ring only a keyboard summons, never
-     swallowed — a border changing colour is a hint, not a focus indicator. */
+     swallowed. A border changing colour is a hint, not a focus indicator. */
   :focus-visible {
     outline: 2px solid var(--accent);
     outline-offset: 2px;
   }
 }
 
-/* The vocabulary the views share. These are classes rather than utilities
-   because the name is computed — a state's mark is `state-{{.State}}`, and a
-   template that spelled out every branch would say the palette twice — or
-   because a script adds the class at runtime, where no scanner can see it. */
+/* The vocabulary the views share. These are classes rather than utilities for
+   one of two reasons: the name is computed (a state's mark is
+   `state-{{.State}}`, and a template spelling out every branch would say the
+   palette twice), or a script adds the class at runtime, where no scanner can
+   see it. */
 
 @layer components {
   .state,
@@ -354,8 +355,8 @@
 
   a.id:hover { color: var(--accent); }
 
-  /* The placeholder for a field with nothing in it — a dash rather than a
-     blank, so an empty cell still reads as answered. */
+  /* The placeholder for a field with nothing in it: a dash rather than a blank,
+     so an empty cell still reads as answered. */
   .none { color: var(--ink-subtle); }
 
   /* Dragging: the card in hand fades, the column under the cursor lights up,
@@ -385,19 +386,16 @@
   /* The graph: the whole backlog as one picture, drawn inside a frame the
      script turns into a viewport it pans and zooms.
 
-     A node is the board's card in SVG — a raised panel on a dotted ground —
-     wearing its state as a saturated spine down one edge rather than as a wash
-     over the whole box. Two reasons: text on a neutral panel reads at any
-     zoom, and colour concentrated in a 5px spine survives being shrunk, where
-     a pastel fill turns to mush. The conditions the core derives ride on the
-     border and the ready dot, and the arrow that closes a cycle is the one
-     line drawn in a colour of its own.
+     A node is the board's card in SVG, on a dotted ground. Its state is the
+     tint it is filled with plus the same colour at full chroma around the
+     edge. The conditions the core derives ride on that border and on the ready
+     dot, and the arrow closing a cycle is the one line in a colour of its own.
 
-     None of this is a utility: every class here is either computed by the
-     server — `state-{{.State}}`, `edge-back` — or added by graph.js at
-     runtime, where no scanner can see it. The frame's cursor is here for the
-     second reason: `panning` is the script's, and a `cursor-grab` utility on
-     the element would outrank a components-layer rule trying to change it. */
+     None of this is a utility. Every class here is either computed by the
+     server (`state-{{.State}}`, `edge-back`) or added by graph.js at runtime,
+     where no scanner can see it. The frame's cursor is here for the second
+     reason: `panning` is the script's, and a `cursor-grab` utility on the
+     element would outrank a components-layer rule trying to change it. */
 
   .graph-frame { cursor: grab; }
   .graph-frame.panning { cursor: grabbing; }
@@ -407,10 +405,10 @@
   .graph .grid-dot { fill: var(--line-strong); }
 
   /* A containment box is a region drawn around its issues, not a surface under
-     them: filling it would hide the canvas the picture is drawn on, and the one
-     ground the whole picture shares is what says a pan is moving it. The dashes
-     take the picture's own line colour, a step darker than the dots, so the
-     boundary reads without a fill to help it. */
+     them: a fill would hide the one ground the whole picture shares, which is
+     what says a pan is moving it. The dashes take the picture's own line
+     colour, a step darker than the dots, so the boundary reads without a
+     fill. */
   .graph .cluster-box {
     fill: none;
     stroke: var(--graph-edge);
@@ -427,11 +425,11 @@
 
   .graph .node { text-decoration: none; }
 
-  /* A node wears its state twice over: the tint it is filled with, and the same
+  /* A node wears its state twice: the tint it is filled with, and the same
      colour at full chroma around the whole edge. The outline is what survives
-     being shrunk — a pale fill goes to mush against its neighbours — and it is
-     the whole edge rather than a bar down one side, which is a decoration the
-     card does not need and every other card already has. */
+     being shrunk, where a pale fill goes to mush against its neighbours. The
+     whole edge rather than a bar down one side, which is a decoration every
+     other card already has. */
   .graph .node-box {
     fill: var(--state-todo);
     stroke: var(--state-todo-ink);
@@ -467,9 +465,9 @@
   .graph .arrowhead { fill: var(--graph-edge); }
   .graph .arrowhead-back { fill: var(--graph-cycle); }
 
-  /* Hovering a node lifts its neighbourhood — itself, the arrows at either end,
-     and the issues those reach — while the rest recedes rather than vanishing,
-     so the shape of the whole picture is still there behind it. */
+  /* Hovering a node lifts its neighbourhood: itself, the arrows at either end,
+     and the issues those reach. The rest recedes rather than vanishing, so the
+     shape of the whole picture is still there behind it. */
 
   .graph .node, .graph .edge, .graph .cluster { transition: opacity 120ms ease-out; }
 

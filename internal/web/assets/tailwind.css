@@ -276,13 +276,13 @@
     width: calc(var(--spacing) * 3.5);
     height: calc(var(--spacing) * 3.5);
   }
-  .size-5 {
-    width: calc(var(--spacing) * 5);
-    height: calc(var(--spacing) * 5);
-  }
   .size-8 {
     width: calc(var(--spacing) * 8);
     height: calc(var(--spacing) * 8);
+  }
+  .size-10 {
+    width: calc(var(--spacing) * 10);
+    height: calc(var(--spacing) * 10);
   }
   .h-0 {
     height: 0px;

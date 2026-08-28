@@ -26,31 +26,23 @@
 <script src="/assets/ui.js" defer></script>
 </head>
 <body class="bg-canvas font-sans text-[0.9375rem] leading-normal text-ink">
-{{/* The shell: a sidebar that stays put and a main region beside it. Below the
-     sidebar's breakpoint the two stack, which is the same shell narrower —
-     never a bar across the top. */}}
+{{/* The shell: a sidebar that stays put and a main region beside it. Below
+     the sidebar's breakpoint the two stack. Never a bar across the top. */}}
 <div class="flex min-h-screen flex-col md:flex-row">
   <aside class="shrink-0 border-b border-line bg-surface md:sticky md:top-0 md:h-screen md:w-60 md:border-r md:border-b-0">
     <div class="flex h-full flex-col gap-4 px-4 py-4">
-      {{/* The brand slot: the icon mark beside the project's name, on the rail
-           the navigation is on and weighted like it, rather than a banner above
-           it. It is the icon rather than the wordmark because the wordmark is a
-           lockup whose "B" is the beaver itself, and the animal does not survive
-           being cap-height. The artwork is the favicon's — one file for one mark,
-           since a second copy under a name of its own would only drift.
+      {{/* The brand: the icon mark on its own tile, a rule, then the project's
+           name. The mark is the favicon's file, so the two cannot drift.
 
-           The name is cut short by the stylesheet rather than wrapped, so the
-           whole of it lives in the title attribute for a hover to read.
+           It answers no hover. This is the masthead, not a nav item, and
+           lighting it up offers a press that goes where the reader already is.
 
-           The mark gets a tile of its own and a rule between it and the name:
-           the two are a lockup rather than one word with a picture stuck to the
-           front of it. Nothing about the pair answers a hover — it is the
-           masthead, not a nav item, and lighting it up like one would offer a
-           press that goes where the reader already is. */}}
+           The name is truncated rather than wrapped, so the whole of it lives
+           in the title attribute for a hover to read. */}}
       <header>
         <a class="flex min-w-0 items-center gap-2.5 py-1" href="/" title="{{.Project}}">
-          <span class="flex size-8 shrink-0 items-center justify-center rounded-lg border border-line bg-canvas">
-            <img class="size-5" src="/assets/favicon.svg" alt="" width="500" height="500">
+          <span class="flex size-10 shrink-0 items-center justify-center rounded-lg bg-canvas">
+            <img class="size-8" src="/assets/favicon.svg" alt="" width="500" height="500">
           </span>
           <span class="h-5 w-px shrink-0 bg-line-strong" aria-hidden="true"></span>
           <span class="truncate text-sm font-semibold text-ink">{{.Project}}</span>
@@ -82,9 +74,9 @@
          hidden while they succeed, shown by live.js, never rendered without it. */}}
     <p id="live-status" hidden
        class="fixed right-4 bottom-4 z-10 rounded-md border border-line bg-condition-stuck px-3 py-1.5 text-xs text-condition-stuck-ink shadow-overlay">Live updates disconnected; retrying…</p>
-    {{/* The view is one element so the live listener can replace it whole with a
-         freshly rendered fragment of the same address — banner and all, since a
-         file repaired outside the browser should stop being complained about. */}}
+    {{/* The view is one element so the live listener can replace it whole with
+         a fresh fragment of the same address, banner included: a file repaired
+         outside the browser should stop being complained about. */}}
     <main id="view" class="min-w-0 flex-1 px-4 py-5 sm:px-6"{{if .Live}} data-live{{end}}>
     {{template "view" .}}
     </main>
@@ -95,9 +87,8 @@
 </html>
 
 {{/* view is everything a page redraws when the store changes: what the reader
-     is looking at, and whatever the scan has to say about the files behind it.
-     The toolbar sits above the content — the per-view controls a page fills in
-     for itself. */}}
+     is looking at, plus whatever the scan says about the files behind it. The
+     toolbar above it holds the per-view controls a page fills in for itself. */}}
 {{define "view"}}
 {{with .Notice}}<p class="mb-4 rounded-md border border-line bg-accent-soft px-3 py-2 text-sm text-ink" role="status">{{.}}</p>{{end}}
 {{with .Warnings}}

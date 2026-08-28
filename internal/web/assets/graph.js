@@ -1,16 +1,14 @@
 // The graph as a canvas: panning, zooming and hover-highlighting, hand-written
-// and dependency-free (ADR 0006). Nothing here draws anything — the picture is
-// the server's, already laid out — so the script only moves the window onto it
-// and marks what the pointer is near. Reading the picture needs the script:
-// the frame is a viewport rather than a scrollbox, and the controls beside it
-// are this file's to answer.
+// and dependency-free (ADR 0006). Nothing here draws anything. The picture is
+// the server's, already laid out, so the script only moves the window onto it
+// and marks what the pointer is near.
 //
 // The window is the SVG's viewBox, in the same user units the layout was
 // computed in: panning subtracts the pointer's travel from its corner, zooming
-// shrinks it about the point under the cursor, and resetting returns it to the
-// whole picture. Keeping it in the script rather than in the markup is what lets
-// a live redraw land underneath a reader without moving the ground — the fresh
-// picture is handed the window the old one had.
+// shrinks it about the point under the cursor, resetting returns it to the whole
+// picture. Holding it here rather than in the markup is what lets a live redraw
+// land under a reader without moving the ground: the fresh picture is handed the
+// window the old one had.
 
 // viewport is the part of the picture on screen, in user units. It outlives
 // every redraw of the view, and is null only before the first picture is fitted.
@@ -24,10 +22,10 @@ const canvas = () => document.querySelector("svg.graph");
 
 document.addEventListener("DOMContentLoaded", adopt);
 
-// A redraw — the live listener's, or a filter's htmx swap — replaces the picture
-// with a fresh one that knows nothing of where the reader had panned to. The
-// observer is how this script hears about that without either of them having to
-// know it is here.
+// A redraw, whether the live listener's or a filter's htmx swap, replaces the
+// picture with a fresh one that knows nothing of where the reader had panned to.
+// The observer is how this script hears about that without either of them
+// having to know it is here.
 new MutationObserver(adopt).observe(document.documentElement, { childList: true, subtree: true });
 
 // adopt turns a freshly rendered picture into the one being read: the window the
@@ -41,10 +39,9 @@ function adopt() {
   show(svg);
 }
 
-// whole is the window holding the entire picture, which is also what the reset
-// control returns to. It is read from the width and height the server rendered
-// — never from the viewBox, which show() keeps overwriting with wherever the
-// reader has panned to.
+// whole is the window holding the entire picture, which is also what reset
+// returns to. Read from the width and height the server rendered, never from the
+// viewBox, which show() keeps overwriting with wherever the reader has panned.
 function whole(svg) {
   return { x: 0, y: 0, w: Number(svg.getAttribute("width")), h: Number(svg.getAttribute("height")) };
 }
@@ -55,17 +52,15 @@ function show(svg) {
 }
 
 // The dotted canvas is drawn inside the picture rather than painted behind the
-// frame, which is what makes it travel with a pan and grow with a zoom — but it
-// is a rectangle, and the server can only size it to the layout's own extent.
-// So it is restretched to whatever the window covers: the ground has to be
-// under the reader wherever they have gone, including past the last node. The
-// dots themselves do not move with it, the pattern being laid out in the
-// picture's units rather than the rectangle's.
+// frame, which is what makes it travel with a pan and grow with a zoom. But it
+// is a rectangle, and the server can only size it to the layout's own extent, so
+// it gets restretched to whatever the window covers. The dots do not move with
+// it, the pattern being laid out in the picture's units, not the rectangle's.
 //
-// It is stretched a window's width past every edge, because the window is not
-// the whole of what is on screen: when the frame and the picture disagree in
-// shape the browser letterboxes, and what sits in the bands either side is
-// outside the viewBox but still in plain sight.
+// A window's width past every edge, because the window is not the whole of what
+// is on screen: where the frame and the picture disagree in shape the browser
+// letterboxes, and those bands are outside the viewBox but still in plain
+// sight.
 function ground(svg) {
   const dots = svg.querySelector(".grid");
   if (!dots) return;
@@ -126,7 +121,7 @@ document.addEventListener("pointermove", (event) => {
   if (!panning || !svg) return;
   event.preventDefault();
   // The travel is measured in screen pixels and spent in user units, at the
-  // scale the gesture began at — so the picture keeps tracking the pointer
+  // scale the gesture began at, so the picture keeps tracking the pointer
   // however far it has already been dragged.
   viewport = {
     ...viewport,
@@ -187,8 +182,8 @@ document.addEventListener("pointerout", (event) => {
   const svg = canvas();
   const node = event.target.closest?.("[data-issue]");
   if (!svg || !node) return;
-  // A node is several elements — box, title, badges — and crossing between them
-  // is not leaving it, so the neighbourhood must not flicker on the way past.
+  // A node is several elements (box, title, badges) and crossing between them is
+  // not leaving it, so the neighbourhood must not flicker on the way past.
   if (node.contains(event.relatedTarget)) return;
   svg.classList.remove("dimmed");
   for (const marked of svg.querySelectorAll(".near")) marked.classList.remove("near");

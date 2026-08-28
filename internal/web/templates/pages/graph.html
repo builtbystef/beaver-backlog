@@ -1,9 +1,9 @@
-{{/* The graph: the whole backlog as one picture, under the toolbar that narrows
-     it. Everything a filter changes lives inside #issues — the picture and the
-     legend that gives it its vocabulary; the controls themselves stay in the
-     toolbar above, where a swap never reaches them.
+{{/* The graph: the whole backlog as one picture, under the toolbar that
+     narrows it. Everything a filter changes lives inside #issues, meaning the
+     picture and its legend. The controls stay in the toolbar above, where a
+     swap never reaches them.
 
-     The picture needs graph.js to be read: the frame is a viewport, not a
+     Reading the picture needs graph.js: the frame is a viewport, not a
      scrollbox (ADR 0006). */}}
 
 {{define "toolbar"}}
@@ -16,16 +16,15 @@
 {{define "content"}}
 <div id="issues">
 {{if .Graph.Nodes}}
-{{/* The frame carries the controls in its own corner rather than on a strip
-     above it, so the picture keeps the whole width it was laid out for. It
-     takes the window's height less the chrome above and the legend below,
-     because the whole picture at once is what reset is for — and a short
-     frame shrinks the fit until nothing in it can be read. */}}
+{{/* The controls sit in the frame's own corner, not on a strip above it, so
+     the picture keeps the full width it was laid out for. The frame takes the
+     window's height less the chrome around it: reset fits the whole picture,
+     and a short frame shrinks that fit until nothing in it can be read. */}}
 <div class="graph-frame relative h-[calc(100vh-14rem)] min-h-[26rem] touch-none overflow-hidden rounded-card border border-line bg-graph-ground select-none">
-  {{/* The controls wear the toolbar's chip, so the two rows of things a reader
-       can press look like one vocabulary. Each spells its own ground and
-       border out: an unstyled <button> still falls to the legacy sheet, which
-       flips on the system's palette rather than the reader's choice. */}}
+  {{/* The controls wear the toolbar's chip, so everything pressable looks like
+       one vocabulary. Each spells its own ground and border out, because an
+       unstyled <button> falls to the legacy sheet, which flips on the system's
+       palette rather than the reader's choice. */}}
   <div class="absolute top-3 right-3 z-10 flex items-center gap-1.5">
     <button class="flex size-8 items-center justify-center rounded-md border border-line bg-surface p-0 text-sm text-ink-muted hover:border-line-strong hover:text-ink"
             type="button" data-graph-zoom="out" aria-label="Zoom out">−</button>
@@ -34,9 +33,8 @@
     <button class="flex h-8 items-center rounded-md border border-line bg-surface px-2.5 text-sm text-ink-muted hover:border-line-strong hover:text-ink"
             type="button" data-graph-reset>Reset view</button>
   </div>
-  {{/* The picture is sized in the user units the layout was computed in: that
-       size is the whole window, which the script fits the viewport to and
-       which reset returns to. */}}
+  {{/* The picture is sized in the user units the layout was computed in. That
+       size is the whole window, which the script fits to and reset returns to. */}}
   <svg class="graph" width="{{.Graph.Width}}" height="{{.Graph.Height}}"
        viewBox="0 0 {{.Graph.Width}} {{.Graph.Height}}" xmlns="http://www.w3.org/2000/svg">
     {{$m := .Graph.Metrics}}
@@ -49,16 +47,16 @@
       </marker>
       {{/* The ground the picture is drawn on. The dots are inside the picture
            rather than behind the frame, so they travel with a pan and grow with
-           a zoom — which is what tells a reader the canvas is moving under them
-           when the part they are looking at is empty. */}}
+           a zoom. That is what says the canvas is moving when the part the
+           reader is looking at is empty. */}}
       <pattern id="grid" width="{{$m.Grid}}" height="{{$m.Grid}}" patternUnits="userSpaceOnUse">
         <circle class="grid-dot" cx="1.4" cy="1.4" r="1.4"/>
       </pattern>
     </defs>
-    {{/* The ground starts as the picture's own extent and is restretched to the
-         window by graph.js on every pan and zoom: the canvas has to be wherever
-         the reader is looking, and the layout's extent is not that once they
-         have panned past the last node. */}}
+    {{/* Sized here to the picture's own extent, then restretched to the window
+         by graph.js on every pan and zoom. The canvas has to be wherever the
+         reader is looking, which the layout's extent stops being once they pan
+         past the last node. */}}
     <rect class="grid" x="0" y="0" width="{{.Graph.Width}}" height="{{.Graph.Height}}" fill="url(#grid)"/>
     {{range .Graph.Clusters}}
     <g class="cluster" data-cluster="{{.ID}}">
@@ -71,10 +69,10 @@
           marker-end="url(#{{if .Back}}arrow-back{{else}}arrow{{end}})"/>
     {{end}}
     {{range .Graph.Nodes}}
-    {{/* A node is the board's card in SVG: a panel tinted with its state and
+    {{/* A node is the board's card in SVG: a panel tinted with its state,
          outlined in the same colour at full chroma. The outline is what carries
-         the state when the picture is small enough that the words are not
-         legible — a tint alone goes to mush against its neighbours. */}}
+         the state once the picture is too small for the words, where a tint
+         alone goes to mush against its neighbours. */}}
     <a href="/issues/{{.Issue.ID}}" data-issue="{{.Issue.ID}}" data-layer="{{.Layer}}" data-row="{{.Row}}"
        class="{{.Class}}">
       <g transform="translate({{.X}},{{.Y}})">
@@ -93,13 +91,12 @@
   </svg>
 </div>
 {{/* The picture's vocabulary, so a first look needs no guessing: the fills are
-     states, the rest are the conditions the core derives and the arrow that
+     states, the rest are the conditions the core derives plus the arrow that
      closes a cycle. */}}
 <div class="mt-2 flex flex-wrap items-center justify-between gap-x-6 gap-y-2 text-xs text-ink-muted">
   <ul class="flex flex-wrap items-center gap-x-4 gap-y-1.5" aria-label="Legend">
-    {{/* A state's swatch is the node in miniature — the tint it is filled with
-         inside the outline that carries it — rather than a shape the picture
-         does not draw anywhere. */}}
+    {{/* A state's swatch is the node in miniature, tint inside outline, rather
+         than a shape the picture does not draw anywhere. */}}
     <li class="flex items-center gap-1.5"><span class="inline-block h-3.5 w-4.5 rounded-xs border border-state-todo-ink bg-state-todo"></span>todo</li>
     <li class="flex items-center gap-1.5"><span class="inline-block h-3.5 w-4.5 rounded-xs border border-state-in-progress-ink bg-state-in-progress"></span>in-progress</li>
     <li class="flex items-center gap-1.5"><span class="inline-block h-3.5 w-4.5 rounded-xs border border-state-done-ink bg-state-done"></span>done</li>

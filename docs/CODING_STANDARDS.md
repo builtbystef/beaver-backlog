@@ -1,12 +1,15 @@
 # Coding standards
 
-Conventions this project holds beyond what linters and formatters enforce. Reviews check diffs against this file — keep every rule current or delete it.
+Conventions this project holds beyond what linters and formatters enforce. Reviews check diffs against this file; keep every rule current or delete it.
 
 ## Comments and docs
 
 - Comments explain _why_, not _what_.
 - Exported identifiers carry concise godoc starting with the identifier's
   name.
+- Keep them short. A sentence or two beats a paragraph, and a comment longer
+  than the code it sits above is usually two comments or none.
+- No em dashes. Use a colon, a semicolon, brackets, or a full stop.
 
 ## Tests
 

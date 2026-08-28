@@ -1,18 +1,18 @@
 package web
 
 // This file holds the graph view: the whole backlog as one picture. Everything
-// here is presentation — where a node sits, which arrow curves where — and
-// nothing is a rule: the edges are the stored depends_on, the boxes are the
+// here is presentation, meaning where a node sits and which arrow curves where.
+// No rule lives here: the edges are the stored depends_on, the boxes are the
 // stored parent, and ready, blocked and stuck are the core's own answers,
 // carried onto a node as markers rather than recomputed.
 //
 // The layout is the classic layered one, cut to what a backlog needs: layers by
-// dependency depth so work reads left to right, a family laid out in a band of
-// its own so a containment box can never straddle another, and a barycentre
-// sweep within each band so independent chains stop crossing. A dependency cycle
-// — which a hand-edit or a merge can always write — is laid out as the DAG left
-// when the edges that close the loops are set aside, and those edges are drawn
-// back the other way, distinctly.
+// dependency depth so work reads left to right, a family in a band of its own so
+// a containment box can never straddle another, and a barycentre sweep within
+// each band so independent chains stop crossing. A dependency cycle, which a
+// hand-edit or a merge can always write, is laid out as the DAG left when the
+// edges closing the loops are set aside. Those edges are then drawn back the
+// other way, distinctly.
 
 import (
 	"fmt"
@@ -49,7 +49,7 @@ const (
 // coordinates. It travels to the template so the box and its contents cannot
 // drift apart: the layout here already owns the geometry, and a template
 // repeating the numbers is the same measurement written twice. Every value is
-// final — html/template does no arithmetic, and it should not have to.
+// final, because html/template does no arithmetic and should not have to.
 var nodeMetrics = metrics{
 	W: nodeWidth, H: nodeHeight, Radius: nodeRadius,
 	TitleX:     nodePad,
@@ -66,8 +66,8 @@ var nodeMetrics = metrics{
 	Grid:       gridPitch,
 }
 
-// metrics is the picture's fixed geometry — the node's inner layout and the
-// pitch of the dotted ground — handed to the template as one value.
+// metrics is the picture's fixed geometry, the node's inner layout and the pitch
+// of the dotted ground, handed to the template as one value.
 type metrics struct {
 	W, H         float64
 	Radius       float64
@@ -118,8 +118,8 @@ type node struct {
 }
 
 // badge is one label drawn along the bottom of a node. Its width is estimated
-// from the text rather than measured — Go has no font metrics here, and a badge
-// a little wide costs nothing but a little space.
+// from the text rather than measured, Go having no font metrics here. A badge a
+// little wide costs nothing but a little space.
 type badge struct {
 	X, W float64
 	Text string
@@ -159,7 +159,7 @@ type graphPage struct {
 }
 
 // graph renders the backlog the address selects as one picture. It reads like
-// the board: the same bar, the same query, one listing from the core — laid out
+// the board: the same bar, the same query, one listing from the core, laid out
 // for the browser and nothing more. Filtering to a parent is therefore a cluster
 // on its own, because the core returns that parent's children and an arrow to
 // an issue off the page is no arrow at all.
@@ -187,8 +187,8 @@ func (s *server) graph(w http.ResponseWriter, r *http.Request) {
 }
 
 // layout turns a listing into a picture. The given order is the core's, so every
-// tie below — which node comes first in a layer, which family gets the top band
-// — breaks the same way on the same store.
+// tie below (which node comes first in a layer, which family gets the top band)
+// breaks the same way on the same store.
 func layout(issues []issue.Issue) graph {
 	g := newLayout(issues)
 	g.findBackEdges()
@@ -200,7 +200,7 @@ func layout(issues []issue.Issue) graph {
 // layoutState is one run of the layout, from the issues in to the picture out.
 type layoutState struct {
 	issues []issue.Issue
-	pos    map[string]int // an issue's place in the given order — every tiebreak
+	pos    map[string]int // an issue's place in the given order; every tiebreak
 	byID   map[string]issue.Issue
 	rel    *issue.Relations
 	out    map[string][]string // prerequisite → the issues waiting on it
@@ -245,7 +245,7 @@ func newLayout(issues []issue.Issue) *layoutState {
 		seen := map[string]bool{}
 		for _, dep := range iss.DependsOn {
 			// A dependency on an issue that is not here is dangling, not an
-			// arrow — there is nothing on the page to point at.
+			// arrow: there is nothing on the page to point at.
 			if _, present := l.byID[dep]; !present || seen[dep] {
 				continue
 			}
@@ -257,7 +257,7 @@ func newLayout(issues []issue.Issue) *layoutState {
 	return l
 }
 
-// findBackEdges marks the edges that close a cycle — the ones a depth-first walk
+// findBackEdges marks the edges that close a cycle: the ones a depth-first walk
 // finds pointing back at an issue it is still inside. Setting them aside is what
 // leaves a DAG to layer, so a cycle costs a differently drawn arrow instead of a
 // layout that never finishes.
@@ -331,10 +331,10 @@ func (l *layoutState) assignLayers() {
 // buildBands groups the issues into the strips they are drawn in. An issue
 // belongs to its parent's band when that parent is on the page; a parent that is
 // nobody's child heads a band of its own; everything left over shares the
-// free-standing band at the bottom. Nesting deeper than that is flattened — a
-// middle issue sits in its own parent's box and labels a second box for its
-// children — because a box inside a box buys nothing the layers do not already
-// say.
+// free-standing band at the bottom. Nesting deeper than that is flattened, a
+// middle issue sitting in its own parent's box and labelling a second box for
+// its children, because a box inside a box buys nothing the layers do not
+// already say.
 func (l *layoutState) buildBands() {
 	children := map[string]bool{}
 	for _, iss := range l.issues {
@@ -373,8 +373,8 @@ func (l *layoutState) buildBands() {
 }
 
 // orderBand settles the rows within one band. Each layer starts in the core's
-// order and is then swept by barycentre — a node pulled towards the average row
-// of what it connects to — which is what stops two independent chains from
+// order and is then swept by barycentre, each node pulled towards the average
+// row of what it connects to, which is what stops two independent chains from
 // crossing. Only edges inside the band count: a node cannot be pulled by
 // something drawn in another strip.
 func (l *layoutState) orderBand(b *band) {
@@ -549,8 +549,8 @@ func nodeClass(n node) string {
 
 // arrow curves one dependency from its prerequisite to the issue waiting on it:
 // out of the right side into the left where the layers run that way, and back
-// around the outside where they do not — a cycle's closing edge, or an edge
-// within one layer.
+// around the outside where they do not, which means a cycle's closing edge or an
+// edge within one layer.
 func arrow(from, to node) string {
 	const loop = 40
 	if from.Issue.ID == to.Issue.ID {
