@@ -41,12 +41,14 @@ var listColumns = []struct {
 }
 
 // header is one column heading as the template draws it: the label, the
-// address that sorts by it, and the direction mark when this column is the one
-// the address already sorts by.
+// address that sorts by it, and — on the one column the address already sorts
+// by — which way the rows run. Sort is the word a table's own vocabulary uses
+// ("ascending"/"descending"), so the heading tells a reader and a screen reader
+// the same thing from the one field.
 type header struct {
 	Label string
 	URL   string // empty for a column that offers no ordering
-	Mark  string
+	Sort  string // empty on every column but the one being sorted by
 }
 
 // parseOrder reads the sort state off the address. A key naming no column is
@@ -101,10 +103,9 @@ func (o order) headers(current *url.URL) []header {
 		if col.Key != "" {
 			h.URL = o.sortURL(current, col.Key, col.TimeFirst)
 			if o.Key == col.Key {
+				h.Sort = "ascending"
 				if o.Desc {
-					h.Mark = "▼"
-				} else {
-					h.Mark = "▲"
+					h.Sort = "descending"
 				}
 			}
 		}

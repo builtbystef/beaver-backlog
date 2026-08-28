@@ -86,47 +86,6 @@
 
   h1 { font-size: 1.35rem; font-weight: 650; letter-spacing: -0.015em; margin: 0 0 1rem; }
 
-  .result-count { color: var(--muted); font-size: 0.85rem; margin: 0 0 0.5rem; }
-
-  .table-scroll {
-    background: var(--panel);
-    border: 1px solid var(--line);
-    border-radius: 10px;
-    box-shadow: var(--shadow);
-    overflow-x: auto;
-  }
-
-  table.issues {
-    border-collapse: collapse;
-    width: 100%;
-  }
-
-  .issues th, .issues td {
-    border-bottom: 1px solid var(--line);
-    padding: 0.55rem 0.9rem;
-    text-align: left;
-    vertical-align: top;
-  }
-
-  .issues tbody tr:last-child td { border-bottom: none; }
-
-  .issues th {
-    color: var(--muted);
-    font-size: 0.8rem;
-    font-weight: 600;
-    letter-spacing: 0.04em;
-    text-transform: uppercase;
-  }
-
-  .issues th a { color: var(--muted); text-decoration: none; }
-  .issues th a:hover { color: var(--accent); }
-  .sort-mark { color: var(--accent); }
-
-  .issues tbody tr:hover { background: var(--accent-soft); }
-
-  /* A row is a doorway to the issue it names (ui.js), not just its title cell. */
-  .issues tbody tr[data-href] { cursor: pointer; }
-
   .empty { color: var(--muted); }
 
   code {

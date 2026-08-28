@@ -1,3 +1,9 @@
+{{/* The Issues view: one row per issue under the toolbar that narrows them.
+
+     Everything a filter changes lives inside #issues — the count included, so
+     a narrowed list never says the number it held a filter ago. The controls
+     themselves stay in the toolbar above, where a swap never reaches them. */}}
+
 {{define "toolbar"}}
 <div class="mb-4 flex flex-wrap items-center gap-x-3 gap-y-2">
   <h1 class="m-0 text-lg font-semibold tracking-tight text-ink">Issues</h1>
@@ -8,36 +14,51 @@
 {{define "content"}}
 <div id="issues">
 {{if .Rows}}
-<p class="result-count">{{len .Rows}} issue(s)</p>
-<div class="table-scroll">
-<table class="issues">
+<p class="mb-2 text-xs text-ink-subtle">{{.Count}}</p>
+{{/* The table scrolls inside its own frame: a window too narrow for seven
+     columns slides them under the reader's thumb rather than dragging the whole
+     page — and the shell — sideways with them. */}}
+<div class="overflow-x-auto rounded-card border border-line bg-surface shadow-card">
+<table class="w-full border-collapse text-left text-sm">
   <thead>
-    <tr>
+    <tr class="border-b border-line">
       {{range .Columns}}
-      <th>{{if .URL}}<a href="{{.URL}}">{{.Label}}{{with .Mark}} <span class="sort-mark">{{.}}</span>{{end}}</a>{{else}}{{.Label}}{{end}}</th>
+      {{/* aria-sort is the one field the heading tells everybody from: the arrow
+           a reader sees and the word a screen reader says are the same fact. */}}
+      <th scope="col" class="px-3 py-2 text-xs font-medium tracking-wide whitespace-nowrap text-ink-subtle uppercase"{{with .Sort}} aria-sort="{{.}}"{{end}}>
+        {{if .URL}}<a class="inline-flex items-center gap-1 {{if .Sort}}text-accent{{else}}text-ink-subtle hover:text-ink{{end}}" href="{{.URL}}">{{.Label}}{{if .Sort}}<span aria-hidden="true">{{if eq .Sort "ascending"}}↑{{else}}↓{{end}}</span>{{end}}</a>{{else}}{{.Label}}{{end}}
+      </th>
       {{end}}
     </tr>
   </thead>
   <tbody>
     {{range .Rows}}
     {{$iss := .Issue}}
-    <tr data-issue="{{$iss.ID}}" data-href="/issues/{{$iss.ID}}">
-      <td>{{template "reflink" $iss.ID}}</td>
-      <td><a href="/issues/{{$iss.ID}}">{{$iss.Title}}</a>{{template "condition" .Conditions}}</td>
-      <td>{{template "state" $iss.State}}</td>
-      <td>{{with $iss.Priority}}{{template "priority" .}}{{else}}{{template "none"}}{{end}}</td>
-      <td>{{range $iss.Labels}}{{template "label" .}} {{else}}{{template "none"}}{{end}}</td>
-      <td>{{with $iss.Assignee}}{{.}}{{else}}{{template "none"}}{{end}}</td>
-      <td>{{template "stamp" $iss.Updated}}</td>
+    {{/* A row is a doorway to the issue it names (ui.js), which is why it says
+         where it leads and points like the links it holds. */}}
+    <tr class="cursor-pointer border-b border-line last:border-b-0 hover:bg-surface-hover"
+        data-issue="{{$iss.ID}}" data-href="/issues/{{$iss.ID}}">
+      <td class="px-3 py-2 align-top whitespace-nowrap">{{template "reflink" $iss.ID}}</td>
+      <td class="px-3 py-2 align-top"><a class="text-ink hover:text-accent" href="/issues/{{$iss.ID}}">{{$iss.Title}}</a>{{template "condition" .Conditions}}</td>
+      <td class="px-3 py-2 align-top">{{template "state" $iss.State}}</td>
+      <td class="px-3 py-2 align-top">{{with $iss.Priority}}{{template "priority" .}}{{else}}{{template "none"}}{{end}}</td>
+      <td class="px-3 py-2 align-top">
+        <span class="flex flex-wrap items-center gap-1">{{range $iss.Labels}}{{template "label" .}}{{else}}{{template "none"}}{{end}}</span>
+      </td>
+      <td class="px-3 py-2 align-top whitespace-nowrap text-ink-muted">{{with $iss.Assignee}}{{.}}{{else}}{{template "none"}}{{end}}</td>
+      <td class="px-3 py-2 align-top whitespace-nowrap text-xs text-ink-muted">{{template "stamp" $iss.Updated}}</td>
     </tr>
     {{end}}
   </tbody>
 </table>
 </div>
 {{else if .Filters.Active}}
-<p class="empty">No issue matches these filters.</p>
+<p class="rounded-card border border-dashed border-line px-4 py-10 text-center text-sm text-ink-muted">No issue matches these filters.</p>
 {{else}}
-<p class="empty">No issues yet. <a href="/issues/new">Create one</a>.</p>
+<div class="rounded-card border border-dashed border-line px-4 py-10 text-center">
+  <p class="text-sm text-ink-muted">No issues yet.</p>
+  <a class="mt-3 inline-block rounded-md bg-accent px-3 py-1.5 text-sm font-medium text-ink-on-accent hover:bg-accent-hover" href="/issues/new">Create one</a>
+</div>
 {{end}}
 </div>
 {{end}}

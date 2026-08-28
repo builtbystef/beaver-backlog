@@ -21,6 +21,7 @@ import (
 	"io/fs"
 	"net/http"
 	"path/filepath"
+	"strconv"
 	"strings"
 
 	"github.com/builtbystef/beaver-backlog/internal/core"
@@ -307,6 +308,15 @@ type listPage struct {
 	Filters filterBar
 	Rows    []row
 	Columns []header
+}
+
+// Count is what the list says it is showing, worded rather than parenthesised:
+// a table of one is "1 issue", not "1 issue(s)".
+func (p listPage) Count() string {
+	if len(p.Rows) == 1 {
+		return "1 issue"
+	}
+	return strconv.Itoa(len(p.Rows)) + " issues"
 }
 
 // row is one issue in the table with the derived conditions its row shows.
