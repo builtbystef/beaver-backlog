@@ -183,6 +183,17 @@
   }
 }
 @layer utilities {
+  .sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+    border-width: 0;
+  }
   .absolute {
     position: absolute;
   }
@@ -626,6 +637,9 @@
   .p-0 {
     padding: 0px;
   }
+  .p-0\.5 {
+    padding: calc(var(--spacing) * 0.5);
+  }
   .p-1\.5 {
     padding: calc(var(--spacing) * 1.5);
   }
@@ -894,11 +908,32 @@
   .has-checked\:bg-accent-soft:has(:checked) {
     background-color: var(--accent-soft);
   }
+  .has-checked\:bg-surface:has(:checked) {
+    background-color: var(--surface);
+  }
+  .has-checked\:font-medium:has(:checked) {
+    --tw-font-weight: var(--font-weight-medium);
+    font-weight: var(--font-weight-medium);
+  }
   .has-checked\:text-ink:has(:checked) {
     color: var(--ink);
   }
   .has-checked\:no-underline:has(:checked) {
     text-decoration-line: none;
+  }
+  .has-checked\:shadow-card:has(:checked) {
+    --tw-shadow: var(--elevation-card);
+    box-shadow: var(--tw-inset-shadow), var(--tw-inset-ring-shadow), var(--tw-ring-offset-shadow), var(--tw-ring-shadow), var(--tw-shadow);
+  }
+  .has-focus-visible\:outline-2:has(:focus-visible) {
+    outline-style: var(--tw-outline-style);
+    outline-width: 2px;
+  }
+  .has-focus-visible\:outline-offset-2:has(:focus-visible) {
+    outline-offset: 2px;
+  }
+  .has-focus-visible\:outline-accent:has(:focus-visible) {
+    outline-color: var(--accent);
   }
   @media (width >= 40rem) {
     .sm\:grid-cols-2 {
@@ -945,6 +980,10 @@
   }
   .\[\&\:\:-webkit-details-marker\]\:hidden::-webkit-details-marker {
     display: none;
+  }
+  .\[\&\>svg\]\:size-8 > svg {
+    width: calc(var(--spacing) * 8);
+    height: calc(var(--spacing) * 8);
   }
 }
 :root {
@@ -1086,6 +1125,9 @@
   --graph-cycle: #e0788c;
   --elevation-card: 0 1px 2px rgba(0, 0, 0, 0.5);
   --elevation-overlay: 0 8px 30px rgba(0, 0, 0, 0.6);
+}
+.brand .ink {
+  fill: var(--ink);
 }
 @layer base {
   :focus-visible {

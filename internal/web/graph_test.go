@@ -137,6 +137,11 @@ func TestGraphBoxesAParentWithItsChildren(t *testing.T) {
 	}
 }
 
+// graphTag matches the picture's own opening tag. The shell draws the brand
+// mark inline, so "an svg on the page" is no longer the same question as "the
+// graph drew something".
+var graphTag = regexp.MustCompile(`<svg[^>]*class="graph"[^>]*>`)
+
 // The picture is sized in the markup, in the user units the layout was computed
 // in: that size is the whole window, which is what the script fits the viewport
 // to and what reset returns to.
@@ -146,7 +151,7 @@ func TestGraphCanvasIsSized(t *testing.T) {
 
 	body := get(newHandler(t, dir), "/graph").Body.String()
 
-	svg := regexp.MustCompile(`<svg[^>]*>`).FindString(body)
+	svg := graphTag.FindString(body)
 	for _, attr := range []string{"width=", "height=", "viewBox="} {
 		if !strings.Contains(svg, attr) {
 			t.Errorf("svg tag %q has no %s", svg, attr)
@@ -319,7 +324,7 @@ func TestAGraphWithNothingToDrawSaysSo(t *testing.T) {
 	if !strings.Contains(empty, "Nothing to draw yet") {
 		t.Errorf("an empty store does not say there is nothing to draw:\n%s", empty)
 	}
-	if strings.Contains(empty, "<svg") {
+	if graphTag.MatchString(empty) {
 		t.Errorf("an empty store still draws a picture:\n%s", empty)
 	}
 

@@ -226,6 +226,16 @@
   --elevation-overlay: 0 8px 30px rgba(0, 0, 0, 0.6);
 }
 
+/* The brand mark's ink. The mark is one SVG file used two ways: drawn into the
+   page by the shell, and handed to the tab strip as the favicon. It carries a
+   stylesheet of its own so the tab strip gets an ink that reads, and that
+   stylesheet can only see the operating system's preference. Inside the page it
+   has to lose to the reader's choice, and a rule in a cascade layer would lose
+   to it instead however specific it was, so this one sits outside the layers
+   with the palette it reads. */
+
+.brand .ink { fill: var(--ink); }
+
 /* The utility layer's vocabulary. `inline` keeps the palette above as the only
    place a colour has a value: a utility resolves the variable at use time, so
    one set of class names draws whichever theme is live. */

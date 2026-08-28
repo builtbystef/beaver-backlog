@@ -15,6 +15,10 @@
 <link rel="apple-touch-icon" href="/assets/apple-touch-icon.png">
 {{/* The design system, and nothing else: every page is drawn on the tokens. */}}
 <link rel="stylesheet" href="/assets/tailwind.css">
+{{/* The one script that is not deferred: the palette the reader chose has to be
+     in force before anything is drawn, and a deferred script runs once the
+     document is parsed, which is one palette drawn and then the other. */}}
+<script src="/assets/theme.js"></script>
 <script src="/assets/htmx.min.js" defer></script>
 <script src="/assets/confirm.js" defer></script>
 <script src="/assets/live.js" defer></script>
@@ -27,7 +31,9 @@
   <aside class="shrink-0 border-b border-line bg-surface md:sticky md:top-0 md:h-screen md:w-60 md:border-r md:border-b-0">
     <div class="flex h-full flex-col gap-4 px-4 py-4">
       {{/* The brand: the icon mark on its own tile, a rule, then the project's
-           name. The mark is the favicon's file, so the two cannot drift.
+           name. The mark is the favicon's file drawn into the page, so the two
+           cannot drift and the mark's ink follows the theme the reader chose
+           rather than the operating system the file alone can see.
 
            It answers no hover. This is the masthead, not a nav item, and
            lighting it up offers a press that goes where the reader already is.
@@ -36,8 +42,8 @@
            in the title attribute for a hover to read. */}}
       <header>
         <a class="flex min-w-0 items-center gap-2.5 py-1" href="/" title="{{.Project}}">
-          <span class="flex size-10 shrink-0 items-center justify-center rounded-lg bg-canvas">
-            <img class="size-8" src="/assets/favicon.svg" alt="" width="500" height="500">
+          <span class="brand flex size-10 shrink-0 items-center justify-center rounded-lg bg-canvas [&>svg]:size-8">
+            {{.Mark}}
           </span>
           <span class="h-5 w-px shrink-0 bg-line-strong" aria-hidden="true"></span>
           <span class="truncate text-sm font-semibold text-ink">{{.Project}}</span>
@@ -60,8 +66,20 @@
         </a>
         {{end}}
       </nav>
-      {{/* The foot of the sidebar, where the theme control lands. */}}
-      <div class="mt-auto"></div>
+      {{/* The foot of the rail: the reader's say over the palette. Three states,
+           of which system is no override at all. Nothing here is posted
+           anywhere; the choice belongs to one browser, not to the store, so
+           theme.js remembers it and the server never hears of it. That is also
+           why the server renders system checked whatever the reader picked
+           last: system is the only state it can honestly claim. */}}
+      <fieldset id="theme" class="mt-auto flex gap-0.5 rounded-md border border-line bg-canvas p-0.5">
+        <legend class="sr-only">Theme</legend>
+        {{range .Themes}}
+        <label class="flex-1 cursor-pointer rounded px-2 py-1 text-center text-xs text-ink-muted transition-colors has-checked:bg-surface has-checked:font-medium has-checked:text-ink has-checked:shadow-card has-focus-visible:outline-2 has-focus-visible:outline-offset-2 has-focus-visible:outline-accent">
+          <input class="sr-only" type="radio" name="theme" value="{{.Value}}"{{if .Default}} checked{{end}}>{{.Label}}
+        </label>
+        {{end}}
+      </fieldset>
     </div>
   </aside>
   <div class="flex min-w-0 flex-1 flex-col">

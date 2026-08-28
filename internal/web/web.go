@@ -299,6 +299,50 @@ func (p page) Nav() []navItem {
 	return items
 }
 
+// themeState is one state the sidebar's theme control offers: what it stores,
+// what it says, and whether it is the one an untouched browser is in.
+type themeState struct {
+	Value   string
+	Label   string
+	Default bool
+}
+
+// Themes is the theme control's three states. It is rendered from here rather
+// than written out three times in the template so the values theme.js stores
+// and the words the reader reads are one list.
+//
+// system is checked whatever the reader last picked: the choice lives in their
+// browser and is never posted here, so it is the only state the server can
+// honestly claim. theme.js moves the mark as soon as the control exists.
+func (page) Themes() []themeState {
+	return []themeState{
+		{Value: "system", Label: "System", Default: true},
+		{Value: "light", Label: "Light"},
+		{Value: "dark", Label: "Dark"},
+	}
+}
+
+// Mark is the brand's icon drawn into the page rather than fetched as an image.
+// Inline, its ink is reached by the design system's palette, so it follows the
+// theme the reader chose; an <img> can only see the operating system's
+// preference, which would leave a reader who overrode it with a mark drawn in
+// the palette they turned off.
+func (page) Mark() template.HTML { return brandMark }
+
+// brandMark is the icon mark's file, the same one the tab strip gets, so the
+// two cannot drift.
+var brandMark = template.HTML(mustAsset("assets/favicon.svg"))
+
+// mustAsset reads one embedded asset at startup, so a rename fails the build's
+// tests rather than one page.
+func mustAsset(name string) string {
+	b, err := assetFS.ReadFile(name)
+	if err != nil {
+		panic("reading embedded asset " + name + ": " + err.Error())
+	}
+	return string(b)
+}
+
 // skipped is one invalid file named for a reader: its path relative to where the
 // server was launched, and what is wrong with it.
 type skipped struct {
