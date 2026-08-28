@@ -1,0 +1,48 @@
+#!/usr/bin/env bash
+# agentbox — run an agent CLI (claude/pi/codex) behind a bwrap policy:
+# private dirs and credential stores masked, personal data read-only, sudo dead.
+set -euo pipefail
+
+SELF="$(readlink -f "$0")"
+H="$HOME"
+U="/run/user/$(id -u)"
+
+args=(--dev-bind / / --die-with-parent --ro-bind "$SELF" "$SELF")
+
+# Skip paths that don't exist: bwrap would create the mount point on the real
+# filesystem and leave it behind.
+mask()  { [ -e "$1" ] || return 0; args+=(--tmpfs "$1"); }
+maskf() { [ -e "$1" ] || return 0; args+=(--bind /dev/null "$1"); }
+ro()    { [ -e "$1" ] || return 0; args+=(--ro-bind "$1" "$1"); }
+
+mask "$H/Main"
+mask "$H/.ssh"
+mask "$H/.gnupg"
+mask "$H/.local/share/keyrings"
+mask "$H/.config/google-chrome"
+mask "$H/.config/chromium"
+mask "$H/.config/BraveSoftware"
+mask "$H/snap/firefox"
+mask "$U/keyring"
+mask "$U/gnupg"
+maskf /run/docker.sock
+
+# Each agent sees only its own credentials
+tool="$(basename "${1:-}")"
+[ "$tool" = claude ] || { maskf "$H/.claude/.credentials.json"; maskf "$H/.claude.json"; }
+[ "$tool" = codex ]  || maskf "$H/.codex/auth.json"
+[ "$tool" = pi ]     || maskf "$H/.pi/agent/auth.json"
+
+ro "$H/dotfiles"
+ro "$H/Music"
+ro "$H/Pictures"
+ro "$H/Documents"
+ro "$H/Videos"
+ro "$H/Desktop"
+ro "$H/.bashrc"
+ro "$H/.profile"
+ro "$H/.zshenv"
+ro "$H/.claude/settings.json"
+ro "$H/.config/gh"
+
+exec bwrap "${args[@]}" -- "$@"

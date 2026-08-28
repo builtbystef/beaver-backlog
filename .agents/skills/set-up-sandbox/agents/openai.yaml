@@ -1,5 +1,5 @@
 interface:
   display_name: "Set Up Sandbox"
-  short_description: "Set a project up with native, OS-enforced sandboxing for coding agents"
+  short_description: "Set a machine up with agentbox — one OS-enforced bwrap wrapper for all coding agents"
 policy:
   allow_implicit_invocation: false

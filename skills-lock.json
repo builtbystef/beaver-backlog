@@ -47,7 +47,7 @@
       "source": "builtbystef/skills",
       "sourceType": "github",
       "skillPath": "implement-loop/SKILL.md",
-      "computedHash": "e97300c3bfa67712f06f197018ecd724678d2c971aeccbb10c96ac410177d079"
+      "computedHash": "1012c306a738eb30c3644d86e392471f8107e3f3a7f451e033197578eea05169"
     },
     "maintain-codebase": {
       "source": "builtbystef/skills",
@@ -83,7 +83,7 @@
       "source": "builtbystef/skills",
       "sourceType": "github",
       "skillPath": "set-up-sandbox/SKILL.md",
-      "computedHash": "7bd7f52d4105de7da1d1f51a3f467326cd9ce06d3a972c991c51a739046616e1"
+      "computedHash": "af7ce0f0252fae551e31f2373f9d6e809cc1d9c12df25255216369a89f4f52b4"
     },
     "test": {
       "source": "builtbystef/skills",

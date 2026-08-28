@@ -6,15 +6,15 @@
 - The command receives the iteration prompt **on stdin**. Exception: if the command contains the placeholder `{PROMPT_FILE}`, the script substitutes the path of the prompt file, and it does not pipe.
 - The command must never prompt a human. Anything interactive stalls until `LOOP_TIMEOUT` (default 3600 s) kills it, and the iteration counts as failed.
 
-Run these recipes in a repository that carries the native sandbox config from the `set-up-sandbox` skill. The recipes run without prompts; the project's sandbox config is what confines them. Never add bypass flags such as `--dangerously-skip-permissions` — they auto-approve everything the project's deny rules do not name. Without sandbox config in the repository, these recipes give each iteration broad access to the machine and its credentials — that posture is the user's to accept.
+Run these recipes from inside `agentbox`, the machine-level wrapper from the `set-up-sandbox` skill. The loop and every iteration inherit its namespace, so confinement comes from the OS, not from per-repo config or the agents' own permission systems. That is also what makes the permissive flags below safe: inside the wrapper, an auto-approved command still cannot reach masked or read-only paths, and sudo is dead. Outside the wrapper, the same flags give each iteration full, unconfined access to the machine and its credentials — that posture is the user's to accept, never the default.
 
 ## Claude Code
 
 ```sh
-LOOP_AGENT_CMD='claude -p --permission-mode acceptEdits --model <model> --effort <effort>'
+LOOP_AGENT_CMD='claude -p --dangerously-skip-permissions --model <model> --effort <effort>'
 ```
 
-Pin the model and effort. Claude Code supports `low`, `medium`, `high`, `xhigh`, and `max`, depending on the model. With the project's sandbox config, sandboxed Bash auto-runs and edits inside the repository auto-approve; anything else fails closed, because print mode cannot prompt. Accept the workspace trust dialog once, interactively, before the first run — without it the config's `WebFetch(domain:*)` allow rule is silently ignored, and network egress (`curl`, `npm install`) can fail mid-loop.
+Pin the model and effort. Claude Code supports `low`, `medium`, `high`, `xhigh`, and `max`, depending on the model. Print mode cannot prompt, so anything short of skip-permissions can fail closed mid-iteration on an unlisted command; inside agentbox the flag is the intended posture — the wrapper, not the agent's config, is the boundary. Run `claude --dangerously-skip-permissions` once interactively first to accept its one-time confirmation, or the first unattended session stalls on it.
 
 ## Pi
 
@@ -22,11 +22,11 @@ Pin the model and effort. Claude Code supports `low`, `medium`, `high`, `xhigh`,
 LOOP_AGENT_CMD='pi -p --approve --model <provider/id> --thinking <level>'
 ```
 
-Pin the model and thinking level. Pi supports `off`, `minimal`, `low`, `medium`, `high`, `xhigh`, and `max`, depending on the model. `--model` takes `provider/id` — `pi --list-models` lists what the machine is authenticated for. `--approve` trusts the project's local files for the run; print mode shows no trust prompt and no tool approvals. Core Pi has no sandbox — the confinement comes from the `pi-sandbox` and `@gotgenes/pi-permission-system` extensions and their config under `.pi/`, set up by the `set-up-sandbox` skill. Their denies are hard and their prompts time out to abort, so print mode fails closed instead of stalling. Sessions are saved by default, one full transcript for each iteration — read one later with `pi --resume`, or `pi --export <file>` for HTML.
+Pin the model and thinking level. Pi supports `off`, `minimal`, `low`, `medium`, `high`, `xhigh`, and `max`, depending on the model. `--model` takes `provider/id` — `pi --list-models` lists what the machine is authenticated for. `--approve` trusts the project's local files for the run; print mode shows no trust prompt and no tool approvals. Core Pi has no sandbox or tool gating of its own — inside agentbox that is exactly right: the wrapper is the confinement. Sessions are saved by default, one full transcript for each iteration — read one later with `pi --resume`, or `pi --export <file>` for HTML.
 
 ## Any other agent
 
-Any non-interactive agent CLI works — add your own recipe here. Before doing so, measure what its sandbox actually enforces unattended: an agent that cannot confine *reads* exposes everything the sandbox setup protects, and belongs in interactive use only. For a prompt file, use:
+Any non-interactive agent CLI works — add your own recipe here. The wrapper confines it like any other process, so the recipe only has to hold up its side of the contract: run one full session unattended and exit. For a prompt file, use:
 
 ```sh
 LOOP_AGENT_CMD='someagent run --auto --prompt-file {PROMPT_FILE}'
@@ -46,4 +46,4 @@ The loop does not run tests. Backpressure belongs in the repository, where every
 
 One session for each queued issue, no retries: the run costs exactly as many sessions as the queue is long. A failed issue is reported, not repeated — re-invoke the skill with it once you know why.
 
-`loop.sh` needs Bash plus GNU `timeout` (macOS: `brew install coreutils`). Start it from inside the project's git repository, with a clean working tree.
+`loop.sh` needs Bash plus GNU `timeout` (macOS: `brew install coreutils`). Start it from inside the project's git repository, with a clean working tree, in an agentbox session.
