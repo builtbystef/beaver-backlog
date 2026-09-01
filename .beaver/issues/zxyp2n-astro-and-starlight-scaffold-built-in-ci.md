@@ -1,11 +1,12 @@
 ---
 id: zxyp2n
 title: Astro and Starlight scaffold, built in CI
-state: todo
+state: done
+assignee: agent
 priority: high
 parent: g64ybd
 created: 2026-08-27T06:24:33Z
-updated: 2026-09-01T18:14:10Z
+updated: 2026-09-01T18:35:55Z
 ---
 
 ## What to build
@@ -67,3 +68,19 @@ committed.
 **pi** — 2026-09-01T18:14:10Z
 
 Took the canonical URL criterion from sw693i: https://beaverbacklog.com in exactly one config place, even before DNS is live.
+
+**agent** — 2026-09-01T18:31:47Z
+
+Seams for this slice: (1) internal/ci, the existing workflow-contract suite, for the site CI job (path filter, npm ci + build, pinned actions); (2) the site build itself (npm run build) for Installation content, link validation, and the rest of the scaffold. No Go product seam: the spec says the binary is untouched.
+
+**agent** — 2026-09-01T18:35:55Z
+
+Done.
+
+site/ is an Astro 7.2.10 + Starlight 0.41.11 project, versions pinned exactly, lockfile committed. npm ci && npm run build there produces the static site. The landing route is Starlight's splash index; Installation is a real docs page with the README's go install line and the clone/build instructions. Sidebar lists it; Pagefind indexes it; theme defaults to Auto (prefers-color-scheme) with light and dark.
+
+Canonical URL is https://beaverbacklog.com in site/astro.config.mjs (the site option), the only place a host is set. Internal links are validated by starlight-links-validator: a link to /docs/does-not-exist failed the build with exit 1, then was removed.
+
+CI: .github/workflows/site.yml runs npm ci && npm run build on pull requests (and main pushes) that touch site/. Actions pinned by SHA. internal/ci asserts the trigger, the lockfile install, Node 22, and the checkout revision matching ci.yml.
+
+Go module, go build, and go test are unchanged. No package.json or lockfile outside site/. site/node_modules, dist, and .astro are git-ignored.

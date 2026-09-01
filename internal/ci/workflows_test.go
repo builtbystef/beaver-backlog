@@ -1,6 +1,8 @@
 // Package ci guards the GitHub Actions workflows. Releasing is one push of a
 // tag, so the release workflow's contract (what triggers it, what it may write,
-// what it runs) is asserted here rather than discovered by pushing a tag.
+// what it runs) is asserted here rather than discovered by pushing a tag. The
+// site workflow is the same idea: a broken docs build must fail before merge,
+// so the trigger, the lockfile install, and the build step are asserted here.
 package ci
 
 import (
@@ -17,6 +19,7 @@ const (
 	workflowDir     = "../../.github/workflows"
 	releaseWorkflow = "release.yml"
 	ciWorkflow      = "ci.yml"
+	siteWorkflow    = "site.yml"
 )
 
 type workflow struct {
@@ -31,11 +34,12 @@ type job struct {
 }
 
 type step struct {
-	Name string               `yaml:"name"`
-	Uses string               `yaml:"uses"`
-	Run  string               `yaml:"run"`
-	With map[string]yaml.Node `yaml:"with"`
-	Env  map[string]string    `yaml:"env"`
+	Name             string               `yaml:"name"`
+	Uses             string               `yaml:"uses"`
+	Run              string               `yaml:"run"`
+	WorkingDirectory string               `yaml:"working-directory"`
+	With             map[string]yaml.Node `yaml:"with"`
+	Env              map[string]string    `yaml:"env"`
 }
 
 func load(t *testing.T, name string) workflow {
@@ -171,7 +175,7 @@ func TestReleaseTakesItsGoVersionFromGoMod(t *testing.T) {
 func TestEveryActionIsPinnedToASHAWithAVersionComment(t *testing.T) {
 	pinned := regexp.MustCompile(`^uses:\s+\S+@[0-9a-f]{40}\s+# v\S+$`)
 
-	for _, name := range []string{releaseWorkflow, ciWorkflow} {
+	for _, name := range []string{releaseWorkflow, ciWorkflow, siteWorkflow} {
 		data, err := os.ReadFile(filepath.Join(workflowDir, name))
 		if err != nil {
 			t.Fatalf("read %s: %v", name, err)
@@ -206,6 +210,94 @@ func TestReleaseUsesTheSameActionRevisionsAsCI(t *testing.T) {
 			t.Errorf("%s is pinned to %s here and %s in %s", action, ref, want, ciWorkflow)
 		}
 	}
+}
+
+func TestSiteWorkflowBuildsOnPullRequestsThatTouchTheSite(t *testing.T) {
+	w := load(t, siteWorkflow)
+
+	node, ok := w.On["pull_request"]
+	if !ok {
+		t.Fatalf("triggers %v, want pull_request so a docs change is built before merge", keys(w.On))
+	}
+
+	var pr struct {
+		Paths []string `yaml:"paths"`
+	}
+	if err := node.Decode(&pr); err != nil {
+		t.Fatalf("decode pull_request trigger: %v", err)
+	}
+	if !contains(pr.Paths, "site/**") {
+		t.Errorf("pull_request paths %v, want site/** so a change under site/ is built", pr.Paths)
+	}
+}
+
+func TestSiteWorkflowInstallsFromTheLockfileAndBuilds(t *testing.T) {
+	w := load(t, siteWorkflow)
+
+	var found bool
+	for _, s := range w.steps() {
+		if !strings.Contains(s.Run, "npm ci") {
+			continue
+		}
+		found = true
+		if strings.Contains(s.Run, "npm install") {
+			t.Errorf("site build uses npm install, which ignores the lockfile: %q", s.Run)
+		}
+		if !strings.Contains(s.Run, "npm run build") {
+			t.Errorf("site step runs %q, want npm run build so a broken site fails the job", s.Run)
+		}
+		if s.WorkingDirectory != "site" && !strings.Contains(s.Run, "cd site") {
+			t.Errorf("site build working-directory %q, want site", s.WorkingDirectory)
+		}
+	}
+	if !found {
+		t.Fatal("no step runs npm ci")
+	}
+}
+
+func TestSiteWorkflowUsesTheSameCheckoutRevisionAsCI(t *testing.T) {
+	ciRef := actionRef(t, ciWorkflow, "actions/checkout")
+	siteRef := actionRef(t, siteWorkflow, "actions/checkout")
+	if siteRef != ciRef {
+		t.Errorf("site checkout is %s, CI checkout is %s; keep them the same", siteRef, ciRef)
+	}
+}
+
+func TestSiteWorkflowSetsUpNode22(t *testing.T) {
+	w := load(t, siteWorkflow)
+
+	for _, s := range w.steps() {
+		if !strings.HasPrefix(s.Uses, "actions/setup-node@") {
+			continue
+		}
+		version := s.With["node-version"]
+		if version.Value != "22" {
+			t.Errorf("setup-node node-version %q, want 22 (Astro 7 needs Node 22.12 or later)", version.Value)
+		}
+		return
+	}
+	t.Fatal("no setup-node step")
+}
+
+func actionRef(t *testing.T, workflowName, action string) string {
+	t.Helper()
+	for _, s := range load(t, workflowName).steps() {
+		name, ref, ok := strings.Cut(s.Uses, "@")
+		if ok && name == action {
+			return ref
+		}
+	}
+	t.Fatalf("%s has no %s step", workflowName, action)
+	return ""
+}
+
+func contains(list []string, want string) bool {
+	for _, s := range list {
+		if s == want {
+			return true
+		}
+	}
+	return false
 }
 
 func keys(m map[string]yaml.Node) []string {

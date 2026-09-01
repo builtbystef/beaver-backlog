@@ -1,0 +1,17 @@
+{
+  "name": "beaver-backlog-site",
+  "type": "module",
+  "version": "0.0.1",
+  "private": true,
+  "scripts": {
+    "dev": "astro dev",
+    "start": "astro dev",
+    "build": "astro build",
+    "preview": "astro preview"
+  },
+  "dependencies": {
+    "@astrojs/starlight": "0.41.11",
+    "astro": "7.2.10",
+    "starlight-links-validator": "0.25.3"
+  }
+}
