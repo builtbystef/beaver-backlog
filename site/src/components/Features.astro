@@ -1,0 +1,69 @@
+---
+const features = [
+	{
+		title: 'Markdown-first',
+		body: 'Every issue is a human-readable .md file with a small YAML header. Read it, edit it, diff it, and review it like any other file.',
+	},
+	{
+		title: 'Local by default',
+		body: 'Issues live on your disk, in your project.',
+	},
+	{
+		title: 'Version-control-friendly',
+		body: 'Plain text that Git diffs and merges cleanly.',
+	},
+	{
+		title: 'Agent-friendly',
+		body: 'Coding agents read, create, and update issues through the same files as you.',
+	},
+	{
+		title: 'Nothing hidden',
+		body: 'The files are the only source of truth. The CLI and the web UI are thin clients over them; hand-editing an issue file is a first-class operation.',
+	},
+];
+---
+
+<ul class="features">
+	{
+		features.map((feature) => (
+			<li>
+				<h2>{feature.title}</h2>
+				<p>{feature.body}</p>
+			</li>
+		))
+	}
+</ul>
+
+<style>
+	.features {
+		list-style: none;
+		margin: 0;
+		padding: 0;
+		display: grid;
+		grid-template-columns: repeat(auto-fit, minmax(min(100%, 14rem), 1fr));
+		gap: 1.25rem;
+		max-width: 100%;
+	}
+
+	.features li {
+		background: var(--surface);
+		border: 1px solid var(--line);
+		border-radius: 0.5rem;
+		padding: 1.25rem;
+		box-shadow: var(--elevation-card);
+		min-width: 0;
+	}
+
+	.features h2 {
+		margin: 0 0 0.5rem;
+		font-size: 1.05rem;
+		line-height: 1.3;
+		color: var(--ink);
+	}
+
+	.features p {
+		margin: 0;
+		color: var(--ink-muted);
+		font-size: 0.95rem;
+	}
+</style>

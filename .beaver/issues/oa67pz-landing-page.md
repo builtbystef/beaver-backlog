@@ -1,14 +1,15 @@
 ---
 id: oa67pz
 title: Landing page
-state: todo
+state: done
+assignee: pi
 priority: high
 depends_on:
     - zxyp2n
     - dpry4y
 parent: g64ybd
 created: 2026-08-27T06:25:11Z
-updated: 2026-08-27T06:25:11Z
+updated: 2026-09-01T19:01:10Z
 ---
 
 ## What to build
@@ -48,3 +49,19 @@ and is complete and presentable without them.
       at a wide desktop width, with no horizontal scrolling of the page body.
 - [ ] The install command shown is the one the Installation documentation page
       leads with, not a second copy that can drift.
+
+## Notes
+
+**pi** — 2026-09-01T18:53:44Z
+
+Seams for this slice: the built site (dist/index.html, dist/installation/index.html, and the compiled CSS). No Go product seam: the spec says the binary is untouched. Link validation is Starlight's existing build check. Invariants (the install command is the one Installation leads with; the page's neutral scale and accent take their values from the application tokens) are asserted after npm run build.
+
+**pi** — 2026-09-01T19:01:10Z
+
+Done.
+
+Landing is a Starlight splash page with a custom Hero: the light/dark wordmark from docs/assets, the one-line pitch, the install command, and actions for Documentation (/installation/) and GitHub. The features row is the README's five reasons on neutral cards. data-screenshot-slot is the empty place for later captures.
+
+The install command is read from the first fenced block of the Installation page at build time, so the landing cannot carry a second copy. Palette values are parsed from internal/web/styles/tailwind.css and mapped onto Starlight; the accent is used for the primary button, focus, and link hover.
+
+CI rebuilds the site when those token or logo sources change. npm run build asserts the invariants against dist/. Link validation covers the documentation action.

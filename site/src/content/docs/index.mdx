@@ -5,7 +5,17 @@ template: splash
 hero:
   tagline: An issue tracker that lives in your repository, built for humans and coding agents working together.
   actions:
-    - text: Installation
+    - text: Documentation
       link: /installation/
       icon: right-arrow
+    - text: GitHub
+      link: https://github.com/builtbystef/beaver-backlog
+      icon: github
+      variant: minimal
 ---
+
+import Features from '../../components/Features.astro';
+
+<section data-screenshot-slot></section>
+
+<Features />

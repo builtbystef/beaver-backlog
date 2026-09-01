@@ -9,10 +9,14 @@ on:
     paths:
       - "site/**"
       - ".github/workflows/site.yml"
+      - "docs/assets/**"
+      - "internal/web/styles/tailwind.css"
   pull_request:
     paths:
       - "site/**"
       - ".github/workflows/site.yml"
+      - "docs/assets/**"
+      - "internal/web/styles/tailwind.css"
 
 permissions:
   contents: read

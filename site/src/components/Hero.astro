@@ -1,0 +1,100 @@
+---
+import { Code, LinkButton } from '@astrojs/starlight/components';
+import { installCommand } from 'virtual:install-command';
+import logoLight from '../../../docs/assets/logo-full.svg?url';
+import logoDark from '../../../docs/assets/logo-full-dark.svg?url';
+
+const { data } = Astro.locals.starlightRoute.entry;
+const { title = data.title, tagline, actions = [] } = data.hero || {};
+---
+
+<div class="hero">
+	<h1 id="_top" data-page-title class="sr-only">{title}</h1>
+	<p class="brand">
+		<img
+			src={logoLight}
+			alt="Beaver Backlog"
+			width="440"
+			height="81"
+			class="dark:sl-hidden"
+		/>
+		<img
+			src={logoDark}
+			alt="Beaver Backlog"
+			width="440"
+			height="81"
+			class="light:sl-hidden"
+		/>
+	</p>
+	{tagline && <p class="pitch">{tagline}</p>}
+	<div class="install">
+		<Code lang="sh" code={installCommand} />
+	</div>
+	{
+		actions.length > 0 && (
+			<p class="actions">
+				{actions.map(
+					({ attrs: { class: className, ...attrs } = {}, icon, link: href, text, variant }) => (
+						<LinkButton {href} {variant} icon={icon?.name} class:list={[className]} {...attrs}>
+							{text}
+							{icon?.html && <Fragment set:html={icon.html} />}
+						</LinkButton>
+					),
+				)}
+			</p>
+		)
+	}
+</div>
+
+<style>
+	.hero {
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		text-align: center;
+		gap: 1.5rem;
+		padding-block: clamp(1.5rem, 6vw, 4rem);
+		max-width: 100%;
+		min-width: 0;
+	}
+
+	.brand {
+		margin: 0;
+		width: min(100%, 22rem);
+	}
+
+	.brand img {
+		width: 100%;
+		height: auto;
+		display: block;
+	}
+
+	.pitch {
+		margin: 0;
+		max-width: 40rem;
+		font-size: clamp(1.15rem, 2.4vw, 1.55rem);
+		line-height: 1.4;
+		color: var(--ink);
+		text-wrap: balance;
+	}
+
+	.install {
+		width: min(100%, 42rem);
+		max-width: 100%;
+		min-width: 0;
+		text-align: start;
+	}
+
+	.install :global(pre) {
+		overflow-x: auto;
+		max-width: 100%;
+	}
+
+	.actions {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 1rem 1.5rem;
+		justify-content: center;
+		margin: 0;
+	}
+</style>

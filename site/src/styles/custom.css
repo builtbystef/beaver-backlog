@@ -1,0 +1,30 @@
+html {
+	overflow-x: clip;
+}
+
+.sl-link-button.primary {
+	background: var(--accent);
+	border-color: var(--accent);
+	color: var(--ink-on-accent);
+}
+
+.sl-link-button.primary:hover {
+	background: var(--accent-hover);
+	border-color: var(--accent-hover);
+	color: var(--ink-on-accent);
+}
+
+.sl-link-button.minimal,
+.sl-link-button.secondary {
+	color: var(--ink);
+}
+
+.sl-link-button.minimal:hover,
+.sl-link-button.secondary:hover {
+	color: var(--accent);
+}
+
+:focus-visible {
+	outline: 2px solid var(--accent);
+	outline-offset: 2px;
+}

@@ -263,6 +263,27 @@ func TestSiteWorkflowUsesTheSameCheckoutRevisionAsCI(t *testing.T) {
 	}
 }
 
+func TestSiteWorkflowRebuildsWhenTheLandingPageSourcesChange(t *testing.T) {
+	w := load(t, siteWorkflow)
+
+	node, ok := w.On["pull_request"]
+	if !ok {
+		t.Fatalf("triggers %v, want pull_request", keys(w.On))
+	}
+
+	var pr struct {
+		Paths []string `yaml:"paths"`
+	}
+	if err := node.Decode(&pr); err != nil {
+		t.Fatalf("decode pull_request trigger: %v", err)
+	}
+	for _, path := range []string{"internal/web/styles/tailwind.css", "docs/assets/**"} {
+		if !contains(pr.Paths, path) {
+			t.Errorf("pull_request paths %v, want %s so a token or logo change rebuilds the site", pr.Paths, path)
+		}
+	}
+}
+
 func TestSiteWorkflowSetsUpNode22(t *testing.T) {
 	w := load(t, siteWorkflow)
 
