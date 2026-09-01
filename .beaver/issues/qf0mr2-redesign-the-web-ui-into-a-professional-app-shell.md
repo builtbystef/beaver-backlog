@@ -1,11 +1,11 @@
 ---
 id: qf0mr2
 title: Redesign the web UI into a professional app shell
-state: todo
+state: done
 labels:
     - spec
 created: 2026-08-27T05:14:46Z
-updated: 2026-08-27T05:14:46Z
+updated: 2026-09-01T18:01:54Z
 ---
 
 ## Problem Statement
