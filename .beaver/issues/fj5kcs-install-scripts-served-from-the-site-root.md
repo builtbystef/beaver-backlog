@@ -9,7 +9,7 @@ depends_on:
     - 6jll90
 parent: g64ybd
 created: 2026-08-27T06:26:15Z
-updated: 2026-08-27T06:26:15Z
+updated: 2026-09-01T18:14:10Z
 ---
 
 ## What to build
@@ -30,6 +30,9 @@ developers with a Go toolchain. The host in those commands is derived from the
 site's configured canonical URL, so pointing the site at the custom domain
 carries the one-liners with it and no command has to be edited twice.
 
+Serving those files as plain text from the live host is the deploy slice's
+to verify, not this one's.
+
 ## Acceptance criteria
 
 - [ ] After `npm run build`, the output contains `install.sh` and `install.ps1`
@@ -45,5 +48,9 @@ carries the one-liners with it and no command has to be edited twice.
 - [ ] The host in the published one-liners comes from the site's configured
       canonical URL: changing that one setting changes every one-liner on the
       site, including the one on the landing page.
-- [ ] The served scripts are fetched as plain text a shell can execute — not
-      as HTML, and not as a download the browser renames.
+
+## Notes
+
+**pi** — 2026-09-01T18:14:10Z
+
+The live-host 'served as plain text' check moved to the Cloudflare Pages publish slice. This slice owns copy-during-build and the one-liners.

@@ -1,13 +1,13 @@
 ---
 id: sw693i
 title: Deploy the site to GitHub Pages
-state: todo
+state: cancelled
 priority: high
 depends_on:
     - zxyp2n
 parent: g64ybd
 created: 2026-08-27T06:24:52Z
-updated: 2026-08-27T06:24:52Z
+updated: 2026-09-01T18:16:20Z
 ---
 
 ## What to build
@@ -44,3 +44,9 @@ existing CI workflow pins its actions.
 - [ ] The canonical site URL is configured in exactly one place in the site's
       configuration, and pages that need an absolute URL derive it from there
       rather than hardcoding a host.
+
+## Notes
+
+**pi** — 2026-09-01T18:16:20Z
+
+Superseded: hosting is Cloudflare Pages, not GitHub Pages. Canonical URL moved to zxyp2n. Publish work is 2ajlma (maintainer). Cancelling this slice so it does not leave dependents stuck.

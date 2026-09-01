@@ -5,7 +5,7 @@ state: todo
 priority: high
 parent: g64ybd
 created: 2026-08-27T06:24:33Z
-updated: 2026-08-27T06:24:33Z
+updated: 2026-09-01T18:14:10Z
 ---
 
 ## What to build
@@ -23,6 +23,10 @@ The one page is Installation, adapted from the README's current content: the
 placeholder — the later docs slices add pages beside it, they do not replace
 it. Starlight's sidebar, its built-in search, and its light and dark themes
 come with the scaffold.
+
+The canonical site URL is `https://beaverbacklog.com`, configured in exactly
+one place, even before the domain is live. Pages that need an absolute URL
+derive it from there rather than hardcoding a host.
 
 Internal link validation is turned on, so a link to a page that does not exist
 fails the build rather than shipping. That is the regression net every later
@@ -54,3 +58,12 @@ committed.
       the lockfile is committed.
 - [ ] CI builds the site on pull requests that touch `site/`, and a pull
       request that breaks the site build fails CI.
+- [ ] The canonical site URL is `https://beaverbacklog.com`, configured in
+      exactly one place in the site's configuration, and pages that need an
+      absolute URL derive it from there rather than hardcoding a host.
+
+## Notes
+
+**pi** — 2026-09-01T18:14:10Z
+
+Took the canonical URL criterion from sw693i: https://beaverbacklog.com in exactly one config place, even before DNS is live.
