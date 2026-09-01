@@ -129,9 +129,29 @@ test('landing install command is the one Installation leads with', () => {
 	assert.equal(fromLanding, fromDocs);
 });
 
-test('landing has a place for screenshots and is complete without them', () => {
-	assert.match(landing, /data-screenshot-slot/);
-	assert.doesNotMatch(landing, /<img\b[^>]*src="[^"]*screenshot/i);
+function screenshotSlot(html) {
+	const match = html.match(/<section[^>]*data-screenshot-slot[\s\S]*?<\/section>/);
+	assert.ok(match, 'expected data-screenshot-slot on the landing page');
+	return match[0];
+}
+
+test('landing shows two or three screenshots, the board first, paired by theme', () => {
+	const slot = screenshotSlot(landing);
+	const imgs = [...slot.matchAll(/<img\b[^>]*>/gi)].map((m) => m[0]);
+	assert.ok(imgs.length >= 4 && imgs.length <= 6, `landing should show 2–3 views as light/dark pairs, got ${imgs.length} images`);
+
+	const alts = imgs.map((tag) => {
+		const m = tag.match(/\balt="([^"]+)"/i);
+		assert.ok(m && m[1].trim(), `screenshot missing alternative text: ${tag}`);
+		return m[1];
+	});
+	assert.match(alts[0], /board/i);
+
+	const light = imgs.filter((tag) => /dark:sl-hidden/.test(tag));
+	const dark = imgs.filter((tag) => /light:sl-hidden/.test(tag));
+	assert.equal(light.length, dark.length, 'each landing screenshot needs a light and a dark image');
+	assert.ok(light.length >= 2 && light.length <= 3, `expected 2–3 views, got ${light.length}`);
+	assert.equal(light.length + dark.length, imgs.length, 'every landing screenshot must hide in the other theme');
 });
 
 test('neutral scale and accent take their values from the application tokens', () => {

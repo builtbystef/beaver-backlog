@@ -161,13 +161,11 @@ writes are attributed just like CLI writes (`beaver serve --as <actor>`).
 
 ### Screenshots
 
-|                          The board                          |                             The graph                             |
-| :---------------------------------------------------------: | :---------------------------------------------------------------: |
-|    ![The board view](screenshots/background/light-board.png)    | ![The dependency graph](screenshots/background/light-graph.png)   |
-|                      **The issue list**                       |                         **An issue page**                         |
-| ![The issue list](screenshots/background/light-list.png) | ![An issue page](screenshots/background/light-detail-research.png) |
-|                     **Dark mode: board**                      |                        **Dark mode: graph**                       |
-| ![The board in dark mode](screenshots/background/dark-board.png) | ![The graph in dark mode](screenshots/background/dark-graph.png) |
+| The board | The graph |
+| :-------: | :-------: |
+| <picture><source media="(prefers-color-scheme: dark)" srcset="docs/assets/screenshots/board-dark.png"><img src="docs/assets/screenshots/board-light.png" alt="The board view, with issues as cards in state columns"></picture> | <picture><source media="(prefers-color-scheme: dark)" srcset="docs/assets/screenshots/graph-dark.png"><img src="docs/assets/screenshots/graph-light.png" alt="The dependency graph, with parent clusters and dependency arrows"></picture> |
+| **The issue list** | **An issue page** |
+| <picture><source media="(prefers-color-scheme: dark)" srcset="docs/assets/screenshots/list-dark.png"><img src="docs/assets/screenshots/list-light.png" alt="The issue list, with priorities, labels, and assignees"></picture> | <picture><source media="(prefers-color-scheme: dark)" srcset="docs/assets/screenshots/issue-dark.png"><img src="docs/assets/screenshots/issue-light.png" alt="An issue page, with its description, notes, and fields"></picture> |
 
 ## The issue file
 

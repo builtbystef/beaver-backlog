@@ -1,0 +1,74 @@
+---
+import boardLight from '../../../docs/assets/screenshots/board-light.png';
+import boardDark from '../../../docs/assets/screenshots/board-dark.png';
+import graphLight from '../../../docs/assets/screenshots/graph-light.png';
+import graphDark from '../../../docs/assets/screenshots/graph-dark.png';
+import issueLight from '../../../docs/assets/screenshots/issue-light.png';
+import issueDark from '../../../docs/assets/screenshots/issue-dark.png';
+
+const shots = [
+	{
+		light: boardLight,
+		dark: boardDark,
+		alt: 'The board view, with issues as cards in state columns',
+	},
+	{
+		light: graphLight,
+		dark: graphDark,
+		alt: 'The dependency graph, with parent clusters and dependency arrows',
+	},
+	{
+		light: issueLight,
+		dark: issueDark,
+		alt: 'An issue page, with its description, notes, and fields',
+	},
+];
+---
+
+<section data-screenshot-slot class="shots">
+	{
+		shots.map((shot) => (
+			<figure>
+				<img
+					src={shot.light.src}
+					width={shot.light.width}
+					height={shot.light.height}
+					alt={shot.alt}
+					class="dark:sl-hidden"
+				/>
+				<img
+					src={shot.dark.src}
+					width={shot.dark.width}
+					height={shot.dark.height}
+					alt={shot.alt}
+					class="light:sl-hidden"
+				/>
+			</figure>
+		))
+	}
+</section>
+
+<style>
+	.shots {
+		display: grid;
+		gap: 1.25rem;
+		margin: 0 0 2.5rem;
+		max-width: 100%;
+	}
+
+	.shots figure {
+		margin: 0;
+		background: var(--surface);
+		border: 1px solid var(--line);
+		border-radius: 0.5rem;
+		overflow: hidden;
+		box-shadow: var(--elevation-card);
+		min-width: 0;
+	}
+
+	.shots img {
+		display: block;
+		width: 100%;
+		height: auto;
+	}
+</style>

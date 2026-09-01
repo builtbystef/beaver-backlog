@@ -1,7 +1,8 @@
 ---
 id: fe63zb
 title: Screenshots from the redesigned UI, on the site and in the README
-state: todo
+state: done
+assignee: pi
 priority: medium
 depends_on:
     - oa67pz
@@ -12,7 +13,7 @@ depends_on:
     - acf595
 parent: g64ybd
 created: 2026-08-27T06:26:45Z
-updated: 2026-08-27T06:26:45Z
+updated: 2026-09-01T20:14:35Z
 ---
 
 ## What to build
@@ -52,3 +53,19 @@ view that communicates what the tool is fastest.
       with priorities, labels, and at least one dependency visible in the graph.
 - [ ] The images are sized for the web — a page carrying them stays reasonable
       to load — and each carries alternative text describing the view.
+
+## Notes
+
+**pi** — 2026-09-01T20:09:06Z
+
+Seams for this slice: docs/assets/screenshots/ (one committed copy of each capture), README.md image references resolved by following each relative path, and the built landing page (dist/index.html) inside data-screenshot-slot. No Go product seam: the spec leaves the binary untouched. Site postbuild tests assert the eight files exist once, README paths resolve, and the landing shows two or three views including the board, each with light/dark pairing and alternative text.
+
+**pi** — 2026-09-01T20:14:35Z
+
+Done.
+
+Eight PNGs live once at docs/assets/screenshots/: board, list, graph, and issue, each in light and dark. Captured from the redesigned sidebar shell (no topbar) against a Harbor demo store: 16 issues across all four states, with priorities, labels, assignees, notes, and a visible dependency chain on the graph.
+
+README and the landing page both point at that one directory. The landing shows three views, board first, using Starlight's dark:sl-hidden / light:sl-hidden pairing so one palette does not sit on the other. README uses picture/prefers-color-scheme for the same four views. Each image has alternative text. Files are 100–157KB.
+
+Seams checked by site/test/screenshots.test.js and the landing screenshot test after npm run build.
