@@ -1,13 +1,14 @@
 ---
 id: orshcq
 title: 'Core docs: quick start, command reference, issue file format'
-state: todo
+state: done
+assignee: pi
 priority: medium
 depends_on:
     - zxyp2n
 parent: g64ybd
 created: 2026-08-27T06:25:33Z
-updated: 2026-08-27T06:25:33Z
+updated: 2026-09-01T19:46:08Z
 ---
 
 ## What to build
@@ -55,3 +56,23 @@ where a term first appears. They join the sidebar beside Installation.
       of the rejected synonyms it lists.
 - [ ] `npm run build` passes, so every internal link across the new pages
       resolves.
+
+## Notes
+
+**pi** — 2026-09-01T19:38:27Z
+
+Seams for this slice: the built site (dist/ pages and sidebar), asserted after npm run build. No Go product seam: the spec says the binary is untouched. Link validation is Starlight's existing build check. Command, flag, and exit-code facts are taken from the CLI (beaver help and the handlers), not the README.
+
+**pi** — 2026-09-01T19:46:06Z
+
+Done.
+
+Three Starlight pages sit beside Installation in the sidebar: Quick start, Command reference, and The issue file.
+
+Quick start walks init → create → list → start (claim) → note → update → done, with console output checked against the CLI, and the rule that state changes are verbs while every other field goes through update.
+
+Command reference documents all fifteen commands the binary lists today (the issue said fourteen; serve is the fifteenth), each with its flags, plus refs (ID, slug, or file name, exact match only), update add/remove syntax, human/JSON auto-detection with --format, and exit codes 0/1/2/3. Facts taken from beaver help and the handlers, not the README.
+
+The issue file page shows a complete example, every frontmatter field (state is todo, in-progress, done, cancelled), machine-owned frontmatter vs actor-owned body vs append-only notes, and the three hand-edit rules.
+
+Pages use the glossary's terms. npm run build passes, including link validation. site/test/core-docs.test.js asserts the pages, sidebar, commands, flags, exit codes, example, and hand-edit rules after the build.

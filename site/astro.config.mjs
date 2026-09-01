@@ -19,7 +19,12 @@ export default defineConfig({
 			description:
 				'An issue tracker that lives in your repository, built for humans and coding agents working together.',
 			plugins: [starlightLinksValidator()],
-			sidebar: [{ label: 'Installation', slug: 'installation' }],
+			sidebar: [
+				{ label: 'Installation', slug: 'installation' },
+				{ label: 'Quick start', slug: 'quick-start' },
+				{ label: 'Command reference', slug: 'command-reference' },
+				{ label: 'The issue file', slug: 'issue-file' },
+			],
 			social: [
 				{
 					icon: 'github',
