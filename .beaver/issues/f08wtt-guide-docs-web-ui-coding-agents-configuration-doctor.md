@@ -1,13 +1,14 @@
 ---
 id: f08wtt
 title: 'Guide docs: web UI, coding agents, configuration, doctor'
-state: todo
+state: done
+assignee: pi
 priority: medium
 depends_on:
     - zxyp2n
 parent: g64ybd
 created: 2026-08-27T06:25:56Z
-updated: 2026-08-27T06:25:56Z
+updated: 2026-09-01T19:53:57Z
 ---
 
 ## What to build
@@ -67,3 +68,27 @@ and to the ADR directory rather than republishing them.
       against the CLI and the running server, not copied on trust.
 - [ ] `npm run build` passes, so every internal link across the new pages
       resolves.
+
+## Notes
+
+**pi** — 2026-09-01T19:50:05Z
+
+Seams for this slice: the built site (dist/ pages and sidebar), asserted after npm run build. No Go product seam: the spec says the binary is untouched. Link validation is Starlight's existing build check. Facts (serve port and scan, actor resolution, doctor skip-and-warn and --fix, init's config.yml) are taken from the CLI, the handlers, and a running beaver serve, not the README.
+
+**pi** — 2026-09-01T19:53:45Z
+
+Done.
+
+Four Starlight pages sit beside the core docs in the sidebar: The web UI, Working with coding agents, Configuration, and Doctor.
+
+Web UI: beaver serve on loopback, default port 2328 with a forward scan when taken, --port (no scan; 0 picks a free one), --as for attribution, and the board, list (Issues), graph, issue, and doctor views as the running server renders them.
+
+Coding agents: actor resolution as the binary does it (--as, then BEAVER_BACKLOG_ACTOR, then agent environment signals, then per-machine user config in an interactive session, then a generic agent), setting BEAVER_BACKLOG_ACTOR, --body-file - for a complete create, list --ready as the queue, claims as advisory not a lock, one working tree per concurrent agent. Links to docs/TRACKER.md rather than restating this repo's conventions.
+
+Configuration: what init writes (.beaver/, issues/, committed config.yml), identity in per-machine user config never in the repository, Beaver Backlog never runs a VCS.
+
+Doctor: skip-and-warn on invalid files (stderr, beaver: skipping invalid issue ...), the finding classes, --fix only filename drift and never removes data.
+
+CONTRIBUTING.md and docs/adr are linked on GitHub, not copied. Facts taken from the CLI, handlers, ADR 0003/0004, and a running beaver serve. npm run build passes, including link validation. site/test/guide-docs.test.js asserts the pages, sidebar, and acceptance criteria after the build.
+
+The actor-resolution list includes the two extra steps the binary actually has (agent detection, generic fallback) that the criterion's three-item summary omitted, so the page matches the binary rather than the README's abbreviation.

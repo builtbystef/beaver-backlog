@@ -24,6 +24,10 @@ export default defineConfig({
 				{ label: 'Quick start', slug: 'quick-start' },
 				{ label: 'Command reference', slug: 'command-reference' },
 				{ label: 'The issue file', slug: 'issue-file' },
+				{ label: 'The web UI', slug: 'web-ui' },
+				{ label: 'Working with coding agents', slug: 'coding-agents' },
+				{ label: 'Configuration', slug: 'configuration' },
+				{ label: 'Doctor', slug: 'doctor' },
 			],
 			social: [
 				{
