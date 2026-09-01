@@ -1,11 +1,16 @@
 ---
 import { Code, LinkButton } from '@astrojs/starlight/components';
-import { installCommand } from 'virtual:install-command';
+import { unixInstallCommand } from '../lib/install.js';
 import logoLight from '../../../docs/assets/logo-full.svg?url';
 import logoDark from '../../../docs/assets/logo-full-dark.svg?url';
 
 const { data } = Astro.locals.starlightRoute.entry;
 const { title = data.title, tagline, actions = [] } = data.hero || {};
+const origin = Astro.site;
+if (!origin) {
+	throw new Error('site URL is required to render install one-liners');
+}
+const installCommand = unixInstallCommand(origin);
 ---
 
 <div class="hero">

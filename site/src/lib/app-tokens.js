@@ -1,21 +1,11 @@
-// Reads the application token table and the Installation page so the site
-// cannot pick a second palette or a second install command that would drift.
+// Reads the application token table so the site cannot pick a second palette
+// that would drift from the app.
 import { readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const here = dirname(fileURLToPath(import.meta.url));
 const sourcePath = join(here, '../../../internal/web/styles/tailwind.css');
-const installationPath = join(here, '../content/docs/installation.md');
-
-export function leadingInstallCommand() {
-	const source = readFileSync(installationPath, 'utf8');
-	const match = source.match(/```[^\n]*\n([\s\S]*?)```/);
-	if (!match) {
-		throw new Error('Installation page has no command for the landing page to show');
-	}
-	return match[1].trim();
-}
 
 function extractBlock(css, selector) {
 	const needle = selector + ' {';
@@ -101,16 +91,11 @@ export function appTokensPlugin() {
 		name: 'app-tokens',
 		resolveId(id) {
 			if (id === 'virtual:app-tokens.css') return '\0virtual:app-tokens.css';
-			if (id === 'virtual:install-command') return '\0virtual:install-command';
 		},
 		load(id) {
 			if (id === '\0virtual:app-tokens.css') {
 				this.addWatchFile(sourcePath);
 				return generateAppTokensCss();
-			}
-			if (id === '\0virtual:install-command') {
-				this.addWatchFile(installationPath);
-				return `export const installCommand = ${JSON.stringify(leadingInstallCommand())};`;
 			}
 		},
 	};

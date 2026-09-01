@@ -1,0 +1,19 @@
+---
+import { Code } from '@astrojs/starlight/components';
+import { unixInstallCommand, windowsInstallCommand } from '../lib/install.js';
+
+interface Props {
+	platform: 'unix' | 'windows';
+}
+
+const { platform } = Astro.props;
+const origin = Astro.site;
+if (!origin) {
+	throw new Error('site URL is required to render install one-liners');
+}
+const command =
+	platform === 'windows' ? windowsInstallCommand(origin) : unixInstallCommand(origin);
+const lang = platform === 'windows' ? 'powershell' : 'sh';
+---
+
+<Code {lang} code={command} />

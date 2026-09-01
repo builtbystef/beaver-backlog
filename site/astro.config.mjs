@@ -4,16 +4,18 @@ import { defineConfig } from 'astro/config';
 import starlight from '@astrojs/starlight';
 import starlightLinksValidator from 'starlight-links-validator';
 import { appTokensPlugin } from './src/lib/app-tokens.js';
+import { installScriptsIntegration } from './src/lib/install.js';
 
 // Canonical origin for the published site. Absolute URLs (canonical tags,
-// the sitemap, later install one-liners) derive from this value; do not
-// hardcode a host elsewhere.
+// the sitemap, install one-liners) derive from this value; do not hardcode a
+// host elsewhere.
 const site = 'https://beaverbacklog.com';
 
 // https://astro.build/config
 export default defineConfig({
 	site,
 	integrations: [
+		installScriptsIntegration(),
 		starlight({
 			title: 'Beaver Backlog',
 			description:

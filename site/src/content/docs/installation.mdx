@@ -1,0 +1,45 @@
+---
+title: Installation
+description: Install Beaver Backlog in one line, or with a Go toolchain.
+---
+
+import InstallCommand from '../../components/InstallCommand.astro';
+
+## macOS and Linux
+
+<InstallCommand platform="unix" />
+
+The binary lands in `~/.local/bin/beaver`. Set `BEAVER_INSTALL_DIR` to install
+somewhere else. When that directory is not on your `PATH`, the script prints
+the line to add to your shell profile.
+
+## Windows
+
+<InstallCommand platform="windows" />
+
+`beaver.exe` lands in `%LOCALAPPDATA%\Programs\beaver`, which the script adds to
+your user `PATH`. No administrator rights are needed; open a new shell
+afterwards to pick up the `PATH` change.
+
+Neither installer needs a Go toolchain. Both verify the download's SHA-256
+against the release's published checksums file, and install nothing if it does
+not match.
+
+## With a Go toolchain
+
+If you already have Go 1.26 or later:
+
+```sh
+go install github.com/builtbystef/beaver-backlog/cmd/beaver@latest
+```
+
+Or build from a clone:
+
+```sh
+git clone https://github.com/builtbystef/beaver-backlog.git
+cd beaver-backlog
+go build ./cmd/beaver
+```
+
+These builds report their version as `dev`, since the version is stamped in at
+release time.

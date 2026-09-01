@@ -1,7 +1,8 @@
 ---
 id: fj5kcs
 title: Install scripts served from the site root
-state: todo
+state: done
+assignee: pi
 priority: medium
 depends_on:
     - zxyp2n
@@ -9,7 +10,7 @@ depends_on:
     - 6jll90
 parent: g64ybd
 created: 2026-08-27T06:26:15Z
-updated: 2026-09-01T18:14:10Z
+updated: 2026-09-01T20:03:41Z
 ---
 
 ## What to build
@@ -54,3 +55,19 @@ to verify, not this one's.
 **pi** — 2026-09-01T18:14:10Z
 
 The live-host 'served as plain text' check moved to the Cloudflare Pages publish slice. This slice owns copy-during-build and the one-liners.
+
+**pi** — 2026-09-01T19:59:40Z
+
+Seams for this slice: the site build output (site/dist after npm run build) for the copied install scripts and the published one-liners, plus the one-liner helpers in site/src/lib/install.js so a change to the configured canonical URL is observable without a second host. No Go product seam: the spec leaves the binary untouched.
+
+**pi** — 2026-09-01T20:03:41Z
+
+Done.
+
+The site build copies the repository's install.sh and install.ps1 into dist/ at astro:build:done, so /install.sh and /install.ps1 are in the published output and stay byte-identical to the linted originals. site/ holds no committed copy.
+
+Installation is now MDX and leads with the macOS/Linux curl one-liner and the Windows irm one-liner; go install and build-from-a-clone sit below as alternatives. Both one-liners, and the landing page's command, are built from Astro.site (the canonical URL in astro.config.mjs). Changing that one setting changes every one-liner.
+
+The virtual:install-command scrape of the Installation markdown is gone; Hero and Installation call the same helpers in site/src/lib/install.js.
+
+Seams checked by site/test/install.test.js after npm run build.
