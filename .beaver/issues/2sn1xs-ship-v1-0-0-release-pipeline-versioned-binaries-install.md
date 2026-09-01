@@ -1,11 +1,11 @@
 ---
 id: 2sn1xs
 title: 'Ship v1.0.0: release pipeline, versioned binaries, install scripts'
-state: todo
+state: done
 labels:
     - spec
 created: 2026-08-27T05:14:47Z
-updated: 2026-08-27T05:14:47Z
+updated: 2026-09-01T17:59:40Z
 ---
 
 ## Problem Statement
