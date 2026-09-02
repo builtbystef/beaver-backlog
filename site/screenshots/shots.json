@@ -1,0 +1,54 @@
+[
+ {
+  "name": "board",
+  "url": "http://127.0.0.1:2340/",
+  "theme": "light"
+ },
+ {
+  "name": "list",
+  "url": "http://127.0.0.1:2340/issues",
+  "theme": "light"
+ },
+ {
+  "name": "graph",
+  "url": "http://127.0.0.1:2340/graph",
+  "theme": "light",
+  "script": "const svg=document.querySelector('svg.graph');const w=+svg.getAttribute('width'),h=+svg.getAttribute('height');const r=svg.getBoundingClientRect();const vh=h*0.5;const vw=vh*r.width/r.height;svg.setAttribute('viewBox',`${w/2-vw/2} ${-h*0.01} ${vw} ${vh}`);"
+ },
+ {
+  "name": "issue",
+  "url": "http://127.0.0.1:2340/issues/pfrezq",
+  "theme": "light"
+ },
+ {
+  "name": "doctor",
+  "url": "http://127.0.0.1:2340/doctor",
+  "theme": "light"
+ },
+ {
+  "name": "board",
+  "url": "http://127.0.0.1:2340/",
+  "theme": "dark"
+ },
+ {
+  "name": "list",
+  "url": "http://127.0.0.1:2340/issues",
+  "theme": "dark"
+ },
+ {
+  "name": "graph",
+  "url": "http://127.0.0.1:2340/graph",
+  "theme": "dark",
+  "script": "const svg=document.querySelector('svg.graph');const w=+svg.getAttribute('width'),h=+svg.getAttribute('height');const r=svg.getBoundingClientRect();const vh=h*0.5;const vw=vh*r.width/r.height;svg.setAttribute('viewBox',`${w/2-vw/2} ${-h*0.01} ${vw} ${vh}`);"
+ },
+ {
+  "name": "issue",
+  "url": "http://127.0.0.1:2340/issues/pfrezq",
+  "theme": "dark"
+ },
+ {
+  "name": "doctor",
+  "url": "http://127.0.0.1:2340/doctor",
+  "theme": "dark"
+ }
+]

@@ -9,9 +9,12 @@ const repo = join(here, '..', '..');
 const dist = join(here, '..', 'dist');
 const shots = join(repo, 'docs', 'assets', 'screenshots');
 
+// The README shows the four core views; the landing page adds the doctor.
 const views = ['board', 'list', 'graph', 'issue'];
+const extras = ['doctor'];
 const palettes = ['light', 'dark'];
-const files = views.flatMap((view) => palettes.map((palette) => `${view}-${palette}.png`));
+const files = [...views, ...extras].flatMap((view) => palettes.map((palette) => `${view}-${palette}.png`));
+const readmeFiles = views.flatMap((view) => palettes.map((palette) => `${view}-${palette}.png`));
 
 // The committed captures are 2x (2880 by 1800) so a high-density screen gets
 // a sharp picture; the README shows them as they are. The site never serves
@@ -46,7 +49,7 @@ function readmeRefs(md) {
 	return refs.filter((ref) => ref && !/^(https?:|#|data:)/i.test(ref));
 }
 
-test('the screenshot set covers board, list, graph, and issue in both palettes', () => {
+test('the screenshot set covers board, list, graph, issue, and doctor in both palettes', () => {
 	for (const name of files) {
 		const path = join(shots, name);
 		assert.ok(existsSync(path), `missing ${relative(repo, path)}`);
@@ -130,7 +133,7 @@ test('every README image reference resolves to a file that exists', () => {
 		const path = join(repo, ref);
 		assert.ok(existsSync(path), `README image ${ref} does not exist`);
 	}
-	for (const name of files) {
+	for (const name of readmeFiles) {
 		assert.ok(
 			refs.some((ref) => ref.endsWith(`screenshots/${name}`) || ref.endsWith(`screenshots/${name}`.replaceAll('\\', '/'))),
 			`README should reference ${name}`,

@@ -3,15 +3,21 @@ import { Image } from 'astro:assets';
 import { Icon } from '@astrojs/starlight/components';
 import boardLight from '../../../docs/assets/screenshots/board-light.png';
 import boardDark from '../../../docs/assets/screenshots/board-dark.png';
+import listLight from '../../../docs/assets/screenshots/list-light.png';
+import listDark from '../../../docs/assets/screenshots/list-dark.png';
 import graphLight from '../../../docs/assets/screenshots/graph-light.png';
 import graphDark from '../../../docs/assets/screenshots/graph-dark.png';
 import issueLight from '../../../docs/assets/screenshots/issue-light.png';
 import issueDark from '../../../docs/assets/screenshots/issue-dark.png';
+import doctorLight from '../../../docs/assets/screenshots/doctor-light.png';
+import doctorDark from '../../../docs/assets/screenshots/doctor-dark.png';
 
 // One view at a time, each at the full width of the column, with the board
-// first: it is the view that explains the product in one look.
+// first: it is the view that explains the product in one look. The rest follow
+// the sidebar's order, with the issue page between the graph and doctor.
 //
-// The committed captures are 2x (2880 wide) so a high-density screen gets a
+// The committed captures are 2x (2880 wide), taken by site/screenshots/ against
+// its demo store, so a high-density screen gets a
 // sharp picture. Astro's image pipeline derives the WebP files the page
 // actually serves: a 1x and a 2x candidate for the slot each picture fills,
 // with the browser picking by its own pixel density.
@@ -28,6 +34,13 @@ const shots = [
 		detail: 'Issues as cards in state columns. Drag a card to move it.',
 	},
 	{
+		light: listLight,
+		dark: listDark,
+		alt: 'The issue list, with priorities, labels, and assignees',
+		caption: 'Issues',
+		detail: 'Every issue as a table. Filter by state, condition, priority, assignee, or label; sort by any column.',
+	},
+	{
 		light: graphLight,
 		dark: graphDark,
 		alt: 'The dependency graph, with parent clusters and dependency arrows',
@@ -40,6 +53,13 @@ const shots = [
 		alt: 'An issue page, with its description, notes, and fields',
 		caption: 'Issue',
 		detail: 'Rendered Markdown, every field editable, notes attributed.',
+	},
+	{
+		light: doctorLight,
+		dark: doctorDark,
+		alt: 'The doctor view, listing an invalid file and a drifted filename with a repair control',
+		caption: 'Doctor',
+		detail: 'Store health as a page. What can be repaired safely, repaired with one click.',
 	},
 ];
 ---
@@ -90,24 +110,31 @@ const shots = [
 					hidden={i !== 0}
 				>
 					<div class="landing-frame">
-						<Image
-							src={shot.light}
-							alt={shot.alt}
-							{widths}
-							{sizes}
-							{width}
-							loading={i === 0 ? 'eager' : 'lazy'}
-							class="dark:sl-hidden"
-						/>
-						<Image
-							src={shot.dark}
-							alt={shot.alt}
-							{widths}
-							{sizes}
-							{width}
-							loading={i === 0 ? 'eager' : 'lazy'}
-							class="light:sl-hidden"
-						/>
+						<button
+							type="button"
+							class="zoom"
+							data-zoom
+							aria-label={`View the ${shot.caption.toLowerCase()} screenshot full screen`}
+						>
+							<Image
+								src={shot.light}
+								alt={shot.alt}
+								{widths}
+								{sizes}
+								{width}
+								loading={i === 0 ? 'eager' : 'lazy'}
+								class="dark:sl-hidden"
+							/>
+							<Image
+								src={shot.dark}
+								alt={shot.alt}
+								{widths}
+								{sizes}
+								{width}
+								loading={i === 0 ? 'eager' : 'lazy'}
+								class="light:sl-hidden"
+							/>
+						</button>
 					</div>
 					<figcaption>
 						<span class="caption">{shot.caption}</span>
@@ -118,6 +145,20 @@ const shots = [
 		}
 	</beaver-slides>
 </section>
+
+{/* The lightbox: one screenshot at the size of the screen, in the palette the
+    page is in. It sits outside the section so the gallery's own markup stays
+    the pairs of pictures the tests read; the script fills it from the picture
+    that was clicked. */}
+<dialog class="lightbox" data-lightbox aria-label="Screenshot, full screen">
+	<button type="button" class="close" data-close aria-label="Close">
+		<Icon name="close" size="1.5em" />
+	</button>
+	<figure>
+		<img alt="" />
+		<figcaption></figcaption>
+	</figure>
+</dialog>
 
 <script>
 	// A tab strip and a pair of arrows over one visible panel. The markup
@@ -143,6 +184,9 @@ const shots = [
 			for (const arrow of this.querySelectorAll<HTMLButtonElement>('[data-step]')) {
 				arrow.addEventListener('click', () => this.show(this.#current + Number(arrow.dataset.step)));
 			}
+			for (const zoom of this.querySelectorAll<HTMLButtonElement>('[data-zoom]')) {
+				zoom.addEventListener('click', () => this.open(zoom));
+			}
 		}
 
 		show(index: number) {
@@ -157,9 +201,48 @@ const shots = [
 			});
 			this.#current = next;
 		}
+
+		// Opens the lightbox on the picture the button shows: of its light and
+		// dark pair, the one the page's theme has left visible. The source set
+		// is carried over with a viewport-wide sizes hint, so the browser fetches
+		// the 2x candidate for the screen it is now filling.
+		open(zoom: HTMLButtonElement) {
+			const lightbox = document.querySelector<HTMLDialogElement>('[data-lightbox]');
+			const shown = [...zoom.querySelectorAll('img')].find((img) => img.getClientRects().length > 0);
+			const large = lightbox?.querySelector('img');
+			const caption = lightbox?.querySelector('figcaption');
+			if (!lightbox || !shown || !large || !caption) return;
+			large.srcset = shown.srcset;
+			large.sizes = '100vw';
+			large.src = shown.currentSrc || shown.src;
+			large.alt = shown.alt;
+			caption.textContent = zoom.closest('figure')?.querySelector('.caption')?.textContent ?? '';
+			lightbox.showModal();
+		}
 	}
 
 	customElements.define('beaver-slides', BeaverSlides);
+
+	// The lightbox closes from its own button, from a click on the dark ground
+	// around the picture (which the browser reports as a click on the dialog
+	// itself), and from Escape, which a modal dialog handles on its own. The
+	// page beneath stops scrolling while it is open, and the picture is let go
+	// when it shuts so the next open does not flash the previous one.
+	const lightbox = document.querySelector<HTMLDialogElement>('[data-lightbox]');
+	if (lightbox) {
+		lightbox.querySelector('[data-close]')?.addEventListener('click', () => lightbox.close());
+		lightbox.addEventListener('click', (event) => {
+			if (event.target === lightbox) lightbox.close();
+		});
+		new MutationObserver(() => {
+			document.documentElement.style.overflow = lightbox.open ? 'hidden' : '';
+		}).observe(lightbox, { attributes: true, attributeFilter: ['open'] });
+		lightbox.addEventListener('close', () => {
+			const large = lightbox.querySelector('img');
+			large?.removeAttribute('srcset');
+			large?.removeAttribute('src');
+		});
+	}
 </script>
 
 <style>
@@ -234,6 +317,101 @@ const shots = [
 		display: block;
 		width: 100%;
 		height: auto;
+	}
+
+	.zoom {
+		display: block;
+		width: 100%;
+		padding: 0;
+		margin: 0;
+		border: 0;
+		background: none;
+		font: inherit;
+		cursor: zoom-in;
+	}
+
+	.zoom:focus-visible {
+		outline: 3px solid var(--accent);
+		outline-offset: -3px;
+	}
+
+	/* The whole screen, on a ground dark enough for either palette's picture
+	   to read as the thing on show. The dialog is the ground itself, so the
+	   backdrop has nothing left to paint. */
+	.lightbox {
+		position: fixed;
+		inset: 0;
+		width: 100vw;
+		height: 100vh;
+		max-width: none;
+		max-height: none;
+		margin: 0;
+		padding: 0;
+		border: 0;
+		background: #0c0c0e;
+		color: #e6e6ea;
+	}
+
+	.lightbox::backdrop {
+		background: transparent;
+	}
+
+	.lightbox figure {
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		justify-content: center;
+		gap: 0.75rem;
+		box-sizing: border-box;
+		width: 100%;
+		height: 100%;
+		margin: 0;
+		padding: 4rem 1rem 1.5rem;
+	}
+
+	.lightbox img {
+		display: block;
+		flex: 0 1 auto;
+		min-height: 0;
+		max-width: 100%;
+		max-height: 100%;
+		width: auto;
+		height: auto;
+		object-fit: contain;
+		border-radius: 0.5rem;
+		/* A dark capture would otherwise dissolve into the ground. */
+		box-shadow: 0 0 0 1px rgb(255 255 255 / 0.14);
+	}
+
+	.lightbox figcaption {
+		flex: none;
+		font-size: 0.9375rem;
+		font-weight: 600;
+		letter-spacing: -0.01em;
+	}
+
+	.close {
+		position: fixed;
+		top: 1rem;
+		right: 1rem;
+		width: 2.75rem;
+		height: 2.75rem;
+		padding: 0;
+		border: 2px solid #e6e6ea;
+		border-radius: 0.625rem;
+		background: #0c0c0e;
+		color: #e6e6ea;
+		cursor: pointer;
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+	}
+
+	.close:hover,
+	.close:focus-visible {
+		background: #e6e6ea;
+		color: #0c0c0e;
+		outline: none;
 	}
 
 	figcaption {

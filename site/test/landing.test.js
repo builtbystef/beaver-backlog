@@ -135,10 +135,10 @@ function screenshotSlot(html) {
 	return match[0];
 }
 
-test('landing shows two or three screenshots, the board first, paired by theme', () => {
+test('landing shows two to five screenshots, the board first, paired by theme', () => {
 	const slot = screenshotSlot(landing);
 	const imgs = [...slot.matchAll(/<img\b[^>]*>/gi)].map((m) => m[0]);
-	assert.ok(imgs.length >= 4 && imgs.length <= 6, `landing should show 2–3 views as light/dark pairs, got ${imgs.length} images`);
+	assert.ok(imgs.length >= 4 && imgs.length <= 10, `landing should show 2–5 views as light/dark pairs, got ${imgs.length} images`);
 
 	const alts = imgs.map((tag) => {
 		const m = tag.match(/\balt="([^"]+)"/i);
@@ -150,7 +150,7 @@ test('landing shows two or three screenshots, the board first, paired by theme',
 	const light = imgs.filter((tag) => /dark:sl-hidden/.test(tag));
 	const dark = imgs.filter((tag) => /light:sl-hidden/.test(tag));
 	assert.equal(light.length, dark.length, 'each landing screenshot needs a light and a dark image');
-	assert.ok(light.length >= 2 && light.length <= 3, `expected 2–3 views, got ${light.length}`);
+	assert.ok(light.length >= 2 && light.length <= 5, `expected 2–5 views, got ${light.length}`);
 	assert.equal(light.length + dark.length, imgs.length, 'every landing screenshot must hide in the other theme');
 });
 
