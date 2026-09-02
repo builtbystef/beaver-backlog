@@ -8,7 +8,8 @@
     "start": "astro dev",
     "build": "astro build",
     "postbuild": "node --test test/*.js",
-    "preview": "astro preview"
+    "preview": "astro preview",
+    "deploy": "npm run build && npx wrangler pages deploy dist --project-name beaver-backlog --branch main"
   },
   "dependencies": {
     "@astrojs/starlight": "0.41.11",
