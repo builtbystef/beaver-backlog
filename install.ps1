@@ -24,7 +24,7 @@
     %LOCALAPPDATA%\Programs\beaver when that is unset.
 
 .EXAMPLE
-    irm https://raw.githubusercontent.com/builtbystef/beaver-backlog/main/install.ps1 | iex
+    irm https://beaverbacklog.com/install.ps1 | iex
 
 .EXAMPLE
     .\install.ps1 -Version 1.0.0
@@ -43,6 +43,10 @@ param(
     [string]$InstallDir = $env:BEAVER_INSTALL_DIR
 )
 
+# Piped into iex, the script runs inside the caller's own session. The block
+# gives it a scope of its own, so the preferences below and strict mode do not
+# outlive the install in an interactive shell.
+& {
 $ErrorActionPreference = 'Stop'
 Set-StrictMode -Version Latest
 
@@ -192,10 +196,14 @@ public static extern IntPtr SendMessageTimeout(IntPtr hWnd, uint msg, UIntPtr wP
         Write-Output "$InstallDir is on your user PATH but not this session's. Open a new shell to run beaver."
     }
 } catch {
-    Write-Error "install.ps1: $($_.Exception.Message)" -ErrorAction Continue
-    exit 1
+    # Never exit: in that same session, exit closes the caller's window before
+    # the message can be read. A terminating error leaves an interactive shell
+    # open with the message on screen, and still fails `powershell -File`
+    # with a non-zero exit code.
+    throw "install.ps1: $($_.Exception.Message)"
 } finally {
     if ($tmp -and (Test-Path -LiteralPath $tmp)) {
         Remove-Item -LiteralPath $tmp -Recurse -Force
     }
+}
 }

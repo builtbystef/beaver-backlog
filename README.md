@@ -57,7 +57,7 @@ with your code:
 ### macOS and Linux
 
 ```sh
-curl -fsSL https://raw.githubusercontent.com/builtbystef/beaver-backlog/main/install.sh | sh
+curl -fsSL https://beaverbacklog.com/install.sh | sh
 ```
 
 The binary lands in `~/.local/bin/beaver`; set `BEAVER_INSTALL_DIR` to install
@@ -67,12 +67,15 @@ the line to add to your shell profile.
 ### Windows
 
 ```powershell
-irm https://raw.githubusercontent.com/builtbystef/beaver-backlog/main/install.ps1 | iex
+irm https://beaverbacklog.com/install.ps1 | iex
 ```
 
 `beaver.exe` lands in `%LOCALAPPDATA%\Programs\beaver`, which the script adds to
 your user `PATH`. No administrator rights are needed; open a new shell
-afterwards to pick up the `PATH` change.
+afterwards to pick up the `PATH` change. If you save the script and run the
+file instead, Windows' default execution policy refuses it; the one-liner is
+not subject to that, and a saved copy runs with
+`powershell -ExecutionPolicy Bypass -File install.ps1`.
 
 Neither installer needs a Go toolchain. Both verify the download's SHA-256
 against the release's published checksums file, and install nothing if it does
@@ -81,11 +84,11 @@ not match.
 By default you get the latest release. To install a specific one:
 
 ```sh
-curl -fsSL https://raw.githubusercontent.com/builtbystef/beaver-backlog/main/install.sh | sh -s -- --version 1.0.0
+curl -fsSL https://beaverbacklog.com/install.sh | sh -s -- --version 1.0.0
 ```
 
 ```powershell
-$env:BEAVER_VERSION = '1.0.0'; irm https://raw.githubusercontent.com/builtbystef/beaver-backlog/main/install.ps1 | iex
+$env:BEAVER_VERSION = '1.0.0'; irm https://beaverbacklog.com/install.ps1 | iex
 ```
 
 ### With a Go toolchain
@@ -336,6 +339,10 @@ warning rather than crashing, and `beaver doctor` reports everything it finds.
 never removes data.
 
 ## Documentation
+
+User documentation, from installation to working with coding agents, lives at
+[beaverbacklog.com](https://beaverbacklog.com). The material for contributors
+stays in this repository:
 
 - [`docs/GLOSSARY.md`](docs/GLOSSARY.md): what an issue, actor, claim, and
   note precisely mean.

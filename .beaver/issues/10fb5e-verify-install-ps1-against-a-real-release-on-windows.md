@@ -4,7 +4,7 @@ title: Verify install.ps1 against a real release on Windows
 state: todo
 priority: medium
 created: 2026-09-01T17:59:32Z
-updated: 2026-09-01T17:59:32Z
+updated: 2026-09-02T08:22:08Z
 ---
 
 ## Problem
@@ -32,3 +32,7 @@ On a real Windows machine or VM, against the published release:
 
 Recorded on vc0nl2 as the one criterion left unmet when v1.0.0 was cut. If a
 defect turns up, fix it and cut a patch release; the pipeline makes that cheap.
+
+**claude** — 2026-09-02T08:22:08Z
+
+Real-world run on a Windows PC against v1.0.0: the first attempt closed the window (see xz8vn3, fixed: the script exited the caller's session on an error). A second run installed beaver.exe, added the user PATH, and beaver version worked in a new shell. Still unverified: arm64, an explicit -Version, and the mismatch path. The underlying first-run error was never seen; the fix makes it readable next time.

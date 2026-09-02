@@ -1,11 +1,11 @@
 ---
 id: g64ybd
 title: Marketing site and user docs at beaverbacklog.com
-state: todo
+state: done
 labels:
     - spec
 created: 2026-08-27T05:14:47Z
-updated: 2026-09-01T18:14:10Z
+updated: 2026-09-02T08:22:08Z
 ---
 
 ## Problem Statement
@@ -49,3 +49,7 @@ A blog, versioned docs, analytics, third-party search, republishing architecture
 **pi** — 2026-09-01T18:14:10Z
 
 Hosting decision: Cloudflare Pages, not GitHub Pages. Connecting the project, first publish, domain purchase, and DNS are the maintainer's. The GitHub Pages deploy slice (sw693i) is cancelled; canonical URL moved onto the scaffold (zxyp2n).
+
+**claude** — 2026-09-02T08:22:08Z
+
+Every slice is done or cancelled and the site is live at beaverbacklog.com. Hosting ended up as manual upload to Cloudflare Pages rather than the Git integration this spec describes.

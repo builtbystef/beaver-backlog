@@ -1,7 +1,7 @@
 ---
 id: 2ajlma
 title: Connect Cloudflare Pages and publish
-state: todo
+state: done
 priority: high
 depends_on:
     - fe63zb
@@ -10,7 +10,7 @@ depends_on:
     - fj5kcs
 parent: g64ybd
 created: 2026-09-01T18:14:10Z
-updated: 2026-09-01T18:14:10Z
+updated: 2026-09-02T08:22:08Z
 ---
 
 ## What to build
@@ -41,3 +41,9 @@ Closure waits for user review.
       and not as a download the browser renames.
 - [ ] The issue is left `needs-review` for the user rather than closed by the
       session that does the work.
+
+## Notes
+
+**claude** — 2026-09-02T08:22:08Z
+
+Published by direct upload of site/dist from the Cloudflare dashboard rather than a Git integration; deploys are manual after npm run build. Reachable at the Pages address; install.sh and install.ps1 are served as plain text and installed the release on Linux and Windows.

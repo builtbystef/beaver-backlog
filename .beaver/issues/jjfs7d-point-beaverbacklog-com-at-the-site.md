@@ -1,13 +1,13 @@
 ---
 id: jjfs7d
 title: Point beaverbacklog.com at the site
-state: todo
+state: done
 priority: low
 depends_on:
     - 2ajlma
 parent: g64ybd
 created: 2026-08-27T06:27:01Z
-updated: 2026-09-01T18:16:20Z
+updated: 2026-09-02T08:22:08Z
 ---
 
 ## What to build
@@ -42,3 +42,7 @@ an agent's. Closure waits for user review.
 **pi** — 2026-09-01T18:16:20Z
 
 Retargeted from GitHub Pages to Cloudflare Pages. Blocked by 2ajlma (connect and publish) instead of the cancelled sw693i.
+
+**claude** — 2026-09-02T08:22:08Z
+
+Live at https://beaverbacklog.com over HTTPS. Install one-liners on the landing and Installation pages read against the domain and install.sh from it installed v1.0.0. The README's one-liners and docs link now use the domain. The pages.dev redirect is not set up: Cloudflare does not redirect it by itself.

@@ -19,7 +19,10 @@ the line to add to your shell profile.
 
 `beaver.exe` lands in `%LOCALAPPDATA%\Programs\beaver`, which the script adds to
 your user `PATH`. No administrator rights are needed; open a new shell
-afterwards to pick up the `PATH` change.
+afterwards to pick up the `PATH` change. If you save the script and run the
+file instead, Windows' default execution policy refuses it; the one-liner is
+not subject to that, and a saved copy runs with
+`powershell -ExecutionPolicy Bypass -File install.ps1`.
 
 Neither installer needs a Go toolchain. Both verify the download's SHA-256
 against the release's published checksums file, and install nothing if it does

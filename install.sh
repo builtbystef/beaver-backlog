@@ -2,7 +2,7 @@
 #
 # Installs a released beaver binary: no Go toolchain, no sudo, one command.
 #
-#   curl -fsSL https://raw.githubusercontent.com/builtbystef/beaver-backlog/main/install.sh | sh
+#   curl -fsSL https://beaverbacklog.com/install.sh | sh
 #
 # It resolves a release, downloads the archive built for this platform, verifies
 # its SHA-256 against the release's published checksums file, and unpacks the
