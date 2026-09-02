@@ -1,105 +1,176 @@
 ---
-import { Code, LinkButton } from '@astrojs/starlight/components';
-import { unixInstallCommand } from '../lib/install.js';
-import logoLight from '../../../docs/assets/logo-full.svg?url';
-import logoDark from '../../../docs/assets/logo-full-dark.svg?url';
+import { Icon } from '@astrojs/starlight/components';
+import InstallTabs from './InstallTabs.astro';
+import HeroScene from './HeroScene.astro';
 
-const { data } = Astro.locals.starlightRoute.entry;
-const { title = data.title, tagline, actions = [] } = data.hero || {};
-const origin = Astro.site;
-if (!origin) {
-	throw new Error('site URL is required to render install one-liners');
-}
-const installCommand = unixInstallCommand(origin);
+const { entry } = Astro.locals.starlightRoute;
+const { data } = entry;
+const { tagline, actions = [] } = data.hero || {};
+
+// Starlight renders its 404 page through the hero as well. It gets the same
+// scene, with copy that fits and no install card.
+const notFound = entry.id === '404';
+const heading = notFound ? 'Nothing at this address.' : 'Simple, local issue tracking.';
+const pitch = notFound
+	? 'The page may have moved, or the link may be wrong. The beaver checked twice.'
+	: tagline;
+const buttons = notFound
+	? [
+			{ href: '/', text: 'Back to the front page', icon: 'left-arrow', variant: 'primary' },
+			{ href: '/installation/', text: 'Read the docs', icon: 'open-book', variant: 'secondary' },
+		]
+	: actions.map(({ attrs = {}, icon, link: href, text, variant }) => ({
+			href,
+			text,
+			icon: icon?.name,
+			variant,
+			attrs,
+		}));
 ---
 
-<div class="hero">
-	<h1 id="_top" data-page-title class="sr-only">{title}</h1>
-	<p class="brand">
-		<img
-			src={logoLight}
-			alt="Beaver Backlog"
-			width="440"
-			height="81"
-			class="dark:sl-hidden"
-		/>
-		<img
-			src={logoDark}
-			alt="Beaver Backlog"
-			width="440"
-			height="81"
-			class="light:sl-hidden"
-		/>
-	</p>
-	{tagline && <p class="pitch">{tagline}</p>}
-	<div class="install">
-		<Code lang="sh" code={installCommand} />
-	</div>
-	{
-		actions.length > 0 && (
-			<p class="actions">
-				{actions.map(
-					({ attrs: { class: className, ...attrs } = {}, icon, link: href, text, variant }) => (
-						<LinkButton {href} {variant} icon={icon?.name} class:list={[className]} {...attrs}>
+<section class="hero not-content">
+	<div class="copy">
+		<h1 id="_top" data-page-title>{heading}</h1>
+		{pitch && <p class="pitch">{pitch}</p>}
+		{
+			!notFound && (
+				<div class="install">
+					<InstallTabs daylight />
+				</div>
+			)
+		}
+		{
+			buttons.length > 0 && (
+				<p class="actions">
+					{buttons.map(({ attrs = {}, icon, href, text, variant }) => (
+						<a
+							{href}
+							class:list={[
+								'landing-btn',
+								variant === 'secondary' ? 'is-secondary' : 'is-primary',
+							]}
+							{...attrs}
+						>
 							{text}
-							{icon?.html && <Fragment set:html={icon.html} />}
-						</LinkButton>
-					),
-				)}
-			</p>
-		)
-	}
-</div>
+							{icon && <Icon name={icon} size="1.125em" />}
+						</a>
+					))}
+				</p>
+			)
+		}
+		{
+			!notFound && (
+				<p class="meta">
+					Or <a class="landing-link" href="/installation/#with-a-go-toolchain">build it with Go</a>.
+				</p>
+			)
+		}
+	</div>
+	<HeroScene />
+</section>
+
+<script>
+	// The landing header sits on the hero's sky with no rule under it. Once the
+	// page scrolls, the header needs an edge again to separate it from content.
+	const root = document.documentElement;
+	const update = () => root.toggleAttribute('data-scrolled', window.scrollY > 4);
+	addEventListener('scroll', update, { passive: true });
+	update();
+</script>
 
 <style>
+	/* The hero breaks out of Starlight's content column: the sky runs edge to
+	   edge and up under the header, which paints itself the same colour. The
+	   buttons and the install card take the hero's fixed ink rather than the
+	   theme's. */
 	.hero {
+		--btn-ink: var(--hero-ink);
+		--btn-paper: var(--hero-paper);
+		--hero-peek: 6rem;
+		position: relative;
+		width: 100vw;
+		margin-inline-start: calc(50% - 50vw);
+		background: var(--hero-sky);
+		color: var(--hero-ink);
+		overflow: hidden;
+	}
+
+	/* The copy fills the first screen, less the header and a strip at the
+	   bottom where the beaver's head shows above the fold, and centres itself
+	   in it. On a short viewport it simply grows and the scene follows. */
+	.copy {
+		position: relative;
+		z-index: 1;
 		display: flex;
 		flex-direction: column;
 		align-items: center;
 		text-align: center;
-		gap: 1.5rem;
-		padding-block: clamp(1.5rem, 6vw, 4rem);
-		max-width: 100%;
-		min-width: 0;
+		max-width: var(--sl-content-width);
+		justify-content: center;
+		box-sizing: border-box;
+		min-height: calc(100svh - var(--sl-nav-height) - var(--hero-peek));
+		margin-inline: auto;
+		padding: clamp(2.5rem, 6vw, 4.5rem) var(--sl-content-pad-x) clamp(1.5rem, 4vw, 3rem);
 	}
 
-	.brand {
+	.copy h1 {
 		margin: 0;
-		width: min(100%, 22rem);
-	}
-
-	.brand img {
-		width: 100%;
-		height: auto;
-		display: block;
-	}
-
-	.pitch {
-		margin: 0;
-		max-width: 40rem;
-		font-size: clamp(1.15rem, 2.4vw, 1.55rem);
-		line-height: 1.4;
-		color: var(--ink);
+		max-width: 22ch;
+		font-size: clamp(2.5rem, 7vw, 4.75rem);
+		font-weight: 700;
+		line-height: 1.02;
+		letter-spacing: -0.04em;
+		color: var(--hero-ink);
 		text-wrap: balance;
 	}
 
-	.install {
-		width: min(100%, 42rem);
-		max-width: 100%;
-		min-width: 0;
-		text-align: start;
+	.pitch {
+		margin: 1.5rem 0 0;
+		max-width: 36rem;
+		font-size: clamp(1.0625rem, 1.7vw, 1.25rem);
+		font-weight: 450;
+		line-height: 1.5;
+		color: var(--hero-ink-muted);
+		text-wrap: pretty;
 	}
 
-	.install :global(pre) {
-		overflow-x: auto;
-		max-width: 100%;
+	.install {
+		margin-top: 2.25rem;
+		width: min(100%, 36rem);
+		min-width: 0;
 	}
 
 	.actions {
 		display: flex;
 		flex-wrap: wrap;
-		gap: 1rem 1.5rem;
+		gap: 0.875rem;
 		justify-content: center;
-		margin: 0;
+		margin: 1.75rem 0 0;
+	}
+
+	.pitch + .actions {
+		margin-top: 2.25rem;
+	}
+
+	.meta {
+		margin: 1.5rem 0 0;
+		font-size: 0.8125rem;
+		color: var(--hero-ink-muted);
+	}
+
+	.meta .landing-link {
+		color: var(--hero-ink);
+		text-decoration-color: currentColor;
+	}
+
+	.meta .landing-link:hover {
+		color: var(--hero-accent);
+	}
+
+	@media (max-width: 40rem) {
+		.hero {
+			--hero-peek: 4rem;
+			padding-top: 0.5rem;
+		}
 	}
 </style>

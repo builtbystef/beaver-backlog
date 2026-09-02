@@ -1,4 +1,6 @@
 ---
+import { Image } from 'astro:assets';
+import { Icon } from '@astrojs/starlight/components';
 import boardLight from '../../../docs/assets/screenshots/board-light.png';
 import boardDark from '../../../docs/assets/screenshots/board-dark.png';
 import graphLight from '../../../docs/assets/screenshots/graph-light.png';
@@ -6,69 +8,251 @@ import graphDark from '../../../docs/assets/screenshots/graph-dark.png';
 import issueLight from '../../../docs/assets/screenshots/issue-light.png';
 import issueDark from '../../../docs/assets/screenshots/issue-dark.png';
 
+// One view at a time, each at the full width of the column, with the board
+// first: it is the view that explains the product in one look.
+//
+// The committed captures are 2x (2880 wide) so a high-density screen gets a
+// sharp picture. Astro's image pipeline derives the WebP files the page
+// actually serves: a 1x and a 2x candidate for the slot each picture fills,
+// with the browser picking by its own pixel density.
+const widths = [1152, 2304];
+const sizes = '(min-width: 76rem) 1152px, 100vw';
+const width = widths[widths.length - 1];
+
 const shots = [
 	{
 		light: boardLight,
 		dark: boardDark,
 		alt: 'The board view, with issues as cards in state columns',
+		caption: 'Board',
+		detail: 'Issues as cards in state columns. Drag a card to move it.',
 	},
 	{
 		light: graphLight,
 		dark: graphDark,
 		alt: 'The dependency graph, with parent clusters and dependency arrows',
+		caption: 'Graph',
+		detail: 'Dependencies and parent clusters, laid out for you. Pan, zoom, filter.',
 	},
 	{
 		light: issueLight,
 		dark: issueDark,
 		alt: 'An issue page, with its description, notes, and fields',
+		caption: 'Issue',
+		detail: 'Rendered Markdown, every field editable, notes attributed.',
 	},
 ];
 ---
 
-<section data-screenshot-slot class="shots">
-	{
-		shots.map((shot) => (
-			<figure>
-				<img
-					src={shot.light.src}
-					width={shot.light.width}
-					height={shot.light.height}
-					alt={shot.alt}
-					class="dark:sl-hidden"
-				/>
-				<img
-					src={shot.dark.src}
-					width={shot.dark.width}
-					height={shot.dark.height}
-					alt={shot.alt}
-					class="light:sl-hidden"
-				/>
-			</figure>
-		))
-	}
+<section data-screenshot-slot class="landing-section not-content">
+	<div class="landing-head">
+		<h2 class="landing-heading">A local web UI over the same files.</h2>
+		<p class="landing-lede">
+			<code>beaver serve</code> starts it on loopback: board, list, dependency graph, issue pages,
+			and doctor. No daemon and no build step. Open pages notice when the store changes
+			underneath them and redraw.
+		</p>
+	</div>
+	<beaver-slides class="slides">
+		<div class="controls">
+			<div class="tabs" role="tablist" aria-label="Views">
+				{
+					shots.map((shot, i) => (
+						<button
+							type="button"
+							role="tab"
+							id={`view-tab-${i}`}
+							aria-controls={`view-panel-${i}`}
+							aria-selected={i === 0 ? 'true' : 'false'}
+							tabindex={i === 0 ? 0 : -1}
+						>
+							{shot.caption}
+						</button>
+					))
+				}
+			</div>
+			<div class="arrows">
+				<button type="button" class="arrow" data-step="-1" aria-label="Previous view">
+					<Icon name="left-arrow" size="1.25em" />
+				</button>
+				<button type="button" class="arrow" data-step="1" aria-label="Next view">
+					<Icon name="right-arrow" size="1.25em" />
+				</button>
+			</div>
+		</div>
+		{
+			shots.map((shot, i) => (
+				<figure
+					class="shot"
+					role="tabpanel"
+					id={`view-panel-${i}`}
+					aria-labelledby={`view-tab-${i}`}
+					hidden={i !== 0}
+				>
+					<div class="landing-frame">
+						<Image
+							src={shot.light}
+							alt={shot.alt}
+							{widths}
+							{sizes}
+							{width}
+							loading={i === 0 ? 'eager' : 'lazy'}
+							class="dark:sl-hidden"
+						/>
+						<Image
+							src={shot.dark}
+							alt={shot.alt}
+							{widths}
+							{sizes}
+							{width}
+							loading={i === 0 ? 'eager' : 'lazy'}
+							class="light:sl-hidden"
+						/>
+					</div>
+					<figcaption>
+						<span class="caption">{shot.caption}</span>
+						<span class="detail">{shot.detail}</span>
+					</figcaption>
+				</figure>
+			))
+		}
+	</beaver-slides>
 </section>
 
-<style>
-	.shots {
-		display: grid;
-		gap: 1.25rem;
-		margin: 0 0 2.5rem;
-		max-width: 100%;
+<script>
+	// A tab strip and a pair of arrows over one visible panel. The markup
+	// already shows the first view, so the page reads fine without this.
+	class BeaverSlides extends HTMLElement {
+		#tabs: HTMLButtonElement[] = [];
+		#panels: HTMLElement[] = [];
+		#current = 0;
+
+		connectedCallback() {
+			this.#tabs = [...this.querySelectorAll<HTMLButtonElement>('[role="tab"]')];
+			this.#panels = [...this.querySelectorAll<HTMLElement>('[role="tabpanel"]')];
+			this.#tabs.forEach((tab, i) => {
+				tab.addEventListener('click', () => this.show(i));
+				tab.addEventListener('keydown', (event) => {
+					const step = event.key === 'ArrowRight' ? 1 : event.key === 'ArrowLeft' ? -1 : 0;
+					if (!step) return;
+					event.preventDefault();
+					this.show(this.#current + step);
+					this.#tabs[this.#current]?.focus();
+				});
+			});
+			for (const arrow of this.querySelectorAll<HTMLButtonElement>('[data-step]')) {
+				arrow.addEventListener('click', () => this.show(this.#current + Number(arrow.dataset.step)));
+			}
+		}
+
+		show(index: number) {
+			const count = this.#tabs.length;
+			const next = ((index % count) + count) % count;
+			this.#tabs.forEach((tab, i) => {
+				tab.setAttribute('aria-selected', i === next ? 'true' : 'false');
+				tab.tabIndex = i === next ? 0 : -1;
+			});
+			this.#panels.forEach((panel, i) => {
+				panel.hidden = i !== next;
+			});
+			this.#current = next;
+		}
 	}
 
-	.shots figure {
-		margin: 0;
+	customElements.define('beaver-slides', BeaverSlides);
+</script>
+
+<style>
+	.slides {
+		display: block;
+	}
+
+	.controls {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: center;
+		justify-content: space-between;
+		gap: 0.75rem 1rem;
+		margin-bottom: 1.25rem;
+	}
+
+	.tabs,
+	.arrows {
+		display: flex;
+		gap: 0.5rem;
+	}
+
+	.tabs button,
+	.arrow {
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		box-sizing: border-box;
+		height: 2.5rem;
+		padding: 0 1rem;
+		border: 2px solid var(--ink);
+		border-radius: 0.625rem;
 		background: var(--surface);
-		border: 1px solid var(--line);
-		border-radius: 0.5rem;
-		overflow: hidden;
-		box-shadow: var(--elevation-card);
+		font: inherit;
+		font-size: 0.875rem;
+		font-weight: 600;
+		color: var(--ink);
+		cursor: pointer;
+		box-shadow: 2px 2px 0 var(--ink);
+		transition: transform 120ms ease, box-shadow 120ms ease, background-color 120ms ease;
+	}
+
+	.tabs button:hover,
+	.arrow:hover {
+		transform: translate(-1px, -1px);
+		box-shadow: 3px 3px 0 var(--ink);
+	}
+
+	.tabs button:active,
+	.arrow:active,
+	.tabs button[aria-selected='true'] {
+		transform: translate(2px, 2px);
+		box-shadow: 0 0 0 var(--ink);
+	}
+
+	.tabs button[aria-selected='true'] {
+		background: var(--accent);
+		color: var(--ink-on-accent);
+	}
+
+	.arrow {
+		width: 2.5rem;
+		padding: 0;
+	}
+
+	.shot {
+		margin: 0;
 		min-width: 0;
 	}
 
-	.shots img {
+	.shot img {
 		display: block;
 		width: 100%;
 		height: auto;
+	}
+
+	figcaption {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: baseline;
+		gap: 0.25rem 0.75rem;
+		margin-top: 1rem;
+		font-size: 0.9375rem;
+		line-height: 1.5;
+	}
+
+	.caption {
+		font-weight: 700;
+		letter-spacing: -0.01em;
+		color: var(--ink);
+	}
+
+	.detail {
+		color: var(--ink-muted);
 	}
 </style>

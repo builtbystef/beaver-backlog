@@ -62,7 +62,10 @@ const starlightMap = `
 	--sl-color-text-invert: var(--ink-on-accent);
 	--sl-color-hairline: var(--line);
 	--sl-color-hairline-light: var(--line);
-	--sl-color-hairline-shade: var(--line-strong);
+	--sl-color-hairline-shade: var(--line);
+	--sl-shadow-sm: none;
+	--sl-shadow-md: none;
+	--sl-shadow-lg: var(--elevation-overlay);
 `;
 
 export function generateAppTokensCss() {

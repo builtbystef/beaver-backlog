@@ -1,0 +1,137 @@
+---
+import { Code } from '@astrojs/starlight/components';
+import { Image } from 'astro:assets';
+import atWork from '../assets/beaver-with-laptop.png';
+
+// The quick start, as the README shows it.
+const session = `$ beaver init
+Initialized empty Beaver Backlog store in /home/you/project/.beaver
+
+$ beaver create "Login form rejects valid passwords" --label bug --priority high
+Created ix2guj  Login form rejects valid passwords
+  .beaver/issues/ix2guj-login-form-rejects-valid-passwords.md
+
+$ beaver list
+ID      PRIORITY  STATE  ASSIGNEE  LABELS  TITLE
+ix2guj  high      todo   -         bug     Login form rejects valid passwords
+
+$ beaver start ix2guj
+Started ix2guj (claimed for stefan)
+
+$ beaver note ix2guj "root cause: form strips ! before hashing"
+Added note to ix2guj as stefan
+
+$ beaver done ix2guj
+Marked ix2guj done`;
+
+const commands = [
+	['init', 'Initialize a store in the current project'],
+	['create', 'Create an issue'],
+	['list', 'List issues, or just the ready or blocked ones'],
+	['show', 'Show an issue and what it waits on'],
+	['start', 'Move to in-progress, claiming it if unowned'],
+	['done', 'Mark done'],
+	['cancel', 'Deliberately abandon'],
+	['reopen', 'Return to todo, clearing the assignee'],
+	['update', 'Change any non-state field'],
+	['note', 'Append an attributed, timestamped note'],
+	['delete', 'Delete the file; the VCS keeps history'],
+	['doctor', 'Check store health, and repair what is safe'],
+	['serve', 'Serve the local web UI'],
+	['whoami', 'Print the actor you resolve as'],
+	['version', 'Print the version of this build'],
+];
+---
+
+<section class="landing-section not-content">
+	<div class="landing-head">
+		<h2 class="landing-heading">Fifteen commands, and they fit on one screen.</h2>
+		<p class="landing-lede">
+			State changes are verbs of their own. Everything else changes through
+			<code>update</code>, which takes as many fields as you like and writes nothing if they
+			net out to no change.
+		</p>
+	</div>
+	<div class="split">
+		<div class="landing-code session">
+			<Code lang="console" code={session} frame="terminal" title="A first session" wrap />
+			<Image
+				src={atWork}
+				widths={[320, 640]}
+				sizes="13rem"
+				width={640}
+				alt="The beaver in glasses, typing on a laptop"
+				loading="lazy"
+				class="landing-art is-bottom-right"
+				style="--tilt: -8deg; --art-width: 12.5rem; --art-over-x: 4.5rem; --art-over-y: 5rem;"
+			/>
+		</div>
+		<dl class="commands">
+			{
+				commands.map(([name, what]) => (
+					<div class="command">
+						<dt>
+							<span class="bin">beaver</span> {name}
+						</dt>
+						<dd>{what}</dd>
+					</div>
+				))
+			}
+			<div class="command more">
+				<a class="landing-link" href="/command-reference/">Every command and flag</a>
+			</div>
+		</dl>
+	</div>
+</section>
+
+<style>
+	.split {
+		display: grid;
+		grid-template-columns: repeat(auto-fit, minmax(min(100%, 24rem), 1fr));
+		gap: 2rem 3rem;
+		align-items: start;
+	}
+
+	.session {
+		min-width: 0;
+	}
+
+	.commands {
+		margin: 0;
+		display: grid;
+		grid-template-columns: repeat(auto-fill, minmax(min(100%, 14rem), 1fr));
+		gap: 0 1.5rem;
+	}
+
+	.command {
+		padding: 0.5625rem 0;
+		border-bottom: 1px solid var(--line-strong);
+		min-width: 0;
+	}
+
+	dt {
+		font-family: var(--sl-font-mono);
+		font-size: 0.8125rem;
+		font-weight: 500;
+		color: var(--ink);
+	}
+
+	.bin {
+		color: var(--ink-subtle);
+		font-weight: 400;
+	}
+
+	dd {
+		margin: 0.125rem 0 0;
+		font-size: 0.8125rem;
+		line-height: 1.5;
+		color: var(--ink-muted);
+	}
+
+	/* The link to the reference fills the last cell of the command list. */
+	.more {
+		display: flex;
+		align-items: center;
+		font-size: 0.8125rem;
+	}
+</style>

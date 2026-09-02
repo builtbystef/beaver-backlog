@@ -1,0 +1,252 @@
+/* The landing page. Starlight's splash template wraps the hero and the page
+   body in content panels sized for prose; the landing wants a wider column,
+   no rule between the two panels, and sections that pace themselves. The
+   section vocabulary below is shared by every landing component, so it lives
+   here rather than in one of them. */
+
+[data-has-hero] {
+	--sl-content-width: 72rem;
+	--landing-pad: clamp(3.5rem, 8vw, 6.5rem);
+
+	/* The hero's own palette, sampled from the illustration and the logo. It
+	   does not follow the theme: the picture is a daylight scene in both, and
+	   the header borrows it so the sky runs to the top of the page. Dark mode
+	   dims the picture and these bands by the same factor so they stay one
+	   surface. */
+	--hero-dim: 1;
+	--hero-sky: #cbe6f6;
+	--hero-water: #85b4fd;
+	--hero-grass: #8eb684;
+	--hero-paper: #fcf7ef;
+	--hero-paper-deep: #f1e9dc;
+	--hero-ink: #18181b;
+	--hero-ink-muted: #46515c;
+	--hero-accent: #c2521a;
+}
+
+@media (prefers-color-scheme: dark) {
+	[data-has-hero]:not([data-theme='light']) {
+		--hero-dim: 0.85;
+		--hero-sky: #acc3d1;
+		--hero-water: #7198d6;
+		--hero-grass: #7a9b71;
+	}
+}
+
+[data-has-hero][data-theme='dark'] {
+	--hero-dim: 0.85;
+	--hero-sky: #acc3d1;
+	--hero-water: #7198d6;
+	--hero-grass: #7a9b71;
+}
+
+/* On the landing the header starts as part of the sky: same colour, no rule
+   under it, controls drawn in the hero's ink whatever the theme. Once the
+   page scrolls it becomes an ordinary header on the page's own ground. */
+[data-has-hero]:not([data-scrolled]) header.header {
+	background: var(--hero-sky);
+	border-bottom-color: transparent;
+}
+
+[data-has-hero][data-scrolled] header.header {
+	background: var(--canvas);
+}
+
+[data-has-hero]:not([data-scrolled]) .site-title {
+	color: var(--hero-ink);
+}
+
+[data-has-hero]:not([data-scrolled]) .site-nav a,
+[data-has-hero]:not([data-scrolled]) .social-icons a {
+	--btn-ink: var(--hero-ink);
+	--btn-paper: var(--hero-paper);
+}
+
+[data-has-hero] .content-panel {
+	padding-block: 0;
+}
+
+[data-has-hero] .content-panel + .content-panel,
+[data-has-hero] .content-panel + .content-panel .landing-section:first-child {
+	border-top: 0;
+}
+
+[data-has-hero] .sl-container > * + * {
+	margin-top: 0;
+}
+
+[data-has-hero] .main-pane {
+	background: var(--canvas);
+}
+
+.landing-section {
+	padding-block: var(--landing-pad);
+	border-top: 1px solid var(--line);
+	min-width: 0;
+}
+
+.landing-head {
+	max-width: 38rem;
+	margin-bottom: clamp(2rem, 4vw, 3rem);
+}
+
+.landing-head.is-centered {
+	margin-inline: auto;
+	text-align: center;
+}
+
+.landing-heading {
+	margin: 0;
+	font-size: clamp(1.875rem, 3.4vw, 2.5rem);
+	font-weight: 700;
+	line-height: 1.1;
+	letter-spacing: -0.03em;
+	color: var(--ink);
+	text-wrap: balance;
+}
+
+.landing-lede {
+	margin: 1rem 0 0;
+	font-size: 1.0625rem;
+	line-height: 1.6;
+	color: var(--ink-muted);
+	text-wrap: pretty;
+}
+
+.landing-lede code,
+.landing-body code {
+	font-family: var(--sl-font-mono);
+	font-size: 0.875em;
+	color: var(--ink);
+	background: var(--surface-hover);
+	border: 1px solid var(--line);
+	border-radius: 0.3125rem;
+	padding: 0.1em 0.375em;
+}
+
+.landing-body {
+	color: var(--ink-muted);
+	font-size: 0.9375rem;
+	line-height: 1.65;
+}
+
+.landing-body p {
+	margin: 0;
+}
+
+.landing-body p + p {
+	margin-top: 0.875rem;
+}
+
+.landing-link {
+	color: var(--ink);
+	font-weight: 500;
+	text-decoration: underline;
+	text-decoration-color: var(--line-strong);
+	text-underline-offset: 0.2em;
+	transition: color 120ms ease, text-decoration-color 120ms ease;
+}
+
+.landing-link:hover {
+	color: var(--accent);
+	text-decoration-color: var(--accent);
+}
+
+/* A framed picture, in the hero's vocabulary: an ink edge and a hard shadow. */
+.landing-frame {
+	border: 2px solid var(--ink);
+	border-radius: 0.875rem;
+	box-shadow: 4px 4px 0 var(--ink);
+	overflow: hidden;
+	background: var(--surface);
+	min-width: 0;
+}
+
+/* An illustration stuck on the corner of a code card like a sticker: above
+   the card, hanging a little over its edge, a few degrees off straight. Each
+   use sets its own width and tilt; neighbours tilt opposite ways so the page
+   does not lean. The card's wrapper sets the position context, and the
+   overhang shrinks on a phone so nothing leaves the viewport. */
+.landing-code {
+	position: relative;
+}
+
+.landing-art {
+	--art-over-max-x: 100rem;
+	--art-over-max-y: 100rem;
+	position: absolute;
+	z-index: 2;
+	bottom: calc(-1 * min(var(--art-over-y, 2.5rem), var(--art-over-max-y)));
+	width: var(--art-width, 12rem);
+	height: auto;
+	rotate: var(--tilt, 0deg);
+	pointer-events: none;
+}
+
+.landing-art.is-bottom-left {
+	left: calc(-1 * min(var(--art-over-x, 3rem), var(--art-over-max-x)));
+}
+
+.landing-art.is-bottom-right {
+	right: calc(-1 * min(var(--art-over-x, 3rem), var(--art-over-max-x)));
+}
+
+/* On a phone the sticker stays inside the column and shrinks, so it never
+   pushes the page wider than the screen. The caps win over the per-use
+   overhang because inline custom properties cannot be overridden here. */
+@media (max-width: 48rem) {
+	.landing-art {
+		--art-over-max-x: 0.25rem;
+		--art-over-max-y: 1.5rem;
+		width: calc(var(--art-width, 12rem) * 0.6);
+	}
+}
+
+/* Buttons: chunky, ink-edged, and they press. The hero and the header set
+   --btn-ink and --btn-paper to their own fixed palette; everywhere else the
+   theme's ink applies. */
+.landing-btn {
+	display: inline-flex;
+	align-items: center;
+	gap: 0.5rem;
+	padding: 0.75rem 1.375rem;
+	border: 2px solid var(--btn-ink, var(--ink));
+	border-radius: 0.75rem;
+	font-size: 0.9375rem;
+	font-weight: 600;
+	line-height: 1.2;
+	text-decoration: none;
+	box-shadow: 3px 3px 0 var(--btn-ink, var(--ink));
+	transition: transform 120ms ease, box-shadow 120ms ease;
+}
+
+.landing-btn:hover {
+	transform: translate(-1px, -1px);
+	box-shadow: 4px 4px 0 var(--btn-ink, var(--ink));
+}
+
+.landing-btn:active {
+	transform: translate(2px, 2px);
+	box-shadow: 0 0 0 var(--btn-ink, var(--ink));
+}
+
+.landing-btn.is-primary {
+	background: var(--accent);
+	color: var(--ink-on-accent);
+}
+
+.landing-btn.is-secondary {
+	background: var(--btn-paper, var(--surface));
+	color: var(--btn-ink, var(--ink));
+}
+
+/* Code blocks on the landing sit in the frame vocabulary above rather than
+   in prose spacing. */
+.landing-code .expressive-code {
+	margin: 0;
+}
+
+.landing-code .expressive-code pre {
+	max-width: 100%;
+	overflow-x: auto;
+}

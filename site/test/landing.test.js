@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { readFileSync, readdirSync } from 'node:fs';
+import { existsSync, readFileSync, readdirSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { test } from 'node:test';
@@ -186,4 +186,33 @@ test('layout does not force the page body to scroll sideways', () => {
 	const styles = builtCss() + landing;
 	assert.match(styles, /overflow-x:\s*clip/);
 	assert.match(styles, /minmax\(min\(100%/);
+});
+
+function canonicalSite() {
+	const source = read(join(here, '..', 'astro.config.mjs'));
+	const match = source.match(/^const site = '([^']+)';$/m);
+	assert.ok(match, 'canonical site URL should be declared in astro.config.mjs');
+	return match[1];
+}
+
+function pngSize(buffer) {
+	assert.equal(buffer.toString('latin1', 1, 4), 'PNG', 'og.png should be a PNG');
+	return { width: buffer.readUInt32BE(16), height: buffer.readUInt32BE(20) };
+}
+
+test('every page carries the Open Graph card at the canonical URL', () => {
+	const url = `${canonicalSite()}/og.png`;
+	for (const html of [landing, installation]) {
+		assert.ok(html.includes(`<meta property="og:image" content="${url}"`), 'expected og:image');
+		assert.ok(html.includes(`<meta name="twitter:image" content="${url}"`), 'expected twitter:image');
+	}
+	const { width, height } = pngSize(readFileSync(join(dist, 'og.png')));
+	assert.deepEqual({ width, height }, { width: 1200, height: 630 });
+});
+
+test('robots.txt allows every crawler and names the sitemap at the canonical URL', () => {
+	const robots = read(join(dist, 'robots.txt'));
+	assert.match(robots, /^User-agent: \*\nAllow: \/\n/);
+	assert.ok(robots.includes(`Sitemap: ${canonicalSite()}/sitemap-index.xml`), robots);
+	assert.ok(existsSync(join(dist, 'sitemap-index.xml')), 'the sitemap the robots file names should exist');
 });

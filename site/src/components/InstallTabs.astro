@@ -1,0 +1,146 @@
+---
+// The install one-liners, one tab per platform. The choice is remembered
+// across every copy on the site through Starlight's synced tabs.
+//
+// By default the card follows the page theme. With `daylight` it takes the
+// hero's fixed paper-and-ink palette instead, so that on the hero's daylight
+// sky it stays a paper note in dark mode too, like the buttons beside it.
+import { Code, TabItem, Tabs } from '@astrojs/starlight/components';
+import { unixInstallCommand, windowsInstallCommand } from '../lib/install.js';
+
+interface Props {
+	daylight?: boolean;
+}
+
+const { daylight = false } = Astro.props;
+
+const origin = Astro.site;
+if (!origin) {
+	throw new Error('site URL is required to render install one-liners');
+}
+const unix = unixInstallCommand(origin);
+const windows = windowsInstallCommand(origin);
+---
+
+<div class:list={['install-tabs', 'landing-code', { 'is-daylight': daylight }]}>
+	<Tabs syncKey="platform">
+		<TabItem label="macOS and Linux">
+			<Code lang="sh" code={unix} frame="none" />
+		</TabItem>
+		<TabItem label="Windows">
+			<Code lang="powershell" code={windows} frame="none" />
+		</TabItem>
+	</Tabs>
+	<!-- Syntax colours come from the page theme, and Expressive Code lets a
+	     block opt out by carrying its own theme attribute. On the paper card
+	     that has to be the light set whatever the page is using. The script
+	     runs inline, before first paint, so dark mode never flashes the dark
+	     set. -->
+	{
+		daylight && (
+			<script is:inline>
+				for (const block of document.currentScript.parentElement.querySelectorAll('.expressive-code')) {
+					block.dataset.theme = 'light';
+				}
+			</script>
+		)
+	}
+</div>
+
+<style>
+	/* The card: a paper note with a hard shadow, the tab row as its header.
+	   Its colours are the page's unless the daylight palette is asked for. */
+	.install-tabs {
+		--card-ink: var(--ink);
+		--card-ink-muted: var(--ink-muted);
+		--card-paper: var(--surface);
+		--card-paper-deep: var(--surface-hover);
+		--card-accent: var(--accent);
+		min-width: 0;
+		text-align: start;
+	}
+
+	.install-tabs.is-daylight {
+		--card-ink: var(--hero-ink);
+		--card-ink-muted: var(--hero-ink-muted);
+		--card-paper: var(--hero-paper);
+		--card-paper-deep: var(--hero-paper-deep);
+		--card-accent: var(--hero-accent);
+	}
+
+	.install-tabs :global(starlight-tabs) {
+		border: 2px solid var(--card-ink);
+		border-radius: 0.875rem;
+		box-shadow: 4px 4px 0 var(--card-ink);
+		background: var(--card-paper);
+		overflow: hidden;
+	}
+
+	.install-tabs :global(.tablist-wrapper) {
+		background: var(--card-paper-deep);
+	}
+
+	.install-tabs :global([role='tablist']) {
+		margin: 0;
+		padding: 0 0.5rem;
+		gap: 0.25rem;
+		border-bottom: 2px solid var(--card-ink);
+	}
+
+	.install-tabs :global(.tab > [role='tab']) {
+		padding: 0.5625rem 0.875rem;
+		font-size: 0.8125rem;
+		font-weight: 600;
+		color: var(--card-ink-muted);
+		box-shadow: none;
+		white-space: nowrap;
+	}
+
+	.install-tabs :global(.tab > [role='tab']:hover) {
+		color: var(--card-ink);
+	}
+
+	.install-tabs :global(.tab > [role='tab'][aria-selected='true']) {
+		color: var(--card-ink);
+		box-shadow: 0 2px 0 var(--card-accent);
+	}
+
+	.install-tabs :global(.tablist-wrapper ~ [role='tabpanel']) {
+		margin-top: 0;
+	}
+
+	.install-tabs :global(.expressive-code .frame) {
+		border-radius: 0;
+		box-shadow: none;
+	}
+
+	.install-tabs :global(.expressive-code pre) {
+		border: 0;
+		border-radius: 0;
+		background: var(--card-paper);
+	}
+
+	.install-tabs :global(.expressive-code .code) {
+		padding-block: 0.25rem;
+	}
+
+	.install-tabs :global(.expressive-code .ec-line .code::before) {
+		content: '$ ';
+		color: var(--card-accent);
+		user-select: none;
+	}
+
+	.install-tabs :global(.expressive-code pre code) {
+		font-size: 0.8125rem;
+	}
+
+	@media (max-width: 40rem) {
+		.install-tabs :global(starlight-tabs) {
+			box-shadow: 3px 3px 0 var(--card-ink);
+		}
+
+		.install-tabs :global(.expressive-code pre code) {
+			font-size: 0.75rem;
+		}
+	}
+</style>

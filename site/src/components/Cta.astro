@@ -1,0 +1,52 @@
+---
+import { Icon } from '@astrojs/starlight/components';
+import InstallTabs from './InstallTabs.astro';
+---
+
+<section class="landing-section not-content">
+	<div class="cta">
+		<h2 class="landing-heading">Start tracking in the next minute.</h2>
+		<p class="landing-lede">
+			One line installs it. <code>beaver init</code> in a project creates the store. Commit
+			it with your code.
+		</p>
+		<div class="install">
+			<InstallTabs />
+		</div>
+		<p class="actions">
+			<a class="landing-btn is-primary" href="/installation/">
+				Read the docs
+				<Icon name="right-arrow" size="1.125em" />
+			</a>
+			<a class="landing-btn is-secondary" href="https://github.com/builtbystef/beaver-backlog">
+				View on GitHub
+				<Icon name="github" size="1.125em" />
+			</a>
+		</p>
+	</div>
+</section>
+
+<style>
+	.cta {
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		text-align: center;
+		max-width: 38rem;
+		margin-inline: auto;
+	}
+
+	.install {
+		margin-top: 2rem;
+		width: min(100%, 34rem);
+		min-width: 0;
+	}
+
+	.actions {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 0.875rem;
+		justify-content: center;
+		margin: 1.75rem 0 0;
+	}
+</style>

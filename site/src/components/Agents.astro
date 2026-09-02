@@ -1,0 +1,137 @@
+---
+import { Code } from '@astrojs/starlight/components';
+import { Image } from 'astro:assets';
+import together from '../assets/beaver-and-robot.png';
+
+// The JSON is the shape the CLI emits when stdout is not a terminal: every
+// field present, unset options as null, unset lists as []. Keep it in step
+// with internal/output.
+const session = `$ export BEAVER_BACKLOG_ACTOR=claude
+
+$ beaver list --ready --format json
+[
+  {
+    "id": "ix2guj",
+    "title": "Login form rejects valid passwords",
+    "state": "todo",
+    "assignee": null,
+    "priority": "high",
+    "labels": [
+      "bug"
+    ],
+    "depends_on": [],
+    "parent": null,
+    "created": "2026-07-06T20:28:40Z",
+    "updated": "2026-07-06T20:28:40Z",
+    "body": "",
+    "notes": [],
+    "custom": {}
+  }
+]
+
+$ beaver start ix2guj
+Started ix2guj (claimed for claude)`;
+
+const points = [
+	{
+		title: 'JSON when piped',
+		body: 'Output auto-detects: tables on a terminal, JSON when piped. Warnings go to stderr, so they never corrupt what an agent parses.',
+	},
+	{
+		title: 'Stable exit codes',
+		body: '0 success, 1 runtime failure, 2 usage error, 3 not found. Branch on the code, never on the text.',
+	},
+	{
+		title: 'Every write is attributed',
+		body: 'Set one environment variable and every claim and note an agent makes carries its name. A claim is a signal, not a lock; the VCS merge surfaces a clash.',
+	},
+];
+---
+
+<section class="landing-section not-content">
+	<div class="split">
+		<div class="text">
+			<h2 class="landing-heading">Humans and agents, same files, same commands.</h2>
+			<p class="landing-lede">
+				An agent picks its next issue from <code>beaver list --ready</code>, claims it, and
+				leaves notes as it works. You review the result as a diff.
+			</p>
+			<ul class="points">
+				{
+					points.map((point) => (
+						<li>
+							<h3>{point.title}</h3>
+							<p>{point.body}</p>
+						</li>
+					))
+				}
+			</ul>
+			<p class="more">
+				<a class="landing-link" href="/coding-agents/">Working with coding agents</a>
+			</p>
+		</div>
+		<div class="landing-code code">
+			<Code lang="console" code={session} frame="terminal" title="From an agent's shell" />
+			<Image
+				src={together}
+				widths={[480, 960]}
+				sizes="22rem"
+				width={960}
+				alt="The beaver and a small robot, walking together hand in hand"
+				loading="lazy"
+				class="landing-art is-bottom-right"
+				style="--tilt: -7deg; --art-width: 22rem; --art-over-x: 6rem; --art-over-y: 5rem;"
+			/>
+		</div>
+	</div>
+</section>
+
+<style>
+	.split {
+		display: grid;
+		grid-template-columns: repeat(auto-fit, minmax(min(100%, 22rem), 1fr));
+		gap: 3rem 4rem;
+		align-items: start;
+	}
+
+	.text {
+		max-width: 32rem;
+	}
+
+	.code {
+		min-width: 0;
+	}
+
+	.points {
+		list-style: none;
+		margin: 2rem 0 0;
+		padding: 0;
+		display: grid;
+		gap: 1.25rem;
+	}
+
+	.points li {
+		padding-inline-start: 1.25rem;
+		border-inline-start: 3px solid var(--accent);
+	}
+
+	.points h3 {
+		margin: 0 0 0.25rem;
+		font-size: 1rem;
+		font-weight: 700;
+		letter-spacing: -0.015em;
+		color: var(--ink);
+	}
+
+	.points p {
+		margin: 0;
+		font-size: 0.9375rem;
+		line-height: 1.6;
+		color: var(--ink-muted);
+	}
+
+	.more {
+		margin: 2rem 0 0;
+		font-size: 0.9375rem;
+	}
+</style>

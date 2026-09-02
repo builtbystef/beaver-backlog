@@ -1,0 +1,136 @@
+---
+// The page footer. Docs pages keep Starlight's edit link, last-updated line,
+// and previous/next pagination; every page then ends with the site footer:
+// the brand, the few links that belong everywhere, and the theme picker.
+import EditLink from 'virtual:starlight/components/EditLink';
+import LastUpdated from 'virtual:starlight/components/LastUpdated';
+import Pagination from 'virtual:starlight/components/Pagination';
+import ThemeSelect from 'virtual:starlight/components/ThemeSelect';
+import config from 'virtual:starlight/user-config';
+import { logos } from 'virtual:starlight/user-images';
+
+const { entry } = Astro.locals.starlightRoute;
+const isDoc = !entry.data.hero;
+const year = new Date().getFullYear();
+const links = [
+	{ href: '/installation/', text: 'Docs' },
+	{ href: 'https://github.com/builtbystef/beaver-backlog', text: 'GitHub' },
+	{ href: '/privacy/', text: 'Privacy' },
+	{ href: '/terms/', text: 'Terms' },
+];
+---
+
+{
+	isDoc && (
+		<div class="doc-footer sl-flex not-content">
+			<div class="meta sl-flex">
+				<EditLink />
+				<LastUpdated />
+			</div>
+			<Pagination />
+		</div>
+	)
+}
+
+<footer class="site-footer not-content">
+	<div class="row">
+		<a class="brand" href="/">
+			{
+				config.logo && logos.dark && (
+					<>
+						<img class="light:sl-hidden" alt="" src={logos.dark.src} width={logos.dark.width} height={logos.dark.height} />
+						<img class="dark:sl-hidden" alt="" src={logos.light?.src} width={logos.light?.width} height={logos.light?.height} />
+					</>
+				)
+			}
+			<span>{config.title.en ?? Object.values(config.title)[0]}</span>
+		</a>
+		<nav class="links" aria-label="Footer">
+			{links.map(({ href, text }) => <a {href}>{text}</a>)}
+		</nav>
+		<div class="theme">
+			<ThemeSelect />
+		</div>
+	</div>
+	<p class="fine">
+		Open source under the MIT license. &copy; {year} builtbystef.
+	</p>
+</footer>
+
+<style>
+	.doc-footer {
+		flex-direction: column;
+		gap: 1.5rem;
+	}
+
+	.meta {
+		gap: 0.75rem 3rem;
+		justify-content: space-between;
+		flex-wrap: wrap;
+		margin-top: 3rem;
+		font-size: var(--sl-text-sm);
+		color: var(--ink-subtle);
+	}
+
+	.meta > :global(p:only-child) {
+		margin-inline-start: auto;
+	}
+
+	.site-footer {
+		margin-top: clamp(3rem, 6vw, 5rem);
+		padding-block: 2rem 2.5rem;
+		border-top: 2px solid var(--ink);
+	}
+
+	.row {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: center;
+		gap: 1rem 2rem;
+	}
+
+	.brand {
+		display: inline-flex;
+		align-items: center;
+		gap: 0.625rem;
+		color: var(--ink);
+		font-weight: 700;
+		font-size: 1rem;
+		letter-spacing: -0.01em;
+		text-decoration: none;
+	}
+
+	.brand img {
+		height: 1.75rem;
+		width: auto;
+	}
+
+	.links {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 0.25rem 1.25rem;
+		margin-inline-end: auto;
+	}
+
+	.links a {
+		font-size: 0.875rem;
+		font-weight: 500;
+		color: var(--ink-muted);
+		text-decoration: none;
+		transition: color 120ms ease;
+	}
+
+	.links a:hover {
+		color: var(--accent);
+	}
+
+	.theme :global(starlight-theme-select label) {
+		color: var(--ink-muted);
+	}
+
+	.fine {
+		margin: 1.25rem 0 0;
+		font-size: 0.8125rem;
+		color: var(--ink-subtle);
+	}
+</style>

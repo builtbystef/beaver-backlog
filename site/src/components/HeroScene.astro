@@ -1,0 +1,122 @@
+---
+// The hero's landscape: the beaver standing in a pond held back by a log dam,
+// with the stream running on below it. It is a hand-written SVG so it scales
+// to any width without seams. The sky is transparent: the hero paints it.
+//
+// Coordinates are in a 1600-wide box with the waterline at y = 170. The box
+// extends above y = 0 to make room for the beaver, which is drawn before the
+// water so the pond hides its feet.
+import { getImage } from 'astro:assets';
+import beaverSrc from '../assets/beaver-with-papers.png';
+
+const horizon = 170;
+const height = 600;
+
+const beaver = await getImage({ src: beaverSrc, width: 800, format: 'webp' });
+const beaverWidth = 320;
+const beaverHeight = (beaverWidth * beaverSrc.height) / beaverSrc.width;
+const beaverSink = 145; // how far below the waterline the feet reach: the water comes up to just under the hands
+const beaverTop = horizon + beaverSink - beaverHeight;
+const top = Math.floor(beaverTop) - 16;
+
+// Wave marks on the pond: a row along the far shore and a few in the
+// narrows above the dam. All of them sit in open water, clear of the banks.
+// The stream below the dam is shallow and still, so it has none.
+const pondWaves = [
+	[60, 194], [300, 190], [520, 196], [1010, 196], [1240, 190], [1480, 194],
+	[560, 242], [960, 238], [680, 292], [860, 312], [730, 352],
+];
+
+// Grass tufts on the banks: [x, y, scale].
+const tufts = [
+	[130, 335, 0.75], [340, 395, 0.6], [80, 465, 0.8], [260, 540, 0.65], [440, 455, 0.55], [200, 590, 0.6],
+	[1470, 335, 0.75], [1260, 395, 0.6], [1520, 465, 0.8], [1340, 540, 0.65], [1160, 455, 0.55], [1400, 590, 0.6],
+];
+
+// The dam: logs stacked across the narrows, drawn bottom to top so the
+// upper ones overlap the lower. [x, y, width, height, rotation]
+const logs = [
+	[580, 446, 440, 20, 1.5],
+	[610, 452, 380, 18, -2.5],
+	[590, 428, 420, 20, -3],
+	[600, 426, 400, 20, 3],
+	[620, 410, 360, 18, 2],
+	[640, 404, 340, 18, -3],
+	[650, 390, 300, 20, -1.5],
+	[680, 374, 240, 18, 2.5],
+];
+const logFills = ['#8a4726', '#904d28', '#96522b'];
+---
+
+<div class="scene" aria-hidden="true">
+	<svg viewBox={`0 ${top} 1600 ${height - top}`} xmlns="http://www.w3.org/2000/svg">
+		<!-- the beaver, behind the water -->
+		<image
+			href={beaver.src}
+			x={800 - beaverWidth / 2}
+			y={beaverTop}
+			width={beaverWidth}
+			height={beaverHeight}
+		/>
+		<!-- pond -->
+		<rect x="0" y={horizon} width="1600" height={height - horizon} fill="#84b3fe" />
+		<!-- waves, drawn under the banks so they stay on the water -->
+		<g fill="none" stroke="#4f86e8" stroke-linecap="round" stroke-width="4">
+			{pondWaves.map(([x, y]) => <path d={`M${x} ${y} q 12 -9 24 0 t 24 0 t 24 0`} />)}
+		</g>
+		<!-- stream: shallower and paler than the pond held behind the dam -->
+		<rect x="0" y="430" width="1600" height={height - 430} fill="#c3dcfb" />
+		<!-- banks -->
+		<path
+			d="M0 205 C 300 210 490 245 600 330 C 640 362 640 400 615 435 C 585 478 500 530 430 600 L0 600 Z"
+			fill="#8fb685"
+		/>
+		<path
+			d="M1600 205 C 1300 210 1110 245 1000 330 C 960 362 960 400 985 435 C 1015 478 1100 530 1170 600 L1600 600 Z"
+			fill="#8fb685"
+		/>
+		<!-- grass tufts -->
+		<g fill="none" stroke="#4d894e" stroke-linecap="round" stroke-width="3.5">
+			{
+				tufts.map(([x, y, s]) => (
+					<g transform={`translate(${x} ${y}) scale(${s})`}>
+						<path d="M0 0 C -3 -10 -9 -18 -16 -24" />
+						<path d="M2 0 C 3 -12 3 -22 2 -32" />
+						<path d="M4 0 C 8 -10 13 -18 20 -22" />
+					</g>
+				))
+			}
+		</g>
+		<!-- the dam -->
+		<g>
+			{
+				logs.map(([x, y, w, h, r], i) => (
+					<g transform={`rotate(${r} ${x + w / 2} ${y + h / 2})`}>
+						<rect x={x} y={y} width={w} height={h} rx={h / 2} fill={logFills[i % logFills.length]} />
+						<rect x={x + 6} y={y + h - 7} width={w - 12} height="4" rx="2" fill="#6a3519" opacity="0.5" />
+					</g>
+				))
+			}
+		</g>
+	</svg>
+</div>
+
+<style>
+	/* The drawing keeps its own aspect ratio and is never narrower than 48rem,
+	   so on a phone it is centred and cropped at the sides rather than shrunk
+	   until the dam is illegible. */
+	.scene {
+		position: relative;
+		display: flex;
+		justify-content: center;
+		overflow: hidden;
+	}
+
+	svg {
+		display: block;
+		flex: none;
+		width: max(100%, 48rem);
+		height: auto;
+		filter: brightness(var(--hero-dim, 1));
+	}
+</style>

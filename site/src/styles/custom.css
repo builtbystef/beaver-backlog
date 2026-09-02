@@ -1,28 +1,470 @@
+/* The site's own layer over Starlight. Colours come from the application
+   token table (virtual:app-tokens.css); this file decides type, spacing, and
+   the shape of Starlight's chrome. The aim is a quiet page: hairlines instead
+   of shadows, one accent, and text that carries the hierarchy. */
+
+:root {
+	--sl-font: 'Inter Variable', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto,
+		sans-serif;
+	--sl-font-mono: 'JetBrains Mono Variable', ui-monospace, SFMono-Regular, Menlo, Consolas,
+		monospace;
+
+	/* Starlight's defaults run large for a reference site; a step down reads
+	   closer to the tools a developer already has open. */
+	--sl-text-base: 0.9375rem;
+	--sl-text-h1: 2rem;
+	--sl-text-h2: 1.375rem;
+	--sl-text-h3: 1.125rem;
+	--sl-text-h4: 1rem;
+	--sl-text-code: 0.8125rem;
+	--sl-text-code-sm: 0.75rem;
+	--sl-line-height: 1.65;
+	--sl-nav-height: 4rem;
+	--sl-sidebar-width: 16.5rem;
+	--sl-content-width: 44rem;
+
+	/* Rendering hints the variable fonts respond to. */
+	font-feature-settings: 'cv11', 'ss01', 'calt';
+	-webkit-font-smoothing: antialiased;
+	-moz-osx-font-smoothing: grayscale;
+}
+
 html {
 	overflow-x: clip;
 }
 
+/* Starlight declares these inside a cascade layer, where any unlayered rule
+   that sets display on the same element beats them. Restated here, outside
+   the layers, so a theme-paired image is only ever drawn once. */
+[data-theme='light'] .light\:sl-hidden,
+[data-theme='dark'] .dark\:sl-hidden {
+	display: none !important;
+}
+
+body {
+	letter-spacing: -0.006em;
+}
+
+@media (min-width: 72rem) {
+	:root {
+		--sl-text-h1: 2.25rem;
+	}
+}
+
+/* ---- Header --------------------------------------------------------- */
+
+.site-title {
+	color: var(--ink);
+	font-weight: 700;
+	font-size: 1.125rem;
+	letter-spacing: -0.015em;
+	gap: 0.75rem;
+}
+
+.site-title img {
+	height: 2.25rem;
+	width: auto;
+}
+
+header.header {
+	border-bottom: 1px solid var(--line);
+	background: var(--surface);
+	transition: background-color 160ms ease, border-color 160ms ease;
+}
+
+/* The header links are small versions of the landing's secondary button:
+   the Docs pill and, beside it, a square holding the repository icon. */
+.site-nav a,
+.social-icons a {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	box-sizing: border-box;
+	height: 2.5rem;
+	padding: 0 0.875rem;
+	margin: 0;
+	border: 2px solid var(--btn-ink, var(--ink));
+	border-radius: 0.625rem;
+	background: var(--btn-paper, var(--surface));
+	font-size: 0.875rem;
+	font-weight: 600;
+	color: var(--btn-ink, var(--ink));
+	text-decoration: none;
+	box-shadow: 2px 2px 0 var(--btn-ink, var(--ink));
+	transition: transform 120ms ease, box-shadow 120ms ease;
+}
+
+.site-nav a:hover,
+.social-icons a:hover {
+	color: var(--btn-ink, var(--ink));
+	transform: translate(-1px, -1px);
+	box-shadow: 3px 3px 0 var(--btn-ink, var(--ink));
+}
+
+.site-nav a:active,
+.social-icons a:active {
+	transform: translate(1px, 1px);
+	box-shadow: 0 0 0 var(--btn-ink, var(--ink));
+}
+
+.site-nav a[aria-current='true'] {
+	background: var(--accent-soft);
+}
+
+.social-icons a {
+	width: 2.5rem;
+	padding: 0;
+}
+
+.social-icons a svg {
+	width: 1.375rem;
+	height: 1.375rem;
+	font-size: 1.375rem;
+}
+
+starlight-theme-select label {
+	color: var(--ink-muted);
+}
+
+starlight-theme-select select {
+	font-size: 0.8125rem;
+}
+
+/* ---- Sidebar -------------------------------------------------------- */
+
+.sidebar-pane {
+	border-inline-end: 1px solid var(--line);
+	background: var(--canvas);
+}
+
+.sidebar-content {
+	padding-top: 1.5rem;
+}
+
+.sidebar-content .top-level > li + li {
+	margin-top: 0.125rem;
+}
+
+.sidebar-content a {
+	font-size: 0.875rem;
+	font-weight: 450;
+	color: var(--ink-muted);
+	border-radius: 0.375rem;
+	padding: 0.375rem 0.625rem;
+	transition: color 120ms ease, background-color 120ms ease;
+}
+
+.sidebar-content a:hover {
+	color: var(--ink);
+	background: var(--surface-hover);
+}
+
+.sidebar-content a[aria-current='page'],
+.sidebar-content a[aria-current='page']:hover,
+.sidebar-content a[aria-current='page']:focus {
+	color: var(--ink);
+	font-weight: 600;
+	background: var(--accent-soft);
+}
+
+/* ---- Right rail ----------------------------------------------------- */
+
+.right-sidebar {
+	border-inline-start: 1px solid var(--line);
+}
+
+.right-sidebar-panel h2 {
+	font-size: 0.75rem;
+	font-weight: 550;
+	letter-spacing: 0.04em;
+	text-transform: uppercase;
+	color: var(--ink-subtle);
+}
+
+.right-sidebar-panel a {
+	font-size: 0.8125rem;
+	color: var(--ink-muted);
+	--pad-inline: 0.75rem;
+}
+
+.right-sidebar-panel a:hover {
+	color: var(--ink);
+}
+
+.right-sidebar-panel a[aria-current='true'] {
+	color: var(--accent);
+	font-weight: 500;
+}
+
+/* ---- Content -------------------------------------------------------- */
+
+.content-panel {
+	border-top: 0;
+}
+
+.content-panel + .content-panel {
+	border-top: 1px solid var(--line);
+}
+
+.sl-markdown-content {
+	color: var(--ink-muted);
+}
+
+.sl-markdown-content h1,
+.sl-markdown-content h2,
+.sl-markdown-content h3,
+.sl-markdown-content h4,
+h1[data-page-title] {
+	color: var(--ink);
+	font-weight: 700;
+	letter-spacing: -0.025em;
+	text-wrap: balance;
+}
+
+h1[data-page-title] {
+	letter-spacing: -0.035em;
+	line-height: 1.1;
+}
+
+.sl-markdown-content :is(h2, h3, h4):not(:where(.not-content *)) {
+	margin-top: 2.25em;
+	line-height: 1.3;
+}
+
+.sl-markdown-content h2:not(:where(.not-content *)) {
+	padding-bottom: 0.5rem;
+	border-bottom: 1px solid var(--line);
+}
+
+.sl-markdown-content :is(h1, h2, h3, h4) + :is(p, ul, ol, pre, table):not(:where(.not-content *)) {
+	margin-top: 0.75rem;
+}
+
+.sl-markdown-content p:not(:where(.not-content *)),
+.sl-markdown-content li:not(:where(.not-content *)) {
+	line-height: 1.7;
+}
+
+.sl-markdown-content strong {
+	color: var(--ink);
+	font-weight: 600;
+}
+
+.sl-markdown-content a:not(:where(.not-content *)) {
+	color: var(--ink);
+	text-decoration: underline;
+	text-decoration-color: var(--line-strong);
+	text-underline-offset: 0.2em;
+	transition: text-decoration-color 120ms ease, color 120ms ease;
+}
+
+.sl-markdown-content a:not(:where(.not-content *)):hover {
+	color: var(--accent);
+	text-decoration-color: var(--accent);
+}
+
+/* Inline code as a small chip, the way GitHub and most editors draw it. */
+.sl-markdown-content code:not(:where(.not-content *, pre *, .expressive-code *)) {
+	background: var(--surface-hover);
+	border: 1px solid var(--line);
+	border-radius: 0.3125rem;
+	padding: 0.1em 0.375em;
+	font-size: 0.875em;
+	color: var(--ink);
+}
+
+.sl-markdown-content :is(h1, h2, h3, h4) code:not(:where(.not-content *)) {
+	font-size: 0.85em;
+}
+
+.sl-markdown-content :is(pre, .expressive-code):not(:where(.not-content *)) {
+	margin-block: 1.25rem;
+}
+
+/* Tables: hairlines only, a quiet uppercase header, no stripes. */
+.sl-markdown-content table:not(:where(.not-content *)) {
+	font-size: 0.875rem;
+	border-collapse: collapse;
+	width: 100%;
+	display: table;
+}
+
+.sl-markdown-content :is(th, td):not(:where(.not-content *)) {
+	border: 0;
+	border-bottom: 1px solid var(--line);
+	padding: 0.625rem 0.75rem;
+	text-align: start;
+	vertical-align: top;
+}
+
+.sl-markdown-content th:not(:where(.not-content *)) {
+	color: var(--ink);
+	font-weight: 550;
+	font-size: 0.75rem;
+	letter-spacing: 0.03em;
+	text-transform: uppercase;
+	border-bottom-color: var(--line-strong);
+}
+
+.sl-markdown-content tr:nth-child(2n):not(:where(.not-content *)) {
+	background: transparent;
+}
+
+.sl-markdown-content :is(th, td):first-child:not(:where(.not-content *)) {
+	padding-inline-start: 0;
+}
+
+.sl-markdown-content :is(th, td):last-child:not(:where(.not-content *)) {
+	padding-inline-end: 0;
+}
+
+.sl-markdown-content blockquote:not(:where(.not-content *)) {
+	border-inline-start: 2px solid var(--line-strong);
+	color: var(--ink-muted);
+}
+
+.sl-markdown-content hr:not(:where(.not-content *)) {
+	border-color: var(--line);
+}
+
+/* Asides (notes, tips) as cards in the landing's vocabulary, the accent
+   colour of the aside kept as a thick leading edge. */
+.starlight-aside {
+	border: 2px solid var(--ink);
+	border-inline-start-width: 6px;
+	border-inline-start-color: var(--sl-color-asides-border);
+	border-radius: 0.75rem;
+	box-shadow: 3px 3px 0 var(--ink);
+	background: var(--surface);
+	color: var(--ink-muted);
+}
+
+.starlight-aside__title {
+	font-size: 0.875rem;
+	font-weight: 700;
+	color: var(--ink);
+}
+
+/* ---- Page footer ---------------------------------------------------- */
+
+.pagination-links a {
+	border: 2px solid var(--ink);
+	border-radius: 0.75rem;
+	box-shadow: 3px 3px 0 var(--ink);
+	color: var(--ink-muted);
+	transition: transform 120ms ease, box-shadow 120ms ease;
+}
+
+.pagination-links a:hover {
+	transform: translate(-1px, -1px);
+	box-shadow: 4px 4px 0 var(--ink);
+}
+
+.pagination-links a > span {
+	color: var(--ink);
+	font-weight: 600;
+}
+
+.pagination-links .link-title {
+	font-size: 1rem;
+}
+
+/* ---- Buttons -------------------------------------------------------- */
+
+.sl-link-button {
+	border: 2px solid var(--ink);
+	border-radius: 0.75rem;
+	font-weight: 600;
+	font-size: 0.9375rem;
+	padding: 0.625rem 1.125rem;
+	box-shadow: 3px 3px 0 var(--ink);
+	transition: transform 120ms ease, box-shadow 120ms ease;
+}
+
+.sl-link-button:hover {
+	transform: translate(-1px, -1px);
+	box-shadow: 4px 4px 0 var(--ink);
+}
+
 .sl-link-button.primary {
 	background: var(--accent);
-	border-color: var(--accent);
+	border-color: var(--ink);
 	color: var(--ink-on-accent);
 }
 
 .sl-link-button.primary:hover {
-	background: var(--accent-hover);
-	border-color: var(--accent-hover);
+	background: var(--accent);
+	border-color: var(--ink);
 	color: var(--ink-on-accent);
 }
 
-.sl-link-button.minimal,
 .sl-link-button.secondary {
+	background: var(--surface);
+	border-color: var(--ink);
 	color: var(--ink);
 }
 
-.sl-link-button.minimal:hover,
 .sl-link-button.secondary:hover {
-	color: var(--accent);
+	border-color: var(--ink);
+	color: var(--ink);
 }
+
+.sl-link-button.minimal {
+	color: var(--ink-muted);
+}
+
+.sl-link-button.minimal:hover {
+	color: var(--ink);
+}
+
+/* ---- Code blocks ---------------------------------------------------- */
+
+/* The frame carries the one ink border and the shadow; the title bar and
+   the terminal bar inside it get a rule under them and nothing else, so a
+   title tab never paints over the frame's edge. */
+.expressive-code .frame {
+	border: 2px solid var(--ink);
+	overflow: hidden;
+}
+
+.expressive-code .frame pre {
+	border: 0;
+	border-radius: 0;
+}
+
+.expressive-code .frame .header {
+	border: 0;
+	border-radius: 0;
+}
+
+.expressive-code .frame.has-title:not(.is-terminal) .header,
+.expressive-code .frame.is-terminal .header {
+	border-bottom: 2px solid var(--ink);
+}
+
+.expressive-code .frame.has-title:not(.is-terminal) .header::before,
+.expressive-code .frame.has-title:not(.is-terminal) .header::after,
+.expressive-code .frame.has-title:not(.is-terminal) .title::after {
+	display: none;
+}
+
+.expressive-code .frame.has-title:not(.is-terminal) .title {
+	border: 0;
+	background: transparent;
+}
+
+.expressive-code .frame.has-title:not(.is-terminal) .title {
+	font-family: var(--sl-font-mono);
+	font-size: 0.75rem;
+	letter-spacing: 0;
+}
+
+.expressive-code .frame.is-terminal .header::after {
+	font-family: var(--sl-font-mono);
+	font-size: 0.75rem;
+}
+
+/* ---- Focus ---------------------------------------------------------- */
 
 :focus-visible {
 	outline: 2px solid var(--accent);

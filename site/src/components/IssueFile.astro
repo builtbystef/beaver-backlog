@@ -1,0 +1,91 @@
+---
+import { Code } from '@astrojs/starlight/components';
+import { Image } from 'astro:assets';
+import overwhelmed from '../assets/beaver-holding-stack-of-papers.png';
+
+// The example from the README, verbatim: the same issue the quick start walks
+// through, after it has been started, noted, and closed.
+const file = `---
+id: ix2guj
+title: Login form rejects valid passwords
+state: done
+assignee: stefan
+priority: high
+labels:
+  - bug
+created: 2026-07-06T20:28:40Z
+updated: 2026-07-06T20:28:59Z
+---
+
+When a user submits a correct password containing a \`!\`, the form clears and
+shows "invalid credentials". Expected: the login succeeds.
+
+## Notes
+
+**stefan** — 2026-07-06T20:28:59Z
+
+root cause: form strips ! before hashing
+`;
+---
+
+<section class="landing-section not-content">
+	<div class="split">
+		<div class="text">
+			<h2 class="landing-heading">One file per issue. The file is the record.</h2>
+			<div class="landing-body">
+				<p>
+					Each issue is one file in <code>.beaver/issues/</code>, named
+					<code>&lt;id&gt;-&lt;slug&gt;.md</code>. The short random ID is the identity; the
+					slug just mirrors the title.
+				</p>
+				<p>
+					The frontmatter is machine-owned: Beaver Backlog keeps it formatted, and unknown
+					keys you add by hand are preserved verbatim. The body is yours; the tool only ever
+					appends notes to it.
+				</p>
+				<p>
+					State is one of <code>todo</code>, <code>in-progress</code>, <code>done</code>, or
+					<code>cancelled</code>. Any state may move to any other: the tracker records reality
+					rather than enforcing a workflow.
+				</p>
+				<p>
+					<a class="landing-link" href="/issue-file/">Read the file format</a>
+				</p>
+			</div>
+		</div>
+		<div class="landing-code code">
+			<Code lang="markdown" title="ix2guj-login-form-rejects-valid-passwords.md" code={file} wrap />
+			<Image
+				src={overwhelmed}
+				widths={[320, 640]}
+				sizes="15rem"
+				width={640}
+				alt="The beaver struggling under a tower of loose paper"
+				loading="lazy"
+				class="landing-art is-bottom-right"
+				style="--tilt: 8deg; --art-width: 15rem; --art-over-x: 6rem; --art-over-y: 4.5rem;"
+			/>
+		</div>
+	</div>
+</section>
+
+<style>
+	.split {
+		display: grid;
+		grid-template-columns: repeat(auto-fit, minmax(min(100%, 22rem), 1fr));
+		gap: 3rem 4rem;
+		align-items: start;
+	}
+
+	.text {
+		max-width: 32rem;
+	}
+
+	.text .landing-body {
+		margin-top: 1.25rem;
+	}
+
+	.code {
+		min-width: 0;
+	}
+</style>

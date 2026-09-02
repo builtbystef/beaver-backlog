@@ -3,7 +3,7 @@ title: Beaver Backlog
 description: An issue tracker that lives in your repository, built for humans and coding agents working together.
 template: splash
 hero:
-  tagline: An issue tracker that lives in your repository, built for humans and coding agents working together.
+  tagline: An issue tracker that lives in your repo as Markdown files, for humans and coding agents.
   actions:
     - text: Documentation
       link: /installation/
@@ -11,12 +11,24 @@ hero:
     - text: GitHub
       link: https://github.com/builtbystef/beaver-backlog
       icon: github
-      variant: minimal
+      variant: secondary
 ---
 
-import Features from '../../components/Features.astro';
 import Screenshots from '../../components/Screenshots.astro';
+import Features from '../../components/Features.astro';
+import IssueFile from '../../components/IssueFile.astro';
+import Cli from '../../components/Cli.astro';
+import Agents from '../../components/Agents.astro';
+import Cta from '../../components/Cta.astro';
 
 <Screenshots />
 
 <Features />
+
+<IssueFile />
+
+<Cli />
+
+<Agents />
+
+<Cta />

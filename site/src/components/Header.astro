@@ -1,0 +1,50 @@
+---
+// Starlight's header, pared down: the logo, one link into the docs, and the
+// repository. Search is off, and the theme picker lives in the footer.
+import SiteTitle from 'virtual:starlight/components/SiteTitle';
+import SocialIcons from 'virtual:starlight/components/SocialIcons';
+
+const docsHref = '/installation/';
+const path = Astro.url.pathname;
+const inDocs = path !== '/' && !['/privacy/', '/terms/'].includes(path);
+---
+
+<div class="header">
+	<div class="title-wrapper sl-flex">
+		<SiteTitle />
+	</div>
+	<div class="sl-flex print:hidden right-group">
+		<nav class="site-nav sl-flex" aria-label="Site">
+			<a href={docsHref} aria-current={inDocs ? 'true' : undefined}>Docs</a>
+		</nav>
+		<div class="sl-flex social-icons">
+			<SocialIcons />
+		</div>
+	</div>
+</div>
+
+<style>
+	@layer starlight.core {
+		.header {
+			display: flex;
+			gap: var(--sl-nav-gap);
+			justify-content: space-between;
+			align-items: center;
+			height: 100%;
+		}
+
+		.title-wrapper {
+			overflow: clip;
+			padding: 0.25rem;
+			margin: -0.25rem;
+			min-width: 0;
+		}
+
+		.right-group,
+		.social-icons,
+		.site-nav {
+			gap: 1rem;
+			align-items: center;
+		}
+	}
+</style>

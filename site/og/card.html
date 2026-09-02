@@ -1,0 +1,101 @@
+<!doctype html>
+<!--
+  The Open Graph card: the hero, composed for a 1200 x 630 frame. Render it
+  with ./og/render.sh, which screenshots this page in headless Chrome and
+  writes public/og.png. Fonts and pictures are the site's own.
+-->
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>Beaver Backlog</title>
+<style>
+	@font-face {
+		font-family: 'Inter Variable';
+		font-weight: 100 900;
+		src: url('../node_modules/@fontsource-variable/inter/files/inter-latin-wght-normal.woff2') format('woff2');
+	}
+	@font-face {
+		font-family: 'JetBrains Mono Variable';
+		font-weight: 100 800;
+		src: url('../node_modules/@fontsource-variable/jetbrains-mono/files/jetbrains-mono-latin-wght-normal.woff2') format('woff2');
+	}
+	html, body { margin: 0; }
+	body {
+		width: 1200px;
+		height: 630px;
+		overflow: hidden;
+		font-family: 'Inter Variable', sans-serif;
+		color: #18181b;
+		background: #cbe6f6;
+		position: relative;
+	}
+	.pond {
+		position: absolute;
+		left: 0; right: 0; bottom: 0;
+		height: 118px;
+		background: #84b3fe;
+	}
+	.waves {
+		position: absolute;
+		left: 0; right: 0; bottom: 0;
+		height: 118px;
+	}
+	.beaver {
+		position: absolute;
+		right: 64px;
+		bottom: -60px;
+		width: 420px;
+		height: auto;
+	}
+	.copy {
+		position: absolute;
+		left: 80px;
+		top: 76px;
+		width: 620px;
+	}
+	.logo { display: block; width: 320px; height: auto; }
+	h1 {
+		margin: 56px 0 0;
+		font-size: 76px;
+		font-weight: 700;
+		line-height: 1.02;
+		letter-spacing: -0.04em;
+	}
+	p {
+		margin: 28px 0 0;
+		font-size: 26px;
+		font-weight: 450;
+		line-height: 1.4;
+		color: #46515c;
+		max-width: 600px;
+	}
+	.url {
+		position: absolute;
+		left: 80px;
+		bottom: 44px;
+		font-family: 'JetBrains Mono Variable', monospace;
+		font-size: 22px;
+		font-weight: 500;
+		color: #fcf7ef;
+	}
+</style>
+</head>
+<body>
+	<img class="beaver" src="../src/assets/beaver-with-papers.png" alt="" />
+	<div class="pond"></div>
+	<svg class="waves" viewBox="0 0 1200 118" fill="none" stroke="#4f86e8" stroke-linecap="round" stroke-width="4">
+		<path d="M60 30 q 12 -9 24 0 t 24 0 t 24 0" />
+		<path d="M330 22 q 12 -9 24 0 t 24 0 t 24 0" />
+		<path d="M560 34 q 12 -9 24 0 t 24 0 t 24 0" />
+		<path d="M1040 26 q 12 -9 24 0 t 24 0 t 24 0" />
+		<path d="M420 78 q 12 -9 24 0 t 24 0 t 24 0" />
+		<path d="M1110 82 q 12 -9 24 0 t 24 0 t 24 0" />
+	</svg>
+	<div class="copy">
+		<img class="logo" src="../../docs/assets/logo-full.svg" alt="Beaver Backlog" />
+		<h1>Simple, local issue tracking.</h1>
+		<p>An issue tracker that lives in your repo as Markdown files, for humans and coding agents.</p>
+	</div>
+	<div class="url">beaverbacklog.com</div>
+</body>
+</html>
