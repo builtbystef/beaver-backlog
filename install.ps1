@@ -45,8 +45,11 @@ param(
 
 # Piped into iex, the script runs inside the caller's own session. The block
 # gives it a scope of its own, so the preferences below and strict mode do not
-# outlive the install in an interactive shell.
+# outlive the install in an interactive shell. The parameters are handed in
+# rather than read through the scope so the analyzer sees them used.
 & {
+param([string]$Version, [string]$InstallDir)
+
 $ErrorActionPreference = 'Stop'
 Set-StrictMode -Version Latest
 
@@ -206,4 +209,4 @@ public static extern IntPtr SendMessageTimeout(IntPtr hWnd, uint msg, UIntPtr wP
         Remove-Item -LiteralPath $tmp -Recurse -Force
     }
 }
-}
+} $Version $InstallDir
