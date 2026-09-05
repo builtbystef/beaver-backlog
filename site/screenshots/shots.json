@@ -26,6 +26,29 @@
   "theme": "light"
  },
  {
+  "name": "graph-quick",
+  "url": "http://127.0.0.1:2340/graph",
+  "theme": "light",
+  "script": "const svg=document.querySelector('svg.graph');const w=+svg.getAttribute('width'),h=+svg.getAttribute('height');const r=svg.getBoundingClientRect();const vh=h*0.5;const vw=vh*r.width/r.height;svg.setAttribute('viewBox',`${w/2-vw/2} ${-h*0.01} ${vw} ${vh}`);document.querySelector('[data-issue=\"pfrezq\"]').dispatchEvent(new MouseEvent('click',{bubbles:true,cancelable:true}));await new Promise(r=>setTimeout(r,800));",
+  "wait": 600
+ },
+ {
+  "name": "new-issue",
+  "url": "http://127.0.0.1:2340/issues/new",
+  "theme": "light",
+  "script": "const f=document.querySelector('[name=title]').form;const set=(k,v)=>{const e=f.querySelector(`[name=${k}]`);if(e)e.value=v;};set('title','Show a reading progress bar in reader mode');set('description','A thin bar at the top of the reader that fills as the reader scrolls.\\n\\n- Hidden until the first scroll\\n- Follows the typography settings for colour');set('priority','medium');set('labels','ux, feature');set('parent','z969o1');"
+ },
+ {
+  "name": "edit",
+  "url": "http://127.0.0.1:2340/issues/3za2nd/edit",
+  "theme": "light"
+ },
+ {
+  "name": "list-filtered",
+  "url": "http://127.0.0.1:2340/issues?label=feature&state=todo",
+  "theme": "light"
+ },
+ {
   "name": "board",
   "url": "http://127.0.0.1:2340/",
   "theme": "dark"
@@ -49,6 +72,29 @@
  {
   "name": "doctor",
   "url": "http://127.0.0.1:2340/doctor",
+  "theme": "dark"
+ },
+ {
+  "name": "graph-quick",
+  "url": "http://127.0.0.1:2340/graph",
+  "theme": "dark",
+  "script": "const svg=document.querySelector('svg.graph');const w=+svg.getAttribute('width'),h=+svg.getAttribute('height');const r=svg.getBoundingClientRect();const vh=h*0.5;const vw=vh*r.width/r.height;svg.setAttribute('viewBox',`${w/2-vw/2} ${-h*0.01} ${vw} ${vh}`);document.querySelector('[data-issue=\"pfrezq\"]').dispatchEvent(new MouseEvent('click',{bubbles:true,cancelable:true}));await new Promise(r=>setTimeout(r,800));",
+  "wait": 600
+ },
+ {
+  "name": "new-issue",
+  "url": "http://127.0.0.1:2340/issues/new",
+  "theme": "dark",
+  "script": "const f=document.querySelector('[name=title]').form;const set=(k,v)=>{const e=f.querySelector(`[name=${k}]`);if(e)e.value=v;};set('title','Show a reading progress bar in reader mode');set('description','A thin bar at the top of the reader that fills as the reader scrolls.\\n\\n- Hidden until the first scroll\\n- Follows the typography settings for colour');set('priority','medium');set('labels','ux, feature');set('parent','z969o1');"
+ },
+ {
+  "name": "edit",
+  "url": "http://127.0.0.1:2340/issues/3za2nd/edit",
+  "theme": "dark"
+ },
+ {
+  "name": "list-filtered",
+  "url": "http://127.0.0.1:2340/issues?label=feature&state=todo",
   "theme": "dark"
  }
 ]
